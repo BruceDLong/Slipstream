@@ -25,27 +25,28 @@ model InfonConnector{
     me string: statusMesg
     //INIT(...)<-{} // init and start the connector
 }
+struct InfonConnector{}
 
-struct ClipConnector: inherits=infonConnector {}
-struct UserConnector: inherits=infonConnector {}
-struct FileConnector: inherits=infonConnector {}
-struct IPFSConnector: inherits=infonConnector {}
-struct RepoConnector: inherits=infonConnector {}     // Connector to a RepositoryManager instance.
-struct GUI_Connector: inherits=infonConnector {}     // Kbd, mouse/touchScn, screen, clipboard, etc.
-struct MediaConnector:inherits=infonConnector {}     // Microphones, audioOut, videoSource
-struct AgentConnector:inherits=infonConnector {}     // Connect to other agents
-struct SensorConnector  : inherits=infonConnector {}
-struct RobotConnector   : inherits=infonConnector {}
-struct InternetConnector: inherits=infonConnector {}
-struct PhoneConnector   : inherits=infonConnector {} // Services offered by phones
+struct ClipConnector: inherits=InfonConnector {}
+struct UserConnector: inherits=InfonConnector {}
+struct FileConnector: inherits=InfonConnector {}
+struct IPFSConnector: inherits=InfonConnector {}
+struct RepoConnector: inherits=InfonConnector {}     // Connector to a RepositoryManager instance.
+struct GUI_Connector: inherits=InfonConnector {}     // Kbd, mouse/touchScn, screen, clipboard, etc.
+struct MediaConnector:inherits=InfonConnector {}     // Microphones, audioOut, videoSource
+struct AgentConnector:inherits=InfonConnector {}     // Connect to other agents
+struct SensorConnector  : inherits=InfonConnector {}
+struct RobotConnector   : inherits=InfonConnector {}
+struct InternetConnector: inherits=InfonConnector {}
+struct PhoneConnector   : inherits=InfonConnector {} // Services offered by phones
 
 
 //////////////////////////////////////////////////////////////////////
 
 struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
     their InfonConnector: source
-    our EarleyParser: parser
-    our agent: parentAgent
+    our EParser: parser
+    our Agent: parentAgent
     me int: statusCode
     me string: statusMesg
     //INIT(...)<-{} // init and start the stream
@@ -61,13 +62,13 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
 }
 
 struct SlipstreamCore{ // Create and manage a slipstream node
-    me list<agent>
+    me list<Agent>: agents
     me ConnectionManager: connectionMgr
     void: initCoreServices()<-{
         // Init P2P connections and DHTs
         // Etc.
     }
-    void: start() <- { // Start Code Services, Initialize and start an agent. Close when done.
+    void: start() <- { // Start Code Services, Initialize and start an Agent. Close when done.
     }
 }
 
