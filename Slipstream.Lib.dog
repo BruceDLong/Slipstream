@@ -11,9 +11,9 @@ Authors = "Bruce Long"
 Description = "The Slipstream Engine"
 ProgramOrLibrary = "library"
 
-featuresNeeded = [Proteus, Logger, Unicode, BigNumbers, Threads, IOBuffer, EarleyParser]
+featuresNeeded = [Proteus, Logger, Unicode, BigNumbers, Threads, IOBuffer, EarleyParser] // Crypto, P2P_Manager, Quic]
 
-LicenseText = `This file is part of the "Slipstream Development suite" All Rights Reserved.`
+LicenseText = `This file is part of the "Slipstream Development Suite" All Rights Reserved.`
 
 struct RepositoryManager{ // Load, track, save, pull, push, pullReq, etc.
 }
@@ -21,7 +21,7 @@ struct RepositoryManager{ // Load, track, save, pull, push, pullReq, etc.
 model InfonConnector{
     me strBuf: inputBuf
     me strBuf: outputBuf
-    me int: statusCode
+    me int:    statusCode
     me string: statusMesg
     //INIT(...)<-{} // init and start the connector
 }
@@ -52,6 +52,7 @@ struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
 }
 
 struct ConnectorFactory{ // Create and initialize subclasses of InfonConnectors
+    their InfonConnector: makeInfonConnector(me string: specString)<-{}
 }
 
 struct ConnectionManager{ // Manage connections to a Proteus Agent
