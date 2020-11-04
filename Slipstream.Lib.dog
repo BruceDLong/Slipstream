@@ -1,0 +1,73 @@
+//////////////////  Classes for Slipstream Based Applications
+// Slipstream.Lib.dog
+
+//LinuxTestBuild: Platform='Linux' CPU='amd64' Lang='CPP' testMode='makeTests';
+LinuxBuild:     Platform='Linux' CPU='amd64' Lang='CPP' optimize='speed';
+
+FileName = "slipstream"
+Version = "0.1"
+CopyrightMesg = "Copyright (c) 2020-<YEAR> Bruce Long"
+Authors = "Bruce Long"
+Description = "The Slipstream Engine"
+ProgramOrLibrary = "library"
+
+featuresNeeded = [Proteus, Logger, Unicode, BigNumbers, Threads, IOBuffer, EarleyParser]
+
+LicenseText = `This file is part of the "Slipstream Development suite" All Rights Reserved.`
+
+struct RepositoryManager{ // Load, track, save, pull, push, pullReq, etc.
+}
+
+model InfonConnector{
+    me strBuf: inputBuf
+    me strBuf: outputBuf
+    me int: statusCode
+    me string: statusMesg
+    //INIT(...)<-{} // init and start the connector
+}
+
+struct ClipConnector: inherits=infonConnector {}
+struct UserConnector: inherits=infonConnector {}
+struct FileConnector: inherits=infonConnector {}
+struct IPFSConnector: inherits=infonConnector {}
+struct RepoConnector: inherits=infonConnector {}     // Connector to a RepositoryManager instance.
+struct GUI_Connector: inherits=infonConnector {}     // Kbd, mouse/touchScn, screen, clipboard, etc.
+struct MediaConnector:inherits=infonConnector {}     // Microphones, audioOut, videoSource
+struct AgentConnector:inherits=infonConnector {}     // Connect to other agents
+struct SensorConnector  : inherits=infonConnector {}
+struct RobotConnector   : inherits=infonConnector {}
+struct InternetConnector: inherits=infonConnector {}
+struct PhoneConnector   : inherits=infonConnector {} // Services offered by phones
+
+
+//////////////////////////////////////////////////////////////////////
+
+struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
+    their InfonConnector: source
+    our EarleyParser: parser
+    our agent: parentAgent
+    me int: statusCode
+    me string: statusMesg
+    //INIT(...)<-{} // init and start the stream
+}
+
+struct ConnectorFactory{ // Create and initialize subclasses of InfonConnectors
+}
+
+struct ConnectionManager{ // Manage connections to a Proteus Agent
+    me ConnectorFactory:     connectionFactory
+    me list<InfonConnector>: connections
+}
+
+struct SlipstreamCore{ // Create and manage a slipstream node
+    me list<agent>
+    me ConnectionManager: connectionMgr
+    void: initCoreServices()<-{
+        // Init P2P connections and DHTs
+        // Etc.
+    }
+    void: start() <- { // Start Code Services, Initialize and start an agent. Close when done.
+    }
+}
+
+
