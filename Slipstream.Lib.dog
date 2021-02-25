@@ -9,12 +9,24 @@ Version = "0.1"
 CopyrightMesg = "Copyright (c) 2020-<YEAR> Bruce Long"
 Authors = "Bruce Long"
 Description = "The Slipstream Engine"
-ProgramOrLibrary = "library"
+ProgramOrLibrary = "program"
 
 featuresNeeded = [Proteus, Logger, Unicode, BigNumbers, Threads, IOBuffer, EarleyParser] // Crypto, P2P_Manager, Quic]
 
 LicenseText = `This file is part of the "Slipstream Development Suite" All Rights Reserved.`
 
+runCode=`
+    logMgr.init(OFile)
+    log("Slipstream CORE started")
+    me SlipstreamCore: CORE
+    CommandLineManager.processCmdLine(joinCmdStrings(argc, argv), false);
+    CommandLineManager.defineOption("Slip", "topFile", "-f", "--file", "The top-level file to load.")
+    me string: topFile <- CommandLineManager.getOption("Slip", "topFile")
+    CORE.init(topFile)
+    CORE.start()
+    CORE.idle()
+    CORE.shutdown()
+`
 struct RepositoryManager{ // Load, track, save, pull, push, pullReq, etc.
 }
 
@@ -50,26 +62,75 @@ struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
     me int: statusCode
     me string: statusMesg
     //INIT(...)<-{} // init and start the stream
+    void: requestFinish() <- {}
 }
 
 struct ConnectorFactory{ // Create and initialize subclasses of InfonConnectors
-    their InfonConnector: makeInfonConnector(me string: specString)<-{}
+    their InfonConnector: makeInfonConnector(me string: specString)<-{
+        me int: colonPos <- specString.find(":")
+        me string: connectionTypeStr <- specString(0, colonPos)
+        switch(connectionTypeStr){
+            case "file":{
+            }
+            case "repo":{
+            }
+            case "user":{
+            }
+            case "ipfs":{
+            }
+            case "ipns":{
+            }
+
+        }
+    }
 }
 
 struct ConnectionManager{ // Manage connections to a Proteus Agent
+    their Agent: agent
     me ConnectorFactory:     connectionFactory
-    me list<InfonConnector>: connections
+    me list<our InfonSteam>: connections
+    me EParser: parser
+    void: init(their Agent: agnt) <- {
+        agent <- agnt
+        parser.populateGrammar()
+    }
+    me bool: startNewConnection(me string: specString) <- {
+        our InfonConnector: connector <- connectionFactory.makeInfonConnector(specString)
+        our InfonStream:: iStream; iStream.init(connector, agent)
+        connections.append(iStream)
+        iStream.start()
+    }
 }
 
 struct SlipstreamCore{ // Create and manage a slipstream node
-    me list<Agent>: agents
+    me Agent: agent
+    me string: masterFile
     me ConnectionManager: connectionMgr
+    me string: statusMsg
+    me bool: stillIdling
     void: initCoreServices()<-{
         // Init P2P connections and DHTs
         // Etc.
     }
-    void: start() <- { // Start Code Services, Initialize and start an Agent. Close when done.
+    void: init(me string: topFile) <- {
+        statusMsg <- ""  // Empty == OK
+        masterFile <- topFile
+        connectionMgr.init()
+        initCoreServices()
+        agent.init(userData)  // TODO: Load or fetch userData
     }
+    void: start(me string: topFile) <- {
+        stillIdling <- true
+        agent.connect("file:"+topFile)
+    }
+    void: idle()<-{
+        while(stillIdling){
+            // process events if needed
+            sleep(10)
+        }
+    }
+    void: stopIdling()<-{stillIdling <- false}
+    void: shutdown()<-{} // TODO: Ask all streams to quit then wait for them. Dealloc anything
 }
 
 
