@@ -22,10 +22,8 @@ runCode=`
     CommandLineManager.processCmdLine(joinCmdStrings(argc, argv), false);
     CommandLineManager.defineOption("Slip", "topFile", "-f", "--file", "The top-level file to load.")
     me string: topFile <- CommandLineManager.getOption("Slip", "topFile")
-    CORE.init(topFile)
-    CORE.start()
-    CORE.idle()
-    CORE.shutdown()
+    if(topFile==""){topFile <- "world.pr"}
+    CORE.run(topFile)
 `
 struct RepositoryManager{ // Load, track, save, pull, push, pullReq, etc.
 }
@@ -35,14 +33,33 @@ model InfonConnector{
     me strBuf: outputBuf
     me int:    statusCode
     me string: statusMesg
-    //INIT(...)<-{} // init and start the connector
+    void: init(me string: itemRefStr) <- {}
+    bool: pumpInputBuf()  <- {}
+    bool: pumpOutputBuf() <- {}
 }
 struct InfonConnector{}
 
+struct FileConnector: inherits=InfonConnector {
+    me FileStream: dataFile
+    void: init(me string: itemRefStr) <- {
+        me string: fileDir <- getAssetsDir() +"/"+itemRefStr //+"/repos"
+        dataFile.open(fileDir)
+        if (dataFile.failure()){logFatalError("Failed to open file: " + fileDir + "\n")}
+    }
+    bool: pumpInputBuf()  <- {
+        if(!dataFile.EOF()){
+            me string: line <- dataFile.getLine()
+            inputBuf.putStr(line)
+            return(true)
+        }
+        return(false)
+    }
+    bool: pumpOutputBuf() <- {return(false)}
+}
 struct ClipConnector: inherits=InfonConnector {}
 struct UserConnector: inherits=InfonConnector {}
-struct FileConnector: inherits=InfonConnector {}
 struct IPFSConnector: inherits=InfonConnector {}
+struct IPNSConnector: inherits=InfonConnector {}
 struct RepoConnector: inherits=InfonConnector {}     // Connector to a RepositoryManager instance.
 struct GUI_Connector: inherits=InfonConnector {}     // Kbd, mouse/touchScn, screen, clipboard, etc.
 struct MediaConnector:inherits=InfonConnector {}     // Microphones, audioOut, videoSource
@@ -56,49 +73,58 @@ struct PhoneConnector   : inherits=InfonConnector {} // Services offered by phon
 //////////////////////////////////////////////////////////////////////
 
 struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
-    their InfonConnector: source
+    our InfonConnector: source
+    their Agent: parentAgent
     our EParser: parser
-    our Agent: parentAgent
-    me int: statusCode
-    me string: statusMesg
-    //INIT(...)<-{} // init and start the stream
-    void: requestFinish() <- {}
-}
+    me Threaded_infonParseAndExtractor: parseAndExtractor
+    me ThreadedNormalizer: threadedNormalizer
 
-struct ConnectorFactory{ // Create and initialize subclasses of InfonConnectors
-    their InfonConnector: makeInfonConnector(me string: specString)<-{
-        me int: colonPos <- specString.find(":")
-        me string: connectionTypeStr <- specString(0, colonPos)
-        switch(connectionTypeStr){
-            case "file":{
-            }
-            case "repo":{
-            }
-            case "user":{
-            }
-            case "ipfs":{
-            }
-            case "ipns":{
-            }
-
-        }
+    void: init(our InfonConnector: connector, their Agent: agent, our EParser: eParser) <- {
+        source <- connector
+        parentAgent <- agent
+        parser <- eParser
     }
+    void: start() <- {
+        our infon:: returnInfon
+        threadedNormalizer.init(parentAgent, returnInfon)
+        threadedNormalizer.start()
+        parseAndExtractor.start(parser, source.inputBuf, returnInfon)
+        while(source.pumpInputBuf()){}
+        source.inputBuf.close()
+        threadedNormalizer.waitForExit()
+parseAndExtractor.waitForThreadsToExit()
+        log("Result:"+toString(returnInfon))
+    }
+    void: requestFinish() <- {}
 }
 
 struct ConnectionManager{ // Manage connections to a Proteus Agent
     their Agent: agent
-    me ConnectorFactory:     connectionFactory
-    me list<our InfonSteam>: connections
-    me EParser: parser
+    me List<our InfonStream>: connections
+    our EParser: parser
     void: init(their Agent: agnt) <- {
         agent <- agnt
+        connections.clear()
+        Allocate(parser)
         parser.populateGrammar()
     }
     me bool: startNewConnection(me string: specString) <- {
-        our InfonConnector: connector <- connectionFactory.makeInfonConnector(specString)
-        our InfonStream:: iStream; iStream.init(connector, agent)
+        our InfonConnector: connector <- makeInfonConnector(specString)
+        our InfonStream:: iStream
+        iStream.init(connector, agent, parser)
         connections.append(iStream)
         iStream.start()
+        return(true)
+    }
+    our InfonConnector: makeInfonConnector(me string: specString)<-{ // connector factory
+       me int: colonPos <- specString.find(":")
+       me string: connectionTypeStr <- specString.subStr(0, colonPos)
+       if     (connectionTypeStr=="file"){our FileConnector:: retval; retval.init(specString.subStr(colonPos+1)); return(retval)}
+       else if(connectionTypeStr=="repo"){our RepoConnector:: retval; retval.init(specString.subStr(colonPos+1)); return(retval)}
+       else if(connectionTypeStr=="user"){our UserConnector:: retval; retval.init(specString.subStr(colonPos+1)); return(retval)}
+       else if(connectionTypeStr=="ipfs"){our IPFSConnector:: retval; retval.init(specString.subStr(colonPos+1)); return(retval)}
+       else if(connectionTypeStr=="ipns"){our IPNSConnector:: retval; retval.init(specString.subStr(colonPos+1)); return(retval)}
+       else {}
     }
 }
 
@@ -113,15 +139,24 @@ struct SlipstreamCore{ // Create and manage a slipstream node
         // Etc.
     }
     void: init(me string: topFile) <- {
+        streamingNormMode <- true
         statusMsg <- ""  // Empty == OK
-        masterFile <- topFile
-        connectionMgr.init()
+        masterFile <- "file:"+topFile
+log("Masterfile:"+ masterFile)
         initCoreServices()
-        agent.init(userData)  // TODO: Load or fetch userData
+        our Map<string, string>:: settings
+        agent.init2(settings)
+        connectionMgr.init(agent)
+log("WORLD:"+toString(agent.world))
+log("LOCALE:"+agent.getLocaleBaseName())
+        stillIdling <- false
     }
-    void: start(me string: topFile) <- {
+    void: start() <- {
         stillIdling <- true
-        agent.connect("file:"+topFile)
+        connectionMgr.startNewConnection(masterFile)
+
+
+        //agent.extendAndNorm(agent.world, "file:"+topFile)
     }
     void: idle()<-{
         while(stillIdling){
@@ -131,6 +166,11 @@ struct SlipstreamCore{ // Create and manage a slipstream node
     }
     void: stopIdling()<-{stillIdling <- false}
     void: shutdown()<-{} // TODO: Ask all streams to quit then wait for them. Dealloc anything
+
+    void: run(me string: topFile) <- {
+        init(topFile)
+        start()
+       // idle()
+        shutdown()
+    }
 }
-
-

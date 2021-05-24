@@ -5,25 +5,38 @@ LinuxBuild: Platform='Linux' CPU='amd64' Lang='CPP' optimize='speed';
 //AndroidBuild: Platform='Android' CPU='JavaVM' Lang='Java' optimize='power';
 //iPhoneBuild: Platform='IOS' CPU='amd64' Lang='Swift' optimize='speed';
 
-Title = "Slipstream"
+Title = "The Slipstream Browser"
 FileName = "Slipstream"
 Version = "1.0"
-CopyrightMesg = "Public Domain"
+CopyrightMesg = "Copyright 2020-2021 Bruce Long; All rights reserved."
 Authors = "Bruce Long"
-Description = "The Slipstream App"
+Description = "The Slipstream Browser"
 ProgramOrLibrary = "program"
 
-featuresNeeded = [GameToolkit, Logger, Proteus, BigNumbers]
+featuresNeeded = [GUI_ToolKit, Dashboard, NativeWidgets, Proteus]
 
 LicenseText = `All rights reserved.`
 
 runCode=`
-    initializeGraphics(false)
-    setUpApp()
-    gameLooper.play(1, 40)
-    deinitGraphics()
+    logMgr.init(OFile)
+    isFirstRun<-true
 `
 ////////////   A p p l i c a t i o n   a n d   G l o b a l s
+
+mainStyle = {
+    colors = {
+    }
+    fontNames = {
+    }
+    fontSizes = {
+        fontSizeSmall     = 8
+    }
+    fontSizeMode = pp
+}
+
+do makeStyler(mainStyle)
+do makeGUI(GUI_Spec)
+do codeModelToGUI(appModel)
 
 struct ProtDraw{
     our infon: item
@@ -32,105 +45,91 @@ struct ProtDraw{
     me int: w
     me int: height
     me int: draw(their GUI_ctxt: cr, our infon: infn, me int: x, me int: y, me int: indent) <- {
-	me int: curY <- y
-	me int: curX <- x +indent * 2
-	cr.setColor(Styler.White)
-	our fontSpec:: textFont {"Ariel", 12, 0}
-	me deltaSize:  size
-	if(infn.value.fType == NUM){
-	    size <- renderText(cr, toString(infn.value.num), textFont, curX, curY)
-	}else if(infn.value.fType == STR){
-	    size <- renderText(cr, infn.value.str, textFont, curX, curY)
-	}else if(infn.value.fType == LST){
-	    withEach i in infn.value.items{
-		curY <+- draw(cr, i, curX, curY, indent+1)
-		if(curY > height){break()}
-	    }
-	}
-	return(size.height)
-    }
-}
-
-struct SlipstreamScreen: inherits=GameMode{
-    me int: textY
-
-    void: update() <- {}
-    void: draw(their GUI_ctxt: cr, me double: interpolation) <- {
-	protDraw.height <- screenHeight
-	protDraw.draw(cr, protDraw.item, 0, 50, 5)
-        cr.strokeNow()
-        window.requestRedraw()
-    }
-    void: pause() <- {}
-    void: resume() <- {}
-    void: keyDownEventHandler(their KeyInfo: event) <- {
-        switch (event.sym){
-            case SDLK_SPACE:{
-		setUpApp()
-
-            }
-            case SDLK_ESCAPE:{
-                looper.quitGame()
-            }
-        }
-    }
-    void: init(our GameLooper: ourLooper) <- {looper <- ourLooper}
-    void: deInit() <- {}
-}
-struct SettingsScreen: inherits=GameMode{
-    void: update() <- {}
-    void: draw(their GUI_ctxt: cr, me double: interpolation) <- {
+        me int: curY <- y
+        me int: curX <- x +indent * 2
         cr.setColor(Styler.White)
-        our fontSpec:: textFont {"Ariel", 20, 0}
-        renderTextCentered(cr, "PAUSED", textFont, screenWidth/2, 200)
-        renderTextCentered(cr, "Press Space to Continue Playing", textFont, screenWidth/2, 300)
-	renderTextCentered(cr, "Press Escape to Exit", textFont, screenWidth/2, 400)
-        cr.strokeNow()
-        window.requestRedraw()
-    }
-    void: pause() <- {}
-    void: resume() <- {}
-    void: keyDownEventHandler(their KeyInfo: event) <- {
-        switch (event.sym){
-            case SDLK_SPACE:{
-
-            }
-            case SDLK_ESCAPE:{
-		looper.setGameMode(slipstreamScreen)
+        our fontSpec:: textFont {"Ariel", 12, 0}
+        me deltaSize:  size
+        if(infn.value.fType == NUM){
+            size <- renderText(cr, toString(infn.value.num), textFont, curX, curY)
+        }else if(infn.value.fType == STR){
+            size <- renderText(cr, infn.value.str, textFont, curX, curY)
+        }else if(infn.value.fType == LST){
+            withEach i in infn.value.items{
+                curY <+- draw(cr, i, curX, curY, indent+1)
+                if(curY > height){break()}
             }
         }
+        return(size.height)
     }
-    void: init(our GameLooper: ourLooper) <- {looper <- ourLooper}
-    void: deInit() <- {}
 }
-struct GLOBAL{
-    their GUI_canvas: drawing_area
-    me int: fontSize
-    our GameLooper:: gameLooper
-    our SlipstreamScreen:: slipstreamScreen
-    our SettingsScreen:: settingsScreen
-    me ProtDraw: protDraw
+model Settings{
+    me string: UsersName
+}
+struct Settings{}
 
-    void: setUpApp() <- {
-	me ProteusCore: CORE
-	me string: resourceDir <- "world.pr"
-	if(! CORE.init(resourceDir)){logFatalError("Failed to initialize Proteus Core:"+CORE.errorMesg)}
-	protDraw.item <- CORE.WORLD
-        slipstreamScreen.init(gameLooper)
-	settingsScreen.init(gameLooper)
-        gameLooper.setGameMode(slipstreamScreen)
+struct slipView: inherits=DashboardWidget{
+   // their bodySim: simPtr
+    their appComponentGUI: parentGuiMgr
+    their GUI_Frame:     box
+
+    their GUI_Frame: initWidget(me string: label) <- {
+       // simPtr <- sim
+        dashboardDBW.init(title)
+        box                     <- makeYStack(title)
+        canvas                  <- thisApp.gui.newCanvas()
+        canvas.setParent(self)
+        dashboardDBW.dashParent <- self
+        dashboardDBW.canvas     <- canvas
+        thisApp.gui.setWidgetSize(canvas,500,900)
+        EventDispatcher.registerWidgetForEventDispatcher(canvas, self)
+
+        addToContainer(box, canvas)
+        return(box)
     }
-    void: toggleFullScreen() <- {
-        if(getFullScreenMode()){
-            fullScreenModeOff()
-        }else{
-            fullScreenModeOn()
-        }
+    void: draw(me GUI_ctxt: cr) <- {
+     //   displayImage(cr, "bodyOverlayF.png", 10,10,1)
+        cr.setRGBA(255, 255, 255, 200)
+        cr.setLineWidth(2)
+        cr.moveTo(10,10)
+        cr.lineTo(100,150)
+        cr.strokeNow()
+        renderText(cr, "Hello World!", styler.fontVerySmall, 400, 15)
+      //  dashboardDBW.draw(cr)
     }
+    void: INIT()                <- {
+        Allocate(dashboardDBW)
+    }
+    void: requestRedraw() <- {
+        markDirtyArea(canvas, 0,0, widgetWidth(canvas), widgetHeight(canvas))
+    }
+    me bool: primaryUp(their GUI_ButtonEvent: event) <- {return(true)}
+    me bool: primaryDn(their GUI_ButtonEvent: event) <- {return(true)}
+    me int: getValue() <- {return(0)}
+    me void: setValue(me int: val) <- {}
+    void: onChanged()  <- {parentGuiMgr.onChanged()}
+}
+
+
+struct GLOBAL{
+    me bool: isFirstRun
+    me void: initializeAppGui() <- {}
+}
+
+model appModel: dialogStyle=Z_stack{
+    our slipView::       mainView
+    our Settings:        settings
+}
+
+struct GUI{
+    me float: prevX
+    me float: prevY
+    me bool: enableScrolling <- true
+    me bool: isEnableScrolling()<-{return (enableScrolling)}
 }
 
 struct APP{
-    my GUI: gui
+    me GUI_ScrollingWindow: scrollerRef
+
+    me void: createAppMenu(me GUI_Frame: frame) <- {}
 }
-
-
