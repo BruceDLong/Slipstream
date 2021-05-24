@@ -13,7 +13,7 @@ Authors = "Bruce Long"
 Description = "The Slipstream Browser"
 ProgramOrLibrary = "program"
 
-featuresNeeded = [GUI_ToolKit, Dashboard, NativeWidgets, Proteus]
+featuresNeeded = [GUI_ToolKit, Dashboard, Proteus]
 
 LicenseText = `All rights reserved.`
 
@@ -36,7 +36,6 @@ mainStyle = {
 
 do makeStyler(mainStyle)
 do makeGUI(GUI_Spec)
-do codeModelToGUI(appModel)
 
 struct ProtDraw{
     our infon: item
@@ -63,38 +62,27 @@ struct ProtDraw{
         return(size.height)
     }
 }
-model Settings{
-    me string: UsersName
-}
-struct Settings{}
 
-struct slipView: inherits=DashboardWidget{
-   // their bodySim: simPtr
+struct SlipView: inherits=DashboardWidget{
     their appComponentGUI: parentGuiMgr
-    their GUI_Frame:     box
 
-    their GUI_Frame: initWidget(me string: label) <- {
-       // simPtr <- sim
-        dashboardDBW.init(title)
-        box                     <- makeYStack(title)
-        canvas                  <- thisApp.gui.newCanvas()
-        canvas.setParent(self)
-        dashboardDBW.dashParent <- self
-        dashboardDBW.canvas     <- canvas
-        thisApp.gui.setWidgetSize(canvas,500,900)
-        EventDispatcher.registerWidgetForEventDispatcher(canvas, self)
-
-        addToContainer(box, canvas)
-        return(box)
-    }
-    void: draw(me GUI_ctxt: cr) <- {
+    void: draw(their GUI_ctxt: cr) <- {
      //   displayImage(cr, "bodyOverlayF.png", 10,10,1)
-        cr.setRGBA(255, 255, 255, 200)
-        cr.setLineWidth(2)
-        cr.moveTo(10,10)
-        cr.lineTo(100,150)
+        print("In DRAW TEST WIDGET!!!!!!!()\n")
+        me cdColor: lineColor <- cdColor(255,0,0)
+        cr.setColor(lineColor)
+        cr.setLineWidth(5)
+        cr.moveTo(0, 0)
+        cr.lineTo(1200, 1200)
+        cr.moveTo(1200, 0)
+        cr.lineTo(0, 1200)
         cr.strokeNow()
-        renderText(cr, "Hello World!", styler.fontVerySmall, 400, 15)
+
+        me cdColor: lineColor2 <- cdColor(0,250,255)
+        cr.setColor(lineColor2)
+        our fontSpec:: testFont{"Ariel", 20, 0}
+        renderText(cr, "Hello World!", testFont, 150, 100)
+        cr.strokeNow()
       //  dashboardDBW.draw(cr)
     }
     void: INIT()                <- {
@@ -113,23 +101,18 @@ struct slipView: inherits=DashboardWidget{
 
 struct GLOBAL{
     me bool: isFirstRun
-    me void: initializeAppGui() <- {}
-}
-
-model appModel: dialogStyle=Z_stack{
-    our slipView::       mainView
-    our Settings:        settings
-}
-
-struct GUI{
-    me float: prevX
-    me float: prevY
-    me bool: enableScrolling <- true
-    me bool: isEnableScrolling()<-{return (enableScrolling)}
+    their GUI_canvas: drawing_area
+    their SlipView: slipView
 }
 
 struct APP{
-    me GUI_ScrollingWindow: scrollerRef
-
-    me void: createAppMenu(me GUI_Frame: frame) <- {}
+    me void: createAppArea(me GUI_Frame: frame) <- {
+        Allocate(slipView)
+        Allocate(slipView.dashboardDBW)
+        drawing_area  <- gui.newCanvas()
+        drawing_area.setParent(slipView)
+        gui.setWidgetSize(drawing_area, 1200, 1200)
+        slipView.EventDispatcher.registerWidgetForEventDispatcher(drawing_area, slipView)
+        addToContainerAndExpand (frame, drawing_area)
+    }
 }
