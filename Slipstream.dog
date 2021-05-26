@@ -19,6 +19,7 @@ LicenseText = `All rights reserved.`
 
 runCode=`
     logMgr.init(OFile)
+    thisApp.loadAndParseSettingsAndData()
     isFirstRun<-true
 `
 ////////////   A p p l i c a t i o n   a n d   G l o b a l s
@@ -37,54 +38,203 @@ mainStyle = {
 do makeStyler(mainStyle)
 do makeGUI(GUI_Spec)
 
-struct ProtDraw{
-    our infon: item
-    flag: open
+struct TaskElement: inherits=dash{
+    our infon: myInfon
+    me string: title
+   // me string: description
+    me bool: rolledUp
+    me List<our dash>: items
 
-    me int: w
-    me int: height
-    me int: draw(their GUI_ctxt: cr, our infon: infn, me int: x, me int: y, me int: indent) <- {
-        me int: curY <- y
-        me int: curX <- x +indent * 2
-        cr.setColor(Styler.White)
-        our fontSpec:: textFont {"Ariel", 12, 0}
-        me deltaSize:  size
-        if(infn.value.fType == NUM){
-            size <- renderText(cr, toString(infn.value.num), textFont, curX, curY)
-        }else if(infn.value.fType == STR){
-            size <- renderText(cr, infn.value.str, textFont, curX, curY)
-        }else if(infn.value.fType == LST){
-            withEach i in infn.value.items{
-                curY <+- draw(cr, i, curX, curY, indent+1)
-                if(curY > height){break()}
+    me bool: extractData() <- {
+        log("VertLists:myInfon:"+toString(myInfon))
+        our infon: propertiesInf <- myInfon.fetchField("properties");          if(propertiesInf==NULL){log("extract propertiesInf HZ = NULL"); return(true)}
+        our infon: titleInf      <- propertiesInf.fetchField("title");         if(titleInf==NULL){log("extract titleInfHZ = NULL"); return(true)}
+        title      <- titleInf.fetchString()
+     /*   our infon: dataInf       <- projectsInf.fetchField("data");            if(dataInf==NULL){log("extract dataInf HZ = NULL"); return(true)}
+        withEach infn in dataInf.value.items{
+            if(infn.type!=NULL and infn.type.asGiven=="task"){
+                our TaskElement:: element
+                element.init(infn)
+                items.pushLast(element)
+            }
+        }*/
+        return(false) // No errors
+    }
+    void: init(our infon: theInfon) <- {myInfon<-theInfon; extractData()}
+    //void: setPos(me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: extCursor) <- {print("SETPOS BoardElement!!\n")}
+    void: draw(their GUI_ctxt: cr) <- {
+        log("                In TaskElement::draw() posX:"+to_string(posX)+"  posY:"+to_string(posY))
+
+        cr.setRGBA(240,245,240,245)
+        roundedRectangle(cr, posX-2, posY-14, 180, 25, 13)
+        cr.fillNow()
+
+        cr.setRGBA(20,30,20,200)
+        our fontSpec:: textFont{"Ariel", 10, 0}
+        renderText(cr, title, textFont, posX+5,posY)
+    }
+}
+
+struct VertList: inherits=dash{
+    our infon: myInfon
+    me string: title
+   // me string: description
+    me bool: rolledUp
+    me List<our dash>: items
+
+    me bool: extractData() <- {
+        log("            VertLists:myInfon:"+toString(myInfon))
+        our infon: propertiesInf <- myInfon.fetchField("properties");          if(propertiesInf==NULL){log("extract propertiesInf HZ = NULL"); return(true)}
+        our infon: titleInf      <- propertiesInf.fetchField("title");         if(titleInf==NULL){log("extract titleInfHZ = NULL"); return(true)}
+        title      <- titleInf.fetchString()
+        our infon: dataInf       <- myInfon.fetchField("data");            if(dataInf==NULL){log("extract dataInf HZ = NULL"); return(true)}
+        withEach infn in dataInf.value.items{
+            if(infn.type!=NULL and infn.type.asGiven=="task"){
+                our TaskElement:: element
+                element.init(infn)
+                items.pushLast(element)
             }
         }
-        return(size.height)
+        return(false) // No errors
+    }
+    void: init(our infon: theInfon) <- {myInfon<-theInfon; extractData()}
+    //void: setPos(me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: extCursor) <- {print("SETPOS BoardElement!!\n")}
+    void: draw(their GUI_ctxt: cr) <- {
+        log("In VertList::draw() posX:"+to_string(posX)+"  posY:"+to_string(posY))
+        me GUI_Scalar: crntY <- posY+70
+
+        cr.setRGBA(20,20,20,200)
+        roundedRectangle(cr, posX, posY, 190, 500, 13)
+        cr.fillNow()
+
+        cr.setRGBA(200,200,200,225)
+        our fontSpec:: textFont{"Ariel", 18, 0}
+        renderTextCentered(cr, title, textFont, posX+(190/2), posY+45)
+        withEach Dash in items{
+            Dash.setPos(posX+5, crntY, 30)
+            crntY <+- 30
+            Dash.draw(cr)
+        }
+    }
+}
+
+struct HorizLists: inherits=dash{
+    our infon: myInfon
+    me string: title
+   // me string: description
+    me bool: rolledUp
+    me List<our dash>: items
+
+    me bool: extractData() <- {
+        log("HorizLists:myInfon:"+toString(myInfon))
+        our infon: propertiesInf <- myInfon.fetchField("properties");          if(propertiesInf==NULL){log("extract propertiesInf HZ = NULL"); return(true)}
+        our infon: titleInf      <- propertiesInf.fetchField("title");         if(titleInf==NULL){log("extract titleInfHZ = NULL"); return(true)}
+        title      <- titleInf.fetchString()
+        our infon: dataInf       <- myInfon.fetchField("data");            if(dataInf==NULL){log("extract dataInf HZ = NULL"); return(true)}
+        withEach infn in dataInf.value.items{
+            if(infn.type!=NULL and infn.type.asGiven=="listelement"){
+                our VertList:: element
+                element.init(infn)
+                items.pushLast(element)
+            }
+        }
+        return(false) // No errors
+    }
+    void: init(our infon: theInfon) <- {myInfon<-theInfon; extractData()}
+    //void: setPos(me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: extCursor) <- {print("SETPOS HorizLists!!\n")}
+    void: draw(their GUI_ctxt: cr) <- {
+        log("        In HorizLists::draw() posX:"+to_string(posX)+"  posY:"+to_string(posY))
+        me GUI_Scalar: crntX <- posX
+        withEach Dash in items{
+            Dash.setPos(crntX, posY, 0)
+            crntX <+- 200
+            Dash.draw(cr)
+        }
+    }
+}
+
+struct BoardElement: inherits=dash{
+    our infon: myInfon
+    me string: title
+    me string: background
+    me bool: rolledUp
+    me List<our dash>: items
+
+    me bool: extractData() <- {
+        log("BoardElement:myInfon:"+toString(myInfon))
+        our infon: propertiesInf <- myInfon.fetchField("properties");          if(propertiesInf==NULL){log("extract propertiesInf = NULL"); return(true)}
+        our infon: titleInf      <- propertiesInf.fetchField("title");         if(titleInf==NULL){log("extract titleInf = NULL"); return(true)}
+        our infon: backgroundInf <- propertiesInf.fetchField("backgroundpic"); if(backgroundInf==NULL){log("extract backgroundInf = NULL"); return(true)}
+        title      <- titleInf.fetchString()
+        background <- backgroundInf.fetchString()
+        our infon: dataInf       <- myInfon.fetchField("data"); if(dataInf==NULL){log("extract dataInf = NULL"); return(true)}
+        withEach infn in dataInf.value.items{
+            if(infn.type!=NULL and infn.type.asGiven=="listselement"){
+                our HorizLists:: element
+                element.init(infn)
+                items.pushLast(element)
+            }
+        }
+        return(false) // No errors
+    }
+    void: init(our infon: theInfon) <- {myInfon<-theInfon; extractData()}
+    //void: setPos(me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: extCursor) <- {print("SETPOS BoardElement!!\n")}
+    void: draw(their GUI_ctxt: cr) <- {
+        log("    In BoardElement::draw() posX:"+to_string(posX)+"  posY:"+to_string(posY))
+        displayBackgroundImage(cr, background)
+
+        // Draw Header
+        cr.setRGBA(20,20,20,200)
+        cr.rectangle(0,0,1200,50)
+        cr.fillNow()
+        cr.setRGBA(200,206,200,200)
+        our fontSpec:: textFont{"Ariel", 15, 0}
+        renderTextCentered(cr, "Board: "+title, textFont, 1200/2, 33)
+        // Draw Items
+        withEach Dash in items{
+            log("XXXX")
+            Dash.setPos(0,70,1)
+            Dash.draw(cr)
+        }
+
+        // Draw Footer
     }
 }
 
 struct SlipView: inherits=DashboardWidget{
+    our infon: myInfon
+    me string: title
+    me int: crntBoardIdx
+    me List<our dash>: boards
     their appComponentGUI: parentGuiMgr
 
     void: draw(their GUI_ctxt: cr) <- {
-     //   displayImage(cr, "bodyOverlayF.png", 10,10,1)
-        print("In DRAW TEST WIDGET!!!!!!!()\n")
-        me cdColor: lineColor <- cdColor(255,0,0)
-        cr.setColor(lineColor)
-        cr.setLineWidth(5)
-        cr.moveTo(0, 0)
-        cr.lineTo(1200, 1200)
-        cr.moveTo(1200, 0)
-        cr.lineTo(0, 1200)
-        cr.strokeNow()
-
-        me cdColor: lineColor2 <- cdColor(0,250,255)
-        cr.setColor(lineColor2)
-        our fontSpec:: testFont{"Ariel", 20, 0}
-        renderText(cr, "Hello World!", testFont, 150, 100)
-        cr.strokeNow()
-      //  dashboardDBW.draw(cr)
+        log("In SlipView::draw() posX:"+to_string(posX)+"  posY:"+to_string(posY))
+        dashboardDBW.draw(cr)
     }
+    void: setCrntBoard(me int: boardIdx) <-{
+        crntBoardIdx <- boardIdx
+        dashboardDBW.dashChildren.clear()
+        dashboardDBW.addChild(boards[crntBoardIdx])
+    }
+    me bool: extractData() <- {
+        our infon: projectsInf   <- myInfon.fetchField("projects");       if(projectsInf==NULL){log("extract projectsInf = NULL"); return(true)}
+        our infon: propertiesInf <- projectsInf.fetchField("properties"); if(propertiesInf==NULL){log("extract propertiesInf = NULL"); return(true)}
+        our infon: titleInf      <- propertiesInf.fetchField("title");    if(titleInf==NULL){log("extract titleInf = NULL"); return(true)}
+            title      <- titleInf.fetchString()
+        our infon: dataInf       <- projectsInf.fetchField("data")
+        log("dataInf:"+toString(dataInf))
+        withEach infn in dataInf.value.items{
+            if(infn.type!=NULL and infn.type.asGiven=="boardelement"){
+                our BoardElement:: element
+                element.init(infn)
+                boards.pushLast(element)
+            }
+        }
+        setCrntBoard(boards.size()-1) // Default to last board for now
+        return(false) // No errors
+    }
+    void: init(our infon: theInfon) <- {myInfon<-theInfon; extractData()}
     void: INIT()                <- {
         Allocate(dashboardDBW)
     }
@@ -100,15 +250,27 @@ struct SlipView: inherits=DashboardWidget{
 
 
 struct GLOBAL{
+    me ProteusCore: CORE
     me bool: isFirstRun
     their GUI_canvas: drawing_area
     their SlipView: slipView
 }
 
 struct APP{
+    me bool: loadAndParseSettingsAndData() <- {
+        me string: worldFileName <- "user.pr"
+        CORE.init(worldFileName, false)
+        if(CORE.WORLD==NULL){
+            print(CORE.errorMesg, "\n")
+            exit(1)
+        }
+        //CORE.agent.normalize(CORE.WORLD)
+        return(true)
+    }
+
     me void: createAppArea(me GUI_Frame: frame) <- {
         Allocate(slipView)
-        Allocate(slipView.dashboardDBW)
+        slipView.init(CORE.WORLD)
         drawing_area  <- gui.newCanvas()
         drawing_area.setParent(slipView)
         gui.setWidgetSize(drawing_area, 1200, 1200)
