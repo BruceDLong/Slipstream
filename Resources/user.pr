@@ -1,0 +1,100 @@
+
+{
+projects:{
+    properties:{
+        title:"Slipstream Projects"
+    }
+
+    data:{
+        boardElement:{
+            properties:{
+                title:"AwesomeWorld"
+                backgroundPic:"Lake-Summer-Mountain.jpg"
+            }
+            data:{
+                workProduct:{
+                    properties:{title:"CodeDog"}
+                    data:{
+                        task:{properties:{title:"comment System" member:"Bruce"} data:{}}
+                        task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{}}
+                        task:{properties:{title:"Library: Speech recognition and production" member:"Mats"} data:{}}
+                    }
+                }
+
+                workProduct:{
+                    properties:{title:"Proteus"}
+                    data:{
+                    }
+                }
+
+                workProduct:{
+                    properties:{title:"Slipstream App"}
+                    data:{
+                        task:{properties:{title:"comment System" member:"Bruce"} data:{}}
+                        task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{}}
+                        task:{properties:{title:"Library: Speech recognition and production" member:"Mats"} data:{}}
+                    }
+                }
+
+                workProduct:{
+                    properties:{title:"Aetria"}
+                    data:{
+                        task:{properties:{title:"Add location and scale to meshes" member:"Bruce"} data:{}}
+                        task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{}}
+                        task:{properties:{title:"Library: Speech recognition and production" member:"Mats"} data:{}}
+                    }
+                }
+            }
+        }
+
+
+        boardElement:{
+            properties:{
+                elementType:"Lists"
+                title:"CodeDog Project"
+                backgroundPic:"HD-Peaceful-Background.png"
+            }
+            data:{
+                ListsElement:{
+                    properties:{title:"Kanban"}
+                    data:{
+                        listElement:{
+                            properties:{title:"Backlog"}
+                            data:{
+                                task:{properties:{title:"comment System" member:"Bruce"} data:{}}
+                                task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{}}
+                                task:{properties:{title:"Library: speech recognition" member:"Bob"} data:{}}
+                            }
+                        }
+                        listElement:{
+                            properties:{title:"Ready"}
+                            data:{
+                                task:{properties:{title:"comment System" member:"Bruce"} data:{}}
+                                task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{}}
+                                task:{properties:{title:"Library: speech recognition" member:"Clair"} data:{}}
+                            }
+                        }
+                        listElement:{
+                            properties:{title:"In Progress"}
+                            data:{
+                                task:{properties:{title:"comment System" member:"Bruce"} data:{}}
+                                task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{}}
+                                task:{properties:{title:"Library: Speech recognition" member:"John"} data:{}}
+                            }
+                        }
+                        listElement:{
+                            properties:{title:"Complete"}
+                            data:{
+                                task:{properties:{title:"comment System" member:"Bruce"} data:{}}
+                                task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{}}
+                                task:{properties:{title:"Library: Speech recognition" member:"Sue"} data:{}}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+...
+}
