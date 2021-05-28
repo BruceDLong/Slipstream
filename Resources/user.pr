@@ -72,6 +72,9 @@ projects:{
                                 task:{properties:{title:"comment System" member:"Bruce"} data:{}}
                                 task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{}}
                                 task:{properties:{title:"Library: speech recognition" member:"Clair"} data:{}}
+                                task:{properties:{title:"comment System" member:"Bruce"} data:{}}
+                                task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{}}
+                                task:{properties:{title:"Library: speech recognition" member:"Clair"} data:{}}
                             }
                         }
                         listElement:{

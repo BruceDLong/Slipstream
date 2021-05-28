@@ -32,21 +32,112 @@ mainStyle = {
     fontSizes = {
         fontSizeSmall     = 8
     }
-    fontSizeMode = pp
 }
+
 
 do makeStyler(mainStyle)
 do makeGUI(GUI_Spec)
 
+struct GLOBAL{
+    me int: vertSepSmall   <- 5
+    me int: vertSepMed     <- 30
+    me int: vertListWidth  <- 200
+    me int: headerHeight <- 25
+    me int: horizListOPad  <- 5
+    me int: Yborder <- 3
+    me int: VListHeaderHeight <- 56
+
+
+    me cdColor: buttonBright <- cdColor(255,255,255,255)
+    me cdColor: buttonNormal <- cdColor(200,200,200,200)
+    me cdColor: surfaceBkgnd <- cdColor(20,20,20,200)
+    me cdColor: titleTextColr<- cdColor(200,200,200,225)
+    me cdColor: taskCardColor<- cdColor(240,245,240,245)
+    me cdColor: cardTextColr <- cdColor(20,30,20,200)
+    me cdColor: footerBoxColr<- cdColor(80,80,80,200)
+}
+
+struct circleButton: inherits=dash{
+    me GUI_Scalar:    radius
+    me int: lWidth
+    me string: symbol
+    me double: stickLen
+    me cdColor: buttonColor
+
+    me void: draw(their GUI_ctxt: cr) <- {
+        cr.setColor(buttonColor)
+        cr.setRoundLineCap()
+        cr.setLineWidth(lWidth)
+       // cr.circle(posX + radius, posY + radius, radius)
+        if (symbol=="+") {
+            cr.moveTo(posX + radius, posY + radius/4)
+            cr.lineTo(posX + radius, posY + 7*radius/4)
+            cr.moveTo(posX + radius/4, posY + radius)
+            cr.lineTo(posX + 7*radius/4, posY + radius)
+        }
+        else if (symbol=="-") {
+            cr.moveTo(posX + radius/4, posY + radius)
+            cr.lineTo(posX + 7*radius/4, posY + radius)
+        }
+        else if (symbol=="<") {
+            cr.moveTo(posX + radius, posY + radius - stickLen * sqrt(2.0))
+            cr.lineTo(posX + radius - stickLen * sqrt(2), posY + radius)
+            cr.lineTo(posX + radius, posY + radius + stickLen * sqrt(2.0))
+        }
+        else if (symbol==">") {
+            cr.moveTo(posX + radius, posY + radius - stickLen * sqrt(2.0))
+            cr.lineTo(posX + radius + stickLen * sqrt(2), posY + radius)
+            cr.lineTo(posX + radius, posY + radius + stickLen * sqrt(2.0))
+        }
+        else if (symbol=="v") {
+            cr.moveTo(posX  - stickLen * sqrt(2.0), posY )
+            cr.lineTo(posX, posY + radius)
+            cr.lineTo(posX  + stickLen * sqrt(2.0), posY)
+        }
+        else if (symbol=="menu") {
+            cr.moveTo(posX + radius/4, posY + radius)
+            cr.lineTo(posX + 7*radius/4, posY + radius)
+
+            cr.moveTo(posX + radius/4, posY + radius/4)
+            cr.lineTo(posX + 7*radius/4, posY + radius/4)
+
+            cr.moveTo(posX + radius/4, posY + 7*radius/4)
+            cr.lineTo(posX + 7*radius/4, posY + 7*radius/4)
+        }
+        cr.strokeNow()
+        cr.setEdgedLine()
+    }
+
+    me void: initCircleBtn(me GUI_Scalar: PosX, me GUI_Scalar: PosY, me GUI_Scalar: Radius, me int: lineWidth, me string: Symbol) <- {
+        posX   <- PosX
+        posY   <- PosY
+        radius <- Radius
+        width  <- 2*radius
+        height <- 2*radius
+        symbol <- Symbol
+        stickLen <- radius/3
+        lWidth   <- lineWidth
+        if(mouseIsOver){buttonColor<-buttonBright} else {buttonColor<-buttonNormal}
+    }
+
+    // Click functionality is inside graph clicks
+    me bool: primaryDn(their GUI_ButtonEvent: event) <- {
+        if (isTouchingMe(event.x, event.y)) {return(true)}
+        else {return(false)}
+    }
+    me bool: primaryUp(their GUI_ButtonEvent: event) <- {
+        if (isTouchingMe(event.x, event.y)) {return(true)}
+        return(false)
+    }
+    void: mouseEnter(their GUI_MotionEvent: event) <- {log("MouseEnter") buttonColor<-buttonBright; requestRedraw()}
+    void: mouseExit(their GUI_MotionEvent: event) <- {log("MouseExit") buttonColor<-buttonNormal; requestRedraw()}
+}
 struct TaskElement: inherits=dash{
     our infon: myInfon
-    me string: title
-   // me string: description
     me bool: rolledUp
     me List<our dash>: items
 
     me bool: extractData() <- {
-        log("VertLists:myInfon:"+toString(myInfon))
         our infon: propertiesInf <- myInfon.fetchField("properties");          if(propertiesInf==NULL){log("extract propertiesInf HZ = NULL"); return(true)}
         our infon: titleInf      <- propertiesInf.fetchField("title");         if(titleInf==NULL){log("extract titleInfHZ = NULL"); return(true)}
         title      <- titleInf.fetchString()
@@ -61,29 +152,40 @@ struct TaskElement: inherits=dash{
         return(false) // No errors
     }
     void: init(our infon: theInfon) <- {myInfon<-theInfon; extractData()}
-    //void: setPos(me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: extCursor) <- {print("SETPOS BoardElement!!\n")}
+    void: setPos(me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: extCursor) <- {
+        posIsSet <- true
+        posX   <- x
+        posY   <- y
+        extC   <- extCursor
+        me GUI_Scalar: crntY <- posY+10
+        //~ withEach Dash in items{
+            //~ Dash.setPos(posX+5, crntY, 0)
+            //~ crntY <+- Dash.height + vertSepMed
+        //~ }
+        height <- styler.smallFont.height+ Yborder*2
+        width  <- vertListWidth-5*2
+        extX   <- posX+width
+        extY   <- posY+height
+    }
     void: draw(their GUI_ctxt: cr) <- {
-        log("                In TaskElement::draw() posX:"+to_string(posX)+"  posY:"+to_string(posY))
-
-        cr.setRGBA(240,245,240,245)
-        roundedRectangle(cr, posX-2, posY-14, 180, 25, 13)
+        cr.setColor(taskCardColor)
+        roundedRectangle(cr, posX, posY, width, height, 13)
         cr.fillNow()
 
-        cr.setRGBA(20,30,20,200)
-        our fontSpec:: textFont{"Ariel", 10, 0}
-        renderText(cr, title, textFont, posX+5,posY)
+        cr.setColor(cardTextColr)
+        renderText(cr, title, styler.smallFont, posX+5, posY+(height/2)+(styler.smallFont.height/2-2))
     }
 }
 
 struct VertList: inherits=dash{
     our infon: myInfon
-    me string: title
-   // me string: description
     me bool: rolledUp
     me List<our dash>: items
 
+    me circleButton: addItemBtn
+    me circleButton: menuBtn
+
     me bool: extractData() <- {
-        log("            VertLists:myInfon:"+toString(myInfon))
         our infon: propertiesInf <- myInfon.fetchField("properties");          if(propertiesInf==NULL){log("extract propertiesInf HZ = NULL"); return(true)}
         our infon: titleInf      <- propertiesInf.fetchField("title");         if(titleInf==NULL){log("extract titleInfHZ = NULL"); return(true)}
         title      <- titleInf.fetchString()
@@ -92,76 +194,154 @@ struct VertList: inherits=dash{
             if(infn.type!=NULL and infn.type.asGiven=="task"){
                 our TaskElement:: element
                 element.init(infn)
+                element.dashParent <- self
                 items.pushLast(element)
             }
         }
         return(false) // No errors
     }
-    void: init(our infon: theInfon) <- {myInfon<-theInfon; extractData()}
-    //void: setPos(me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: extCursor) <- {print("SETPOS BoardElement!!\n")}
+    void: init(our infon: theInfon) <- {
+        myInfon<-theInfon; extractData()
+        addItemBtn.dashParent <- self
+        menuBtn.dashParent <- self
+    }
+    void: setPos(me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: extCursor) <- {
+        posIsSet <- true
+        posX   <- x
+        posY   <- y
+        extC   <- extCursor
+        me GUI_Scalar: crntY <- posY+VListHeaderHeight
+        withEach Dash in items{
+            Dash.setPos(posX+5, crntY, 0)
+            crntY <+- Dash.height + vertSepSmall
+        }
+        me int: footerHeight <- 30
+        height <- crntY+footerHeight-posY
+        width  <- vertListWidth
+        extX   <- posX+width
+        extY   <- posY+height
+    }
     void: draw(their GUI_ctxt: cr) <- {
-        log("In VertList::draw() posX:"+to_string(posX)+"  posY:"+to_string(posY))
-        me GUI_Scalar: crntY <- posY+70
-
-        cr.setRGBA(20,20,20,200)
-        roundedRectangle(cr, posX, posY, 190, 500, 13)
+        cr.setColor(surfaceBkgnd)
+        roundedBotmRect(cr, posX, posY, vertListWidth, height, 15)
         cr.fillNow()
 
-        cr.setRGBA(200,200,200,225)
-        our fontSpec:: textFont{"Ariel", 18, 0}
-        renderTextCentered(cr, title, textFont, posX+(190/2), posY+45)
+        cr.setColor(titleTextColr)
+        renderTextCentered(cr, title, styler.titleFont, posX+(vertListWidth/2), posY+(VListHeaderHeight/2)+(styler.titleFont.height/2-5))
         withEach Dash in items{
-            Dash.setPos(posX+5, crntY, 30)
-            crntY <+- 30
             Dash.draw(cr)
         }
+
+        cr.setColor(footerBoxColr)
+        roundedBotmRect(cr, posX+3, posY+height-26, vertListWidth-6, 23, 15)
+        cr.fillNow()
+
+        menuBtn.initCircleBtn(posX+10, posY+height-22, 8, 3, "menu")
+        addItemBtn.initCircleBtn(posX+vertListWidth-22, posY+height-23, 8, 3, "+")
+        addItemBtn.draw(cr)
+        menuBtn.draw(cr)
+    }
+    me bool: primaryDn(their GUI_ButtonEvent: event) <- {return(true)}
+    me bool: primaryUp(their GUI_ButtonEvent: event) <- {
+        if (addItemBtn.primaryUp(event)) {log("addItemBtn.primaryUp") return(true)}
+        if (menuBtn.primaryUp(event)) {log("menuBtn.primaryUp") return(true)}
+        withEach Dash in items{
+            if(Dash.primaryUp(event)){return(true)}
+        }
+        return(false)
+    }
+    me bool: mouseMoved(their GUI_MotionEvent: event) <- {
+        addItemBtn.mouseMoved(event)
+        menuBtn.mouseMoved(event)
+        withEach Dash in items{
+            if(mouseIsOver){Dash.mouseMoved(event)}
+            else if(Dash.mouseMoved(event)){return(true)}
+        }
+        return(false)
     }
 }
 
 struct HorizLists: inherits=dash{
     our infon: myInfon
-    me string: title
-   // me string: description
     me bool: rolledUp
     me List<our dash>: items
+    our circleButton: addItemBtn
 
     me bool: extractData() <- {
-        log("HorizLists:myInfon:"+toString(myInfon))
-        our infon: propertiesInf <- myInfon.fetchField("properties");          if(propertiesInf==NULL){log("extract propertiesInf HZ = NULL"); return(true)}
-        our infon: titleInf      <- propertiesInf.fetchField("title");         if(titleInf==NULL){log("extract titleInfHZ = NULL"); return(true)}
+        our infon: propertiesInf <- myInfon.fetchField("properties");      if(propertiesInf==NULL){log("extract propertiesInf HZ = NULL"); return(true)}
+        our infon: titleInf      <- propertiesInf.fetchField("title");     if(titleInf==NULL){log("extract titleInfHZ = NULL"); return(true)}
         title      <- titleInf.fetchString()
         our infon: dataInf       <- myInfon.fetchField("data");            if(dataInf==NULL){log("extract dataInf HZ = NULL"); return(true)}
         withEach infn in dataInf.value.items{
             if(infn.type!=NULL and infn.type.asGiven=="listelement"){
                 our VertList:: element
                 element.init(infn)
+                element.dashParent <- self
                 items.pushLast(element)
             }
         }
         return(false) // No errors
     }
-    void: init(our infon: theInfon) <- {myInfon<-theInfon; extractData()}
-    //void: setPos(me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: extCursor) <- {print("SETPOS HorizLists!!\n")}
+    void: init(our infon: theInfon) <- {
+        Allocate(addItemBtn)
+        addItemBtn.dashParent <- self
+        myInfon<-theInfon; extractData()
+    }
+    void: setPos(me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: extCursor) <- {
+        posIsSet <- true
+        posX   <- x
+        posY   <- y
+        extC   <- extCursor
+        me int: maxH   <- 0
+        me int: crntX <- posX
+        withEach Dash in items{
+            Dash.setPos(crntX, posY+headerHeight, 0)
+            maxH <- max(Dash.height, maxH)
+            crntX <+- Dash.width+horizListOPad
+        }
+        height <- maxH+headerHeight
+        width  <- crntX-posX-horizListOPad
+        extX   <- posX+width
+        extY   <- posY+height
+    }
     void: draw(their GUI_ctxt: cr) <- {
-        log("        In HorizLists::draw() posX:"+to_string(posX)+"  posY:"+to_string(posY))
+        cr.setColor(surfaceBkgnd)
+        roundedTopRect(cr, posX, posY, width, headerHeight-1, 15)
+        cr.fillNow()
+        cr.setColor(titleTextColr)
+        renderTextCentered(cr, title, styler.smallFont, posX+width/2, posY+(headerHeight/2)+(styler.smallFont.height/2-3))
+        addItemBtn.initCircleBtn(posX+width-25, posY+headerHeight-21, 8, 3, "+")
+        addItemBtn.draw(cr)
         me GUI_Scalar: crntX <- posX
         withEach Dash in items{
-            Dash.setPos(crntX, posY, 0)
-            crntX <+- 200
             Dash.draw(cr)
         }
+    }
+    me bool: primaryUp(their GUI_ButtonEvent: event) <- {
+        if (addItemBtn.primaryUp(event)) {return(true)}
+        withEach Dash in items{
+            if(Dash.primaryUp(event)){return(true)}
+        }
+        return(false)
+    }
+    me bool: primaryDn(their GUI_ButtonEvent: event) <- {return(true)}
+    me bool: mouseMoved(their GUI_MotionEvent: event) <- {
+        if (addItemBtn.mouseMoved(event)) {return(true)}
+        withEach Dash in items{
+            if(mouseIsOver){Dash.mouseMoved(event)}
+            else if(Dash.mouseMoved(event)){return(true)}
+        }
+        return(false)
     }
 }
 
 struct BoardElement: inherits=dash{
     our infon: myInfon
-    me string: title
     me string: background
     me bool: rolledUp
     me List<our dash>: items
 
     me bool: extractData() <- {
-        log("BoardElement:myInfon:"+toString(myInfon))
         our infon: propertiesInf <- myInfon.fetchField("properties");          if(propertiesInf==NULL){log("extract propertiesInf = NULL"); return(true)}
         our infon: titleInf      <- propertiesInf.fetchField("title");         if(titleInf==NULL){log("extract titleInf = NULL"); return(true)}
         our infon: backgroundInf <- propertiesInf.fetchField("backgroundpic"); if(backgroundInf==NULL){log("extract backgroundInf = NULL"); return(true)}
@@ -172,50 +352,72 @@ struct BoardElement: inherits=dash{
             if(infn.type!=NULL and infn.type.asGiven=="listselement"){
                 our HorizLists:: element
                 element.init(infn)
+                element.dashParent <- self
                 items.pushLast(element)
             }
         }
         return(false) // No errors
     }
     void: init(our infon: theInfon) <- {myInfon<-theInfon; extractData()}
-    //void: setPos(me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: extCursor) <- {print("SETPOS BoardElement!!\n")}
-    void: draw(their GUI_ctxt: cr) <- {
-        log("    In BoardElement::draw() posX:"+to_string(posX)+"  posY:"+to_string(posY))
-        displayBackgroundImage(cr, background)
 
+    void: draw(their GUI_ctxt: cr) <- {
         // Draw Header
-        cr.setRGBA(20,20,20,200)
-        cr.rectangle(0,0,1200,50)
+        cr.setColor(surfaceBkgnd)
+        cr.rectangle(0,0,windowW,50)
         cr.fillNow()
-        cr.setRGBA(200,206,200,200)
-        our fontSpec:: textFont{"Ariel", 15, 0}
-        renderTextCentered(cr, "Board: "+title, textFont, 1200/2, 33)
+        cr.setColor(titleTextColr)
+        renderTextCentered(cr, "Board: "+title, styler.titleFont, windowW/2, 33)
         // Draw Items
         withEach Dash in items{
-            log("XXXX")
             Dash.setPos(0,70,1)
             Dash.draw(cr)
         }
 
         // Draw Footer
     }
+    me bool: primaryUp(their GUI_ButtonEvent: event) <- {
+        withEach Dash in items{
+            if(Dash.primaryUp(event)){return(true)}
+        }
+        return(false)
+    }
+    me bool: primaryDn(their GUI_ButtonEvent: event) <- {return(true)}
+    me bool: mouseMoved(their GUI_MotionEvent: event) <- {
+        withEach Dash in items{
+            if(mouseIsOver){Dash.mouseMoved(event)}
+            else if(Dash.mouseMoved(event)){return(true)}
+        }
+        return(false)
+    }
 }
 
 struct SlipView: inherits=DashboardWidget{
     our infon: myInfon
-    me string: title
     me int: crntBoardIdx
-    me List<our dash>: boards
+    me List<our BoardElement>: boards
     their appComponentGUI: parentGuiMgr
 
+    our circleButton: addItemBtn
+    our circleButton: menuBtn
+    our circleButton: boardListBtn
+
     void: draw(their GUI_ctxt: cr) <- {
-        log("In SlipView::draw() posX:"+to_string(posX)+"  posY:"+to_string(posY))
+        setwindowMetrics()
+        width  <- windowW; height <- windowH
+        dashboardDBW.setPos(0, 0, 0); dashboardDBW.width<-width;  dashboardDBW.height<-height
+        menuBtn.initCircleBtn(20, 11, 14, 4, "menu")
+        addItemBtn.initCircleBtn(windowW-50, 7, 18, 5, "+")
+        boardListBtn.initCircleBtn(windowW/2-180, 11, 12, 3, ">")
         dashboardDBW.draw(cr)
     }
     void: setCrntBoard(me int: boardIdx) <-{
         crntBoardIdx <- boardIdx
         dashboardDBW.dashChildren.clear()
+        dashboardDBW.bgImageFilename <- boards[crntBoardIdx].background
         dashboardDBW.addChild(boards[crntBoardIdx])
+        dashboardDBW.addChild(addItemBtn)
+        dashboardDBW.addChild(menuBtn)
+        dashboardDBW.addChild(boardListBtn)
     }
     me bool: extractData() <- {
         our infon: projectsInf   <- myInfon.fetchField("projects");       if(projectsInf==NULL){log("extract projectsInf = NULL"); return(true)}
@@ -234,16 +436,34 @@ struct SlipView: inherits=DashboardWidget{
         setCrntBoard(boards.size()-1) // Default to last board for now
         return(false) // No errors
     }
-    void: init(our infon: theInfon) <- {myInfon<-theInfon; extractData()}
+    void: loadData(our infon: theInfon) <- {
+        Allocate(menuBtn)
+        Allocate(addItemBtn)
+        Allocate(boardListBtn)
+        myInfon<-theInfon; extractData()
+    }
     void: INIT()                <- {
         Allocate(dashboardDBW)
     }
-    void: requestRedraw() <- {
+    void: requestRedraw() <- { log("TopREqRedraw")
         markDirtyArea(canvas, 0,0, widgetWidth(canvas), widgetHeight(canvas))
     }
-    me bool: primaryUp(their GUI_ButtonEvent: event) <- {return(true)}
+    me bool: primaryUp(their GUI_ButtonEvent: event) <- {
+        if(addItemBtn.primaryUp(event)){return(true)}
+        else if(menuBtn.primaryUp(event)){return(true)}
+        else if(boardListBtn.primaryUp(event)){return(true)}
+        else if(boards[crntBoardIdx].primaryUp(event)){ return(true)}
+        return(false)
+    }
     me bool: primaryDn(their GUI_ButtonEvent: event) <- {return(true)}
-    me int: getValue() <- {return(0)}
+    //~ me bool: mouseMoved(their GUI_MotionEvent: event) <- {
+        //~ if(addItemBtn.mouseMoved(event)){return(true)}
+        //~ else if(menuBtn.mouseMoved(event)){return(true)}
+        //~ else if(boardListBtn.mouseMoved(event)){return(true)}
+        //~ else if(boards[crntBoardIdx].mouseMoved(event)){ return(true)}
+        //~ return(false)
+    //~ }
+    me int:  getValue() <- {return(0)}
     me void: setValue(me int: val) <- {}
     void: onChanged()  <- {parentGuiMgr.onChanged()}
 }
@@ -264,17 +484,13 @@ struct APP{
             print(CORE.errorMesg, "\n")
             exit(1)
         }
-        //CORE.agent.normalize(CORE.WORLD)
         return(true)
     }
 
     me void: createAppArea(me GUI_Frame: frame) <- {
         Allocate(slipView)
-        slipView.init(CORE.WORLD)
-        drawing_area  <- gui.newCanvas()
-        drawing_area.setParent(slipView)
-        gui.setWidgetSize(drawing_area, 1200, 1200)
-        slipView.EventDispatcher.registerWidgetForEventDispatcher(drawing_area, slipView)
+        drawing_area  <- slipView.init("")
+        slipView.loadData(CORE.WORLD)
         addToContainerAndExpand (frame, drawing_area)
     }
 }
