@@ -47,6 +47,8 @@ struct GLOBAL{
     me int: Yborder <- 3
     me int: VListHeaderHeight <- 56
 
+    me int: buttonWidth  <-55
+    me int: buttonHeight <-22
 
     me cdColor: buttonBright <- cdColor(255,255,255,255)
     me cdColor: buttonNormal <- cdColor(200,200,200,200)
@@ -57,6 +59,27 @@ struct GLOBAL{
     me cdColor: footerBoxColr<- cdColor(80,80,80,200)
 }
 
+struct labelButton: inherits=dash{
+    void: init(me string: label) <- {
+        title<-label
+        width <- buttonWidth; height <- buttonHeight
+    }
+    me void: draw(their GUI_ctxt: cr) <- {
+        if(mouseIsOver){cr.setColor(buttonBright)}else{cr.setColor(titleTextColr)}
+        cr.rectangle(posX, posY,width,height)
+        cr.fillNow()
+        if(mouseIsOver){cr.setColor(footerBoxColr)}else{cr.setColor(cardTextColr)}
+        renderTextCentered(cr, title, styler.smallFont, posX+width/2, posY+(height/2)+(styler.smallFont.height/2-2))
+        cr.fillNow()
+    }
+    me bool: primaryUp(their GUI_ButtonEvent: event) <- {
+        if (!isTouchingMe(event.x, event.y)) {return(false)}
+        getDashBrdMngr().closePopup()
+        return(true)
+    }
+    void: mouseEnter(their GUI_MotionEvent: event) <- {requestRedraw()}
+    void: mouseExit(their GUI_MotionEvent: event)  <- {requestRedraw()}
+}
 struct circleButton: inherits=dash{
     me GUI_Scalar:    radius
     me int: lWidth
@@ -120,7 +143,6 @@ struct circleButton: inherits=dash{
         if(mouseIsOver){buttonColor<-buttonBright} else {buttonColor<-buttonNormal}
     }
 
-    // Click functionality is inside graph clicks
     me bool: primaryDn(their GUI_ButtonEvent: event) <- {
         if (isTouchingMe(event.x, event.y)) {return(true)}
         else {return(false)}
@@ -132,6 +154,53 @@ struct circleButton: inherits=dash{
     void: mouseEnter(their GUI_MotionEvent: event) <- {log("MouseEnter") buttonColor<-buttonBright; requestRedraw()}
     void: mouseExit(their GUI_MotionEvent: event) <- {log("MouseExit") buttonColor<-buttonNormal; requestRedraw()}
 }
+
+struct mesgPopup: inherits=Dashboard{
+    me string: result
+    me string: mesg
+    me List<string>: buttons
+    me string: buttonList  // 'ok|', 'ok|cancel|'
+
+    void: init(me string: buttonList, me string: Mesg, me int: W, me int: H) <- {
+        result <- ""
+        mesg <- Mesg
+        width<-W; height<-H;
+        me string: btnLabel <- ""
+        withEach pos in RANGE(0..buttonList.size()){
+            me char: ch<-buttonList[pos]
+            if(ch=="|"){buttons.pushLast(btnLabel); btnLabel <- ""}
+            else{btnLabel <+- ch}
+        }
+        me int: numBtns <- buttons.size()
+        withEach label in buttons{
+            our labelButton:: lBtn; lBtn.init(label)
+            lBtn.dashParent <- self
+            addChild(lBtn)
+        }
+    }
+    void: setPos(me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: extCursor) <- {
+        posIsSet <- true
+        posX <- x; posY <- y; extC <- extCursor
+        me int: numBtns <- buttons.size()
+        me int: count <- 0
+        withEach btn in dashChildren{
+            btn.setPos(posX + width/numBtns*count+(width/numBtns/2) - buttonWidth/2, posY+height-(buttonHeight+5), 0)
+            count <+- 1
+        }
+    }
+    void: draw(their GUI_ctxt: cr) <- {
+        cr.setColor(surfaceBkgnd)
+        roundedRectangle(cr, posX, posY, width, height, 13)
+        cr.fillNow()
+
+        cr.setColor(footerBoxColr)
+        renderText(cr, mesg, styler.defaultFont, posX+5, posY+((height-(buttonHeight+5))/2)+(styler.defaultFont.height/2-2))
+        cr.fillNow()
+
+        baseDraw(cr)
+    }
+}
+
 struct TaskElement: inherits=dash{
     our infon: myInfon
     me bool: rolledUp
@@ -154,9 +223,7 @@ struct TaskElement: inherits=dash{
     void: init(our infon: theInfon) <- {myInfon<-theInfon; extractData()}
     void: setPos(me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: extCursor) <- {
         posIsSet <- true
-        posX   <- x
-        posY   <- y
-        extC   <- extCursor
+        posX <- x; posY <- y; extC <- extCursor
         me GUI_Scalar: crntY <- posY+10
         //~ withEach Dash in items{
             //~ Dash.setPos(posX+5, crntY, 0)
@@ -207,9 +274,7 @@ struct VertList: inherits=dash{
     }
     void: setPos(me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: extCursor) <- {
         posIsSet <- true
-        posX   <- x
-        posY   <- y
-        extC   <- extCursor
+        posX <- x; posY <- y; extC <- extCursor
         me GUI_Scalar: crntY <- posY+VListHeaderHeight
         withEach Dash in items{
             Dash.setPos(posX+5, crntY, 0)
@@ -220,8 +285,11 @@ struct VertList: inherits=dash{
         width  <- vertListWidth
         extX   <- posX+width
         extY   <- posY+height
+
+        menuBtn.initCircleBtn(posX+10, posY+height-22, 8, 3, "menu")
+        addItemBtn.initCircleBtn(posX+vertListWidth-22, posY+height-23, 8, 3, "+")
     }
-    void: draw(their GUI_ctxt: cr) <- {
+    void: draw(their GUI_ctxt: cr) <- {log("v_DRAW:"+title)
         cr.setColor(surfaceBkgnd)
         roundedBotmRect(cr, posX, posY, vertListWidth, height, 15)
         cr.fillNow()
@@ -236,8 +304,6 @@ struct VertList: inherits=dash{
         roundedBotmRect(cr, posX+3, posY+height-26, vertListWidth-6, 23, 15)
         cr.fillNow()
 
-        menuBtn.initCircleBtn(posX+10, posY+height-22, 8, 3, "menu")
-        addItemBtn.initCircleBtn(posX+vertListWidth-22, posY+height-23, 8, 3, "+")
         addItemBtn.draw(cr)
         menuBtn.draw(cr)
     }
@@ -289,9 +355,7 @@ struct HorizLists: inherits=dash{
     }
     void: setPos(me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: extCursor) <- {
         posIsSet <- true
-        posX   <- x
-        posY   <- y
-        extC   <- extCursor
+        posX <- x; posY <- y; extC <- extCursor
         me int: maxH   <- 0
         me int: crntX <- posX
         withEach Dash in items{
@@ -304,7 +368,7 @@ struct HorizLists: inherits=dash{
         extX   <- posX+width
         extY   <- posY+height
     }
-    void: draw(their GUI_ctxt: cr) <- {
+    void: draw(their GUI_ctxt: cr) <- {log("h_DRAW:"+title)
         cr.setColor(surfaceBkgnd)
         roundedTopRect(cr, posX, posY, width, headerHeight-1, 15)
         cr.fillNow()
@@ -360,16 +424,20 @@ struct BoardElement: inherits=dash{
     }
     void: init(our infon: theInfon) <- {myInfon<-theInfon; extractData()}
 
-    void: draw(their GUI_ctxt: cr) <- {
+    void: setPos(me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: extCursor) <- {
+        posX <- x; posY <- y; extC <- extCursor
+        items[0].setPos(20,70,0)
+    }
+
+    void: draw(their GUI_ctxt: cr) <- { log("BOARD_DRAW:"+title)
         // Draw Header
         cr.setColor(surfaceBkgnd)
-        cr.rectangle(0,0,windowW,50)
+        cr.rectangle(posX,posY,width,50)
         cr.fillNow()
         cr.setColor(titleTextColr)
         renderTextCentered(cr, "Board: "+title, styler.titleFont, windowW/2, 33)
         // Draw Items
         withEach Dash in items{
-            Dash.setPos(0,70,1)
             Dash.draw(cr)
         }
 
@@ -401,23 +469,31 @@ struct SlipView: inherits=DashboardWidget{
     our circleButton: menuBtn
     our circleButton: boardListBtn
 
-    void: draw(their GUI_ctxt: cr) <- {
+    void: setPos(me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: extCursor) <- {
         setwindowMetrics()
         width  <- windowW; height <- windowH
-        dashboardDBW.setPos(0, 0, 0); dashboardDBW.width<-width;  dashboardDBW.height<-height
+        posX <- x; posY <- y; extC <- extCursor
+        boards[crntBoardIdx].width <- width
+        boards[crntBoardIdx].height <- height
+        boards[crntBoardIdx].setPos(x,y,extC)
         menuBtn.initCircleBtn(20, 11, 14, 4, "menu")
-        addItemBtn.initCircleBtn(windowW-50, 7, 18, 5, "+")
-        boardListBtn.initCircleBtn(windowW/2-180, 11, 12, 3, ">")
-        dashboardDBW.draw(cr)
+        addItemBtn.initCircleBtn(width-50, 7, 18, 5, "+")
+        boardListBtn.initCircleBtn(width/2-180, 11, 12, 3, ">")
+        if(showModalPopUp){popUp.setPos(width/2-popUp.width/2, height/2-popUp.height/2, 0)}
+    }
+    void: draw(their GUI_ctxt: cr) <- {
+        setPos(0,0,0)
+        baseDraw(cr)
+        if(showModalPopUp){popUp.draw(cr)}
     }
     void: setCrntBoard(me int: boardIdx) <-{
         crntBoardIdx <- boardIdx
-        dashboardDBW.dashChildren.clear()
-        dashboardDBW.bgImageFilename <- boards[crntBoardIdx].background
-        dashboardDBW.addChild(boards[crntBoardIdx])
-        dashboardDBW.addChild(addItemBtn)
-        dashboardDBW.addChild(menuBtn)
-        dashboardDBW.addChild(boardListBtn)
+        dashChildren.clear()
+        bgImageFilename <- boards[crntBoardIdx].background
+        addChild(boards[crntBoardIdx])
+        addChild(addItemBtn)
+        addChild(menuBtn)
+        addChild(boardListBtn)
     }
     me bool: extractData() <- {
         our infon: projectsInf   <- myInfon.fetchField("projects");       if(projectsInf==NULL){log("extract projectsInf = NULL"); return(true)}
@@ -442,27 +518,16 @@ struct SlipView: inherits=DashboardWidget{
         Allocate(boardListBtn)
         myInfon<-theInfon; extractData()
     }
-    void: INIT()                <- {
-        Allocate(dashboardDBW)
+
+    me bool: secondaryClick(their GUI_ButtonEvent: event) <- {
+        if(showModalPopUp){return(popUp.secondaryClick(event))}
+        our mesgPopup:: ePop
+        ePop.dashParent <- self
+        ePop.init("ok|cancel|", "Do not Right Click!", 200, 120)
+        getDashBrdMngr().activateModalPopup(ePop)
+        return(true)
     }
-    void: requestRedraw() <- { log("TopREqRedraw")
-        markDirtyArea(canvas, 0,0, widgetWidth(canvas), widgetHeight(canvas))
-    }
-    me bool: primaryUp(their GUI_ButtonEvent: event) <- {
-        if(addItemBtn.primaryUp(event)){return(true)}
-        else if(menuBtn.primaryUp(event)){return(true)}
-        else if(boardListBtn.primaryUp(event)){return(true)}
-        else if(boards[crntBoardIdx].primaryUp(event)){ return(true)}
-        return(false)
-    }
-    me bool: primaryDn(their GUI_ButtonEvent: event) <- {return(true)}
-    //~ me bool: mouseMoved(their GUI_MotionEvent: event) <- {
-        //~ if(addItemBtn.mouseMoved(event)){return(true)}
-        //~ else if(menuBtn.mouseMoved(event)){return(true)}
-        //~ else if(boardListBtn.mouseMoved(event)){return(true)}
-        //~ else if(boards[crntBoardIdx].mouseMoved(event)){ return(true)}
-        //~ return(false)
-    //~ }
+
     me int:  getValue() <- {return(0)}
     me void: setValue(me int: val) <- {}
     void: onChanged()  <- {parentGuiMgr.onChanged()}
@@ -481,6 +546,9 @@ struct APP{
         me string: worldFileName <- "user.pr"
         CORE.init(worldFileName, false)
         if(CORE.WORLD==NULL){
+            //~ our mesgPopup: errorPopup
+            //~ errorPopup.init("ok|cancel|", CORE.errorMesg)
+            //~ popUp <- errorPopup
             print(CORE.errorMesg, "\n")
             exit(1)
         }
