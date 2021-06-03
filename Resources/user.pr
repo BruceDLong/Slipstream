@@ -55,10 +55,10 @@ projects:{
                 backgroundPic:"HD-Peaceful-Background.png"
             }
             data:{
-                ListsElement:{
+                kanban:{
                     properties:{title:"Kanban"}
                     data:{
-                        listElement:{
+                        TaskList:{
                             properties:{title:"Backlog"}
                             data:{
                                 task:{properties:{title:"comment System" member:"Bruce"} data:{}}
@@ -66,7 +66,7 @@ projects:{
                                 task:{properties:{title:"Library: speech recognition" member:"Bob"} data:{}}
                             }
                         }
-                        listElement:{
+                        TaskList:{
                             properties:{title:"Ready"}
                             data:{
                                 task:{properties:{title:"comment System" member:"Bruce"} data:{}}
@@ -77,7 +77,7 @@ projects:{
                                 task:{properties:{title:"Library: speech recognition" member:"Clair"} data:{}}
                             }
                         }
-                        listElement:{
+                        TaskList:{
                             properties:{title:"In Progress"}
                             data:{
                                 task:{properties:{title:"comment System" member:"Bruce"} data:{}}
@@ -85,7 +85,7 @@ projects:{
                                 task:{properties:{title:"Library: Speech recognition" member:"John"} data:{}}
                             }
                         }
-                        listElement:{
+                        TaskList:{
                             properties:{title:"Complete"}
                             data:{
                                 task:{properties:{title:"comment System" member:"Bruce"} data:{}}
