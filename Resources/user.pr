@@ -53,11 +53,12 @@ projects:{
                 elementType:"Lists"
                 title:"CodeDog Project"
                 backgroundPic:"HD-Peaceful-Background.png"
+                screenPos:{xPos:50 yPos:100}
             }
             data:{
                 kanban:{
                     properties:{title:"Kanban"}
-                    data:{
+                    data:{ tasklist:{properties:{title:"<Type a title>"} data:{task:{properties:{title:$ member:""} data:{}}|  task:{properties:{title:$ member:""} data:{}}...}}|
                         TaskList:{
                             properties:{title:"Backlog"}
                             data:{
@@ -87,12 +88,14 @@ projects:{
                         }
                         TaskList:{
                             properties:{title:"Complete"}
-                            data:{
+                            data:{task:{properties:{title:$ member:""} data:{}}|
                                 task:{properties:{title:"comment System" member:"Bruce"} data:{}}
                                 task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{}}
                                 task:{properties:{title:"Library: Speech recognition" member:"Sue"} data:{}}
+                                ...
                             }
                         }
+                        ...
                     }
                 }
             }

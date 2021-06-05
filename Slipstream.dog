@@ -73,7 +73,7 @@ struct labelButton: inherits=dash{
         cr.fillNow()
     }
     me bool: primaryUp(their GUI_ButtonEvent: event) <- {
-        if (!isTouchingMe(event.x, event.y)) {return(false)}
+        if (!isTouching(event.x, event.y)) {return(false)}
         getDashBrdMngr().closePopup()
         return(true)
     }
@@ -127,106 +127,30 @@ struct mesgPopup: inherits=Dashboard{
     }
 }
 
-struct viewStyles:inherits=<mode[vsDefault, vsX_stack, vsY_stack, vsZ_stack, vsPlotGraph, vsDataView, vsString, vsNumber, vsDate]> {}
-
-struct EventTrigger:inherits=<mode[tPrimaryClick, tSecondaryClick, tPrimaryUp, tPrimaryDn, tSecondaryUp, tSecondaryDn,
-                                   tMouseMove, tMouseEnter, tMouseExit, tMouseHover, tKeyPress, tTimer
-                                  ]> {}
-
-struct EventType:inherits=<mode[eNullEvent, eNormalize, eAddInfon, eDeleteInfon, eEditString, eEditInt, eEditByType,
-                                eMoveInfonInList, eMoveInfonToList,
-                                eGUI_SetXY, eGUI_SetColor, eGUI_SetDragMode, eGUI_SetTimer, eGUI_PopupModal, eGUI_CloseModal, eGUI_SetViewMode
-                               ]> {}
-
-struct ProactEvent{
-    me EventTrigger: Trigger
-    me GUI_Scalar: X
-    me GUI_Scalar: Y
-    me GUI_Scalar: W
-    me GUI_Scalar: H
-    me EventType: eventType
-    me string: text
-    our infon: inf
-    our infon: toInfon
-    me GUI_Scalar: arg1
-    me GUI_Scalar: arg2
-    me GUI_Scalar: arg3
-    me GUI_Scalar: arg4
-
-    void: setTrigger(me EventTrigger: trigger, me GUI_Scalar: posX, me GUI_Scalar: posY, me GUI_Scalar: w, me GUI_Scalar: h) <- {
-        Trigger<-trigger; X<-posX; Y<-posY; W<-w; H<-h;
-    }
-    void: setInfonEvent(me EventType: evntType, our infon:infon1, our infon:infon2) <- {eventType<-evntType; inf<-infon1; toInfon<-infon2;}
-    void: setNormalizeEvent(me EventType: evntType, me string: query) <- {eventType<-evntType; text<-query;}
-    void: setGUI_Event(me EventType: evntType, our infon: target, me GUI_Scalar: a1, me GUI_Scalar: a2, me GUI_Scalar: a3, me GUI_Scalar: a4) <- {
-        eventType<-evntType; arg1<-a1; arg2<-a2; arg3<-a3; arg4<-a4;
+struct GuiModelManager{
+    void: processCommand(our ProactEvent: ev) <- {
+        switch(ev.eventType){
+        case eAddInfon:  {our POV: newPov <- ev.inf.tryAddingTentativeChild(); newPov.pItem.isTentative<-false;  CORE.agent.normalize(ev.inf); log("\nAdded Item:"+newPov.stringify())}
+        case eReqRedraw: {log("Redraw_Requested")}
+        }
+        slipView.requestRedraw()
     }
 }
 
+struct viewStyles:inherits=<mode[vsDefault, vsX_stack, vsY_stack, vsZ_stack, vsPlotGraph, vsDataView, vsString, vsNumber, vsDate]> {}
+
 struct Presenter{
-    me List<our ProactEvent>: eventRegistry
-
-    void: registerEvent(our ProactEvent: event) <- {eventRegistry.append(event)}
-    void: clearEvents() <- {eventRegistry.clear()}
-
-    void: drawCircleButton(our dashDrawing: dr, me GUI_Scalar: posX, me GUI_Scalar: posY, me GUI_Scalar: radius, me GUI_Scalar: lineWidth, me string: symbol) <- {
-        me GUI_Scalar: stickLen <- radius/3
-        me cdColor: buttonColor<-buttonNormal
-        //if(mouseIsOver){buttonColor<-buttonBright} else {buttonColor<-buttonNormal}
-        dr.addC(cmdSetColor, buttonColor)
-        dr.add1(cmdRoundLineCap)
-        dr.add2(cmdSetLineWidth, lineWidth)
-       // cr.circle(posX + radius, posY + radius, radius)
-        if (symbol=="+") {
-            dr.addXY(cmdMoveTo, posX + radius, posY + radius/4)
-            dr.addXY(cmdLineTo, posX + radius, posY + 7*radius/4)
-            dr.addXY(cmdMoveTo, posX + radius/4, posY + radius)
-            dr.addXY(cmdLineTo, posX + 7*radius/4, posY + radius)
-        }
-        else if (symbol=="-") {
-            dr.addXY(cmdMoveTo, posX + radius/4, posY + radius)
-            dr.addXY(cmdLineTo, posX + 7*radius/4, posY + radius)
-        }
-        else if (symbol=="<") {
-            dr.addXY(cmdMoveTo, posX + radius, posY + radius - stickLen * sqrt(2.0))
-            dr.addXY(cmdLineTo, posX + radius - stickLen * sqrt(2), posY + radius)
-            dr.addXY(cmdMoveTo, posX + radius, posY + radius + stickLen * sqrt(2.0))
-        }
-        else if (symbol==">") {
-            dr.addXY(cmdMoveTo, posX + radius, posY + radius - stickLen * sqrt(2.0))
-            dr.addXY(cmdLineTo, posX + radius + stickLen * sqrt(2), posY + radius)
-            dr.addXY(cmdLineTo, posX + radius, posY + radius + stickLen * sqrt(2.0))
-        }
-        else if (symbol=="v") {
-            dr.addXY(cmdMoveTo, posX  - stickLen * sqrt(2.0), posY )
-            dr.addXY(cmdLineTo, posX, posY + radius)
-            dr.addXY(cmdLineTo, posX  + stickLen * sqrt(2.0), posY)
-        }
-        else if (symbol=="menu") {
-            dr.addXY(cmdMoveTo, posX + radius/4, posY + radius)
-            dr.addXY(cmdLineTo, posX + 7*radius/4, posY + radius)
-
-            dr.addXY(cmdMoveTo, posX + radius/4, posY + radius/4)
-            dr.addXY(cmdLineTo, posX + 7*radius/4, posY + radius/4)
-
-            dr.addXY(cmdMoveTo, posX + radius/4, posY + 7*radius/4)
-            dr.addXY(cmdLineTo, posX + 7*radius/4, posY + 7*radius/4)
-        }
-        dr.add1(cmdStroke)
-        dr.add1(cmdEdgedLineCap)
-    }
-
     void: drawUnsizedElement(our dashDrawing: dr, our infon: element, me GUI_Scalar:x, me GUI_Scalar:y, their GUI_Scalar: w, their GUI_Scalar:h) <- {
-        our infon: propertiesInf <- element.fetchField("properties");          if(propertiesInf==NULL){log("extract propertiesInf = NULL"); return()}
-        our infon: titleInf      <- propertiesInf.fetchField("title");         if(titleInf==NULL){log("extract titleInf = NULL"); return()}
-        me string: title         <- titleInf.fetchString()
-        our infon: dataInf       <- element.fetchField("data"); if(dataInf==NULL){log("extract dataInf = NULL"); return()}
+        our POV: propertiesInf <- element.fetchField("properties");          if(propertiesInf==NULL){log("extract propertiesInf = NULL"); return()}
+        our POV: titleInf      <- propertiesInf.pItem.fetchField("title");         if(titleInf==NULL){log("extract titleInf = NULL"); return()}
+        me string: title       <- titleInf.pItem.fetchString()
+        our POV: dataInf       <- element.fetchField("data"); if(dataInf==NULL){log("extract dataInf = NULL"); return()}
 
         //me mode[xStack, yStack, zStack, stringItem, integerItem, decimalItem]: viewStyle
         me viewStyles: viewStyle
         if(element.type.asGiven=="kanban"){ viewStyle <- vsX_stack}
         else if(element.type.asGiven=="tasklist"){ viewStyle <- vsY_stack}
-        log("INFON_TYPE:"+element.type.asGiven)
+        //log("INFON_TYPE:"+element.type.asGiven)
         me GUI_Scalar:xPos <- x; me GUI_Scalar:yPos <- y
         me GUI_Scalar:width <- w; me GUI_Scalar:height <- h
         me GUI_Scalar:maxH <- 0
@@ -235,7 +159,7 @@ struct Presenter{
             // Draw Header
 
             // Draw Columns
-            withEach element in dataInf.value.items{
+            withEach element in dataInf.pItem.value.items{
                 dr.addC(cmdSetColor, surfaceBkgnd)
 
                 our dashDrawing:: dr2
@@ -251,21 +175,23 @@ struct Presenter{
             me GUI_Scalar: X <- x
             w <deep- (xPos-8)-X; h <deep- maxH+headerHeight;
             width<-w
-            drawCircleButton(dr, x+width-25, y+headerHeight-21, 8, 3, "+")
-            //~ addItemBtn.draw(cr)
-            //~ me GUI_Scalar: crntX <- posX
-            //~ withEach Dash in items{
-                //~ Dash.draw(cr)
-            //~}
+
             dr.addC(cmdSetColor, surfaceBkgnd)
-            me RectArea:RA{x, y, width, headerHeight-2}; dr.addRAA(cmdRoundTopRect, RA, 15)
+            me GuiCoords:RA2{x, y, width, headerHeight-2}; dr.addRAA(cmdRoundTopRect, RA2, 15)
             dr.add1(cmdFill)
+
+            me GuiCoords:RA1{x+width-25, y+3, 16, 16}
+            drawCircleButton(dr, RA1.X, RA1.Y, RA1.W/2, 3, "+", element.mySymbol()+"AddItem")
+            our ProactEvent:: addListEvent;
+            addListEvent.setTrigger(tPrimaryClick, RA1); addListEvent.setInfonEvent(eAddInfon, dataInf, NULL)
+            registerEvent(addListEvent)
+
             dr.addC(cmdSetColor, titleTextColr)
             dr.addTF(cmdRenderTextCentered, x+width/2, y+(headerHeight/2)+(styler.smallFont.height/2-3), title, styler.smallFont)
         } else if(viewStyle==vsY_stack){
             dr.addC(cmdSetColor, surfaceBkgnd)
-            me RectArea:RA{xPos, y, vertListWidth, 0}
-            our Drawel: boxDR <- dr.addRAA(cmdRoundTopRect, RA, 15) // Background for lists
+            me GuiCoords:RA{xPos, y, vertListWidth, 0}
+            our Drawel: boxDR <- dr.addRAA(cmdRoundBotRect, RA, 15) // Background for lists
             dr.add1(cmdFill)
 
             // Column Header
@@ -274,7 +200,7 @@ struct Presenter{
 
             // Draw the list body
             yPos <- y+VListHeaderHeight
-            withEach element in dataInf.value.items{
+            withEach element in dataInf.pItem.value.items{
                 dr.addC(cmdSetColor, surfaceBkgnd)
                 our dashDrawing:: dr2
                 me GUI_Scalar: W2
@@ -287,60 +213,77 @@ struct Presenter{
             // Draw the footer
             me int: footerHeight <- 27
             dr.addC(cmdSetColor, footerBoxColr)
-            me RectArea:RAf{x+5, yPos, vertListWidth-10, footerHeight-4}
+            me GuiCoords:RAf{x+5, yPos, vertListWidth-10, footerHeight-4}
             dr.addRAA(cmdRoundBotRect, RAf, 15)
             dr.add1(cmdFill)
-            drawCircleButton(dr, x+10, yPos+H2-20, 8, 3, "menu")
-            drawCircleButton(dr, x+vertListWidth-23, yPos+H2-20, 8, 3, "+")
+
+            me GuiCoords:RA1{x+10, yPos+H2-20, 16, 16}
+            drawCircleButton(dr, RA1.X, RA1.Y, RA1.W/2, 3, "menu", element.mySymbol()+"Menu")
+            our ProactEvent:: addListEvent1;
+            addListEvent1.setTrigger(tPrimaryClick, RA1); addListEvent1.setInfonEvent(eGUI_PopupModal, dataInf, NULL)
+            registerEvent(addListEvent1)
+
+            me GuiCoords:RA2{x+vertListWidth-23, yPos+H2-20, 16, 16}
+            drawCircleButton(dr, RA2.X, RA2.Y, RA2.W/2, 3, "+", element.mySymbol()+"AddItem")
+            our ProactEvent:: addListEvent2;
+            addListEvent2.setTrigger(tPrimaryClick, RA2); addListEvent2.setInfonEvent(eAddInfon, dataInf, NULL)
+            registerEvent(addListEvent2)
+
             yPos <+- footerHeight
 
             boxDR.h<-yPos-y
         } else if(element.type.asGiven=="task"){
+            me string: text<-title
+            if(titleInf.pItem.value.format==fUnknown){text<-"<Empty>"}
             H2 <- styler.smallFont.height+ Yborder*2
             h <deep- H2
             width  <- vertListWidth-5*2
 
             dr.addC(cmdSetColor, taskCardColor)
-            me RectArea:RA{x, y, width, H2}
+            me GuiCoords:RA{x, y, width, H2}
             dr.addRAA(cmdRoundRect, RA, 13)
             dr.add1(cmdFill)
 
             dr.addC(cmdSetColor, cardTextColr)
-            dr.addTF(cmdRenderText, x+5, y+(H2/2)+(styler.smallFont.height/2-2), title, styler.smallFont)
+            dr.addTF(cmdRenderText, x+5, y+(H2/2)+(styler.smallFont.height/2-2), text, styler.smallFont)
         }
     }
 
     void: drawDashboard(our dashDrawing: dr, our infon: board, me GUI_Scalar:x, me GUI_Scalar:y, me GUI_Scalar: w, me GUI_Scalar:h) <- {
-        our infon: propertiesInf <- board.fetchField("properties");            if(propertiesInf==NULL){log("extract propertiesInf = NULL"); return()}
-        our infon: titleInf      <- propertiesInf.fetchField("title");         if(titleInf==NULL){log("extract titleInf = NULL"); return()}
-        our infon: backgroundInf <- propertiesInf.fetchField("backgroundpic"); if(backgroundInf==NULL){log("extract backgroundInf = NULL"); return()}
-        me string: title      <- titleInf.fetchString()
-        me string: background <- backgroundInf.fetchString()
-        our infon: dataInf       <- board.fetchField("data"); if(dataInf==NULL){log("extract dataInf = NULL"); return()}
+        our POV: propertiesInf <- board.fetchField("properties");            if(propertiesInf==NULL){log("extract propertiesInf = NULL"); return()}
+        our POV: titleInf      <- propertiesInf.pItem.fetchField("title");         if(titleInf==NULL){log("extract titleInf = NULL"); return()}
+        our POV: backgroundInf <- propertiesInf.pItem.fetchField("backgroundpic"); if(backgroundInf==NULL){log("extract backgroundInf = NULL"); return()}
+        me string: title      <- titleInf.pItem.fetchString()
+        me string: background <- backgroundInf.pItem.fetchString()
+        our POV: dataInf       <- board.fetchField("data"); if(dataInf==NULL){log("extract dataInf = NULL"); return()}
 
         if(background!=""){dr.addT(cmdDrawBkgndImage, background)}
         dr.addC(cmdSetColor, surfaceBkgnd)
-        me RectArea: RA{0,0,w,50}; dr.addRA(cmdDrawRect, RA)
+        me GuiCoords: RA{0,0,w,50}; dr.addRA(cmdDrawRect, RA)
         dr.add1(cmdFill)
         dr.addC(cmdSetColor, titleTextColr)
         me string: brdTitleText <- "Board: "+title
         me deltaSize: DSize <- getTextSize(brdTitleText, styler.titleFont)
         dr.addTF(cmdRenderTextCentered, windowW/2, 33, brdTitleText, styler.titleFont)
-        drawCircleButton(dr, w/2-(DSize.width/2+33), 6, 18, 4, ">")
+        me GuiCoords:RA1{w/2-(DSize.width/2+33), 6, 36, 36}
+        drawCircleButton(dr, RA1.X, RA1.Y, RA1.W/2, 4, ">", board.mySymbol()+":open")
 
-        drawCircleButton(dr, 20, 11, 14, 4, "menu")
-        drawCircleButton(dr, w-50, 7, 18, 5, "+")
-        withEach infn in dataInf.value.items{
+        me GuiCoords:RA2{20, 11, 28, 28}
+        drawCircleButton(dr, RA2.X, RA2.Y, RA2.W/2, 4, "menu", board.mySymbol()+":Menu")
+
+        me GuiCoords:RA3{w-50, 7, 36, 36}
+        drawCircleButton(dr, RA3.X, RA3.Y, RA3.W/2, 5, "+", board.mySymbol()+":AddItem")
+        our ProactEvent:: addListEvent3;
+        addListEvent3.setTrigger(tPrimaryClick, RA3); addListEvent3.setInfonEvent(eAddInfon, dataInf, NULL)
+        registerEvent(addListEvent3)
+
+        withEach infn in dataInf.pItem.value.items{
             drawUnsizedElement(dr, infn, 20, 70, w, h)
         }
     }
 }
 
-struct GLOBAL{
-    me Presenter: presenter
-}
-
-struct SlipView: inherits=DashboardWidget{
+struct SlipView: inherits=ProactiveGUIWidget{
     our infon: myInfon
     me int: crntBoardIdx
     //their appComponentGUI: parentGuiMgr
@@ -348,9 +291,10 @@ struct SlipView: inherits=DashboardWidget{
     me List<our infon>: boardInfons
 
     void: draw(their GUI_ctxt: cr) <- {
+        proactiveGUI.presenter.reset()
         setwindowMetrics()
         our dashDrawing:: dr
-        presenter.drawDashboard(dr, boardInfons[crntBoardIdx], 0,0,windowW,windowH)
+        proactiveGUI.presenter.drawDashboard(dr, boardInfons[crntBoardIdx], 0,0,windowW,windowH)
         dr.render(cr)
 
     }
@@ -359,13 +303,13 @@ struct SlipView: inherits=DashboardWidget{
     }
     bool: loadData(our infon: theInfon) <- {
         myInfon<-theInfon;
-        our infon: projectsInf   <- myInfon.fetchField("projects");       if(projectsInf==NULL){log("extract projectsInf = NULL"); return(true)}
-        our infon: propertiesInf <- projectsInf.fetchField("properties"); if(propertiesInf==NULL){log("extract propertiesInf = NULL"); return(true)}
-        our infon: titleInf      <- propertiesInf.fetchField("title");    if(titleInf==NULL){log("extract titleInf = NULL"); return(true)}
-            title      <- titleInf.fetchString()
-        our infon: dataInf       <- projectsInf.fetchField("data")
+        our POV: projectsInf   <- myInfon.fetchField("projects");       if(projectsInf==NULL){log("extract projectsInf = NULL"); return(true)}
+        our POV: propertiesInf <- projectsInf.pItem.fetchField("properties"); if(propertiesInf==NULL){log("extract propertiesInf = NULL"); return(true)}
+        our POV: titleInf      <- propertiesInf.pItem.fetchField("title");    if(titleInf==NULL){log("extract titleInf = NULL"); return(true)}
+            title      <- titleInf.pItem.fetchString()
+        our POV: dataInf       <- projectsInf.pItem.fetchField("data")
 
-        withEach infn in dataInf.value.items{
+        withEach infn in dataInf.pItem.value.items{
             if(infn.type!=NULL and infn.type.asGiven=="boardelement"){
                 boardInfons.append(infn)
             }
@@ -373,24 +317,11 @@ struct SlipView: inherits=DashboardWidget{
         setCrntBoard(boardInfons.size()-1) // Default to last board for now
         return(false) // No errors
     }
-
-    me bool: secondaryClick(their GUI_ButtonEvent: event) <- {
-        if(showModalPopUp){return(popUp.secondaryClick(event))}
-        our mesgPopup:: ePop
-        ePop.dashParent <- self
-        ePop.init("ok|cancel|", "Do not Right Click!", 200, 120)
-        getDashBrdMngr().activateModalPopup(ePop)
-        return(true)
-    }
-
-    //~ me int:  getValue() <- {return(0)}
-    //~ me void: setValue(me int: val) <- {}
-    //~ void: onChanged()  <- {parentGuiMgr.onChanged()}
 }
-
 
 struct GLOBAL{
     me ProteusCore: CORE
+    me ProactiveGUI: proactiveGUI
     me bool: isFirstRun
     their GUI_canvas: drawing_area
     their SlipView: slipView
