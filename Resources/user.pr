@@ -53,11 +53,13 @@ projects:{
                 elementType:"Lists"
                 title:"CodeDog Project"
                 backgroundPic:"HD-Peaceful-Background.png"
-                screenPos:{xPos:50 yPos:100}
             }
             data:{
                 kanban:{
-                    properties:{title:"Kanban"}
+                    properties:{
+                        title:"Kanban"
+                        screenPos:{xPos:50 yPos:100}
+                    }
                     data:{ tasklist:{properties:{title:"<Type a title>"} data:{task:{properties:{title:$ member:""} data:{}}|  task:{properties:{title:$ member:""} data:{}}...}}|
                         TaskList:{
                             properties:{title:"Backlog"}
