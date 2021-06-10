@@ -8,12 +8,12 @@ projects:{
     data:{
         boardElement:{
             properties:{
-                title:"AwesomeWorld"
-                backgroundPic:"Lake-Summer-Mountain.jpg"
+                title:"Awesome World"
+                backgroundPic:"Lake-Summer-Mountain.png"
             }
             data:{
-                workProduct:{
-                    properties:{title:"CodeDog"}
+                TaskList:{
+                    properties:{title:"CodeDog" screenPos:{xPos:20 yPos:100}}
                     data:{
                         task:{properties:{title:"comment System" member:"Bruce"} data:{}}
                         task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{}}
@@ -21,14 +21,14 @@ projects:{
                     }
                 }
 
-                workProduct:{
-                    properties:{title:"Proteus"}
+                TaskList:{
+                    properties:{title:"Proteus" screenPos:{xPos:350 yPos:80}}
                     data:{
                     }
                 }
 
-                workProduct:{
-                    properties:{title:"Slipstream App"}
+                TaskList:{
+                    properties:{title:"Slipstream App" screenPos:{xPos:350 yPos:400}}
                     data:{
                         task:{properties:{title:"comment System" member:"Bruce"} data:{}}
                         task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{}}
@@ -36,8 +36,8 @@ projects:{
                     }
                 }
 
-                workProduct:{
-                    properties:{title:"Aetria"}
+                TaskList:{
+                    properties:{title:"Aetria" screenPos:{xPos:650 yPos:80}}
                     data:{
                         task:{properties:{title:"Add location and scale to meshes" member:"Bruce"} data:{}}
                         task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{}}
