@@ -85,7 +85,14 @@ projects:{
                             data:{
                                 task:{properties:{title:"comment System" member:"Bruce"} data:{}}
                                 task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{}}
-                                task:{properties:{title:"Library: Speech recognition" member:"John"} data:{}}
+                                task:{properties:{title:"Library: Speech recognition" member:"John"}
+                                    data:{
+                                        subTasks:{1 2 3}
+                                        note:"This string is a note"
+                                        role:"software engineer II"
+                                        members:{"Bruce". "Bob"}
+                                    }
+                                }
                             }
                         }
                         TaskList:{
