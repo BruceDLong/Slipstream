@@ -42,7 +42,7 @@ struct GLOBAL{
     me int: vertSepSmall   <- 5
     me int: vertSepMed     <- 30
     me int: vertListWidth  <- 200
-    me int: headerHeight <- 25
+    me int: headerHeight   <- 25
     me int: horizListOPad  <- 5
     me int: Yborder <- 3
     me int: VListHeaderHeight <- 56
@@ -96,51 +96,34 @@ struct GuiModelManager{
     }
 }
 
+struct TextEditBox: inherits=reactiveControl{
+    me bool: expandsX()<-{return(true)}
+    me bool: expandsY()<-{return(true)}
+    me deltaSize: premeasure() <- {}
+    me void: fetchState() <- {}
+    void: draw(our dashDrawing: dr) <- {}
+    void: registerStaticEvent() <- {}
+    void: registerActiveEvent() <- {}
+}
+
 struct viewStyles:inherits=<mode[vsDefault, vsX_stack, vsY_stack, vsZ_stack, vsPlotGraph, vsDataView, vsString, vsNumber, vsDate]> {}
 
 struct Presenter{
 
-    me string: chooseViewStyle(their ParamRec: PR) <- {
-        if(PR.propertiesPov!=NULL){
-            our POV: viewStyle <- fetchField(PR.propertiesPov, "viewStyle")
-            if(viewStyle){
-                me string: viewStyleTag <- fetchStringField(viewStyle)
-                return(viewStyleTag)
-            }
-            viewStyle <- fetchField(PR.propertiesPov, "viewStyleDefault")
-            if(viewStyle){
-                me string: viewStyleTag <- fetchStringField(viewStyle)
-                return(viewStyleTag)
-            }
-        }
-        me string: itemsType
-        if(PR.sourcePov.pItem.type!=NULL){
-            itemsType <- PR.sourcePov.pItem.type.asGiven
-        }
-        if(itemsType!=""){return(itemsType)}
-        if(PR.dataPov){
-            switch(PR.dataPov.pItem.value.fType){
-                case LST:{return("genericList")}
-                case STR:{return("genericString")}
-                case NUM:{return("genericNumber")}
-            }
-        }
-        return("")
-    }
-
-    void: drawKanban(our dashDrawing: dr, our POV:data, me GUI_Scalar:posX, me GUI_Scalar:posY, their GUI_Scalar: width, their GUI_Scalar:height, their ParamRec: PR) <- {
+    void: drawKanban(our dashDrawing: dr, their ParamRec: PR) <- {
         // Draw Columns
         me GUI_Scalar: itemHeight
         me GUI_Scalar: itemWidth
-        PR.viewModeHint <- "headeredVList"
-        draw_X_stack_XYwh(dr, PR.dataPov, posX, posY+headerHeight, itemWidth, itemHeight, PR)
+        me ParamRec: listPR; listPR.init(PR.dataPov, PR.posX, PR.posY+headerHeight, 0, 0)
+        listPR.viewStyleArg <- "headeredVList"
+        draw_X_stack_XYwh(dr, listPR)
 
         // Kanban header
-        width <deep- (itemWidth)-posX;
-        height <deep- itemHeight+headerHeight;
+        PR.posW <deep- listPR.posW
+        PR.posH <deep- listPR.posH+headerHeight;
 
         dr.addC(cmdSetColor, surfaceBkgnd)
-        me GuiCoords:HedrRectXYWH{posX, posY, itemWidth, headerHeight-2};
+        me GuiCoords:HedrRectXYWH{PR.posX, PR.posY, listPR.posW, headerHeight-2};
         dr.addRAA(cmdRoundTopRect, HedrRectXYWH, 15)
         dr.add1(cmdFill)
         if(PR.screenPos!=NULL){
@@ -149,77 +132,78 @@ struct Presenter{
             registerEvent(dragEvent)
         }
 
-        me GuiCoords:RA1{posX+itemWidth-25, posY+3, 16, 16}
-        drawCircleButton(dr, RA1.X, RA1.Y, RA1.W/2, 3, "+", data.mySymbol()+"AddItem")
+        me GuiCoords:RA1{PR.posX+listPR.posW-25, PR.posY+3, 16, 16}
+        drawCircleButton(dr, RA1.X, RA1.Y, RA1.W/2, 3, "+", PR.sourcePov.mySymbol()+"AddItem")
         our ProactEvent:: addListEvent;
         addListEvent.setTrigger(tPrimaryClick, RA1); addListEvent.setInfonEvent(eAddInfon, PR.dataPov, NULL)
         registerEvent(addListEvent)
 
         dr.addC(cmdSetColor, titleTextColr)
-        dr.addTF(cmdRenderTextCentered, posX+itemWidth/2, posY+(headerHeight/2)+(styler.smallFont.height/2-3), PR.title, styler.smallFont)
+        dr.addTF(cmdRenderTextCentered, PR.posX+listPR.posW/2, PR.posY+(headerHeight/2)+(styler.smallFont.height/2-3), PR.title, styler.smallFont)
     }
 
-    void: drawListWidget(our dashDrawing: dr, our POV:data, me GUI_Scalar:posX, me GUI_Scalar:posY, their GUI_Scalar: width, their GUI_Scalar:height, their ParamRec: PR) <- {
-        me GUI_Scalar:yCur <- posY
+    void: drawListWidget(our dashDrawing: dr, their ParamRec: PR) <- {
+        me GUI_Scalar:yCur <- PR.posY
         dr.addC(cmdSetColor, surfaceBkgnd)
-        me GuiCoords:RA{posX, posY, vertListWidth, 0}
+        me GuiCoords:RA{PR.posX, yCur, vertListWidth, 0}
         me DrawCmd: dCmd <- cmdRoundRect
-        if(PR.viewModeHint=="headeredVList"){dCmd <- cmdRoundBotRect}
+        if(PR.viewStyleArg=="headeredVList"){dCmd <- cmdRoundBotRect}
         our Drawel: boxDR <- dr.addRAA(dCmd, RA, 15) // Background for lists
         dr.add1(cmdFill)
 
         // Column Header
         dr.addC(cmdSetColor, titleTextColr)
-        dr.addTF(cmdRenderTextCentered, posX+(vertListWidth/2), posY+(VListHeaderHeight/2)+(styler.titleFont.height/2-5), PR.title, styler.titleFont)
+        dr.addTF(cmdRenderTextCentered, PR.posX+(vertListWidth/2), yCur+(VListHeaderHeight/2)+(styler.titleFont.height/2-5), PR.title, styler.titleFont)
 
         if(PR.screenPos!=NULL){ // Enable dragging
-            me GuiCoords:HedrRectXYWH{posX, posY, vertListWidth, VListHeaderHeight};
+            me GuiCoords:HedrRectXYWH{PR.posX, yCur, vertListWidth, VListHeaderHeight};
             our ProactEvent:: dragEvent;
             dragEvent.setTrigger(tDragStart, HedrRectXYWH); dragEvent.setInfonEvent(eGUI_SetXY, PR.xPov, PR.yPov)
             registerEvent(dragEvent)
         }
         // Draw the list body
-        yCur <- posY+VListHeaderHeight
-        me GUI_Scalar: itemHeight
-        PR.viewModeHint <- "cardView"
-        draw_Y_stack_XYWh(dr, PR.dataPov, posX, yCur, vertListWidth, itemHeight, PR)
-        yCur <+- itemHeight
+        yCur <+- VListHeaderHeight
+        me ParamRec: listPR; listPR.init(PR.dataPov, PR.posX, yCur, vertListWidth, 0)
+        listPR.viewStyleArg <- "cardView"
+        draw_Y_stack_XYWh(dr, listPR)
+        yCur <+- listPR.posH
 
         // Draw the footer
         me int: footerHeight <- 27
         dr.addC(cmdSetColor, footerBoxColr)
-        me GuiCoords:RAf{posX+5, yCur, vertListWidth-10, footerHeight-4}
+        me GuiCoords:RAf{PR.posX+5, yCur, vertListWidth-10, footerHeight-4}
         dr.addRAA(cmdRoundBotRect, RAf, 15)
         dr.add1(cmdFill)
 
-        me GuiCoords:RA1{posX+10, yCur+3, 16, 16}
-        drawCircleButton(dr, RA1.X, RA1.Y, RA1.W/2, 3, "menu", data.mySymbol()+"Menu")
+        me GuiCoords:RA1{PR.posX+10, yCur+3, 16, 16}
+        drawCircleButton(dr, RA1.X, RA1.Y, RA1.W/2, 3, "menu", PR.sourcePov.mySymbol()+"Menu")
 
-        me GuiCoords:RA2{posX+vertListWidth-23, yCur+3, 16, 16}
-        drawCircleButton(dr, RA2.X, RA2.Y, RA2.W/2, 3, "+", data.mySymbol()+"AddItem")
+        me GuiCoords:RA2{PR.posX+vertListWidth-23, yCur+3, 16, 16}
+        drawCircleButton(dr, RA2.X, RA2.Y, RA2.W/2, 3, "+", PR.sourcePov.mySymbol()+"AddItem")
         our ProactEvent:: addListEvent2;
         addListEvent2.setTrigger(tPrimaryClick, RA2); addListEvent2.setInfonEvent(eAddInfon, PR.dataPov, NULL)
         registerEvent(addListEvent2)
 
         yCur <+- footerHeight
-
-        boxDR.h<-yCur-posY
+        PR.posW <- vertListWidth
+        PR.posH <- yCur-PR.posY
+        boxDR.h <- PR.posH
     }
 
-    void: drawTaskCard(our dashDrawing: dr, our POV:data, me GUI_Scalar:posX, me GUI_Scalar:posY, their GUI_Scalar: width, their GUI_Scalar:height, their ParamRec: PR) <- {
+    void: drawTaskCard(our dashDrawing: dr, their ParamRec: PR) <- {
         me string: text<-PR.title
         if(PR.titlePov.pItem.value.format==fUnknown){text<-"<Empty>"}
-        me GUI_Scalar:H2 <- styler.smallFont.height+ Yborder*2
-        height <deep- H2
-        width  <deep- vertListWidth-5*2
-        me GUI_Scalar:W2 <- width
+        //~ me GUI_Scalar:H2 <- styler.smallFont.height+ Yborder*2
+        //~ PR.posH  <deep- H2
+        //~ PR.posW  <deep- vertListWidth-5*2
+        me GUI_Scalar:W2 <- PR.posW
         dr.addC(cmdSetColor, taskCardColor)
-        me GuiCoords:RA{posX, posY, W2, H2}
+        me GuiCoords:RA{PR.posX, PR.posY, W2, PR.posH}
         dr.addRAA(cmdRoundRect, RA, 13)
         dr.add1(cmdFill)
 
         dr.addC(cmdSetColor, cardTextColr)
-        dr.addTF(cmdRenderText, posX+5, posY+(H2/2)+(styler.smallFont.height/2-2), text, styler.smallFont)
+        dr.addTF(cmdRenderText, PR.posX+5, PR.posY+(PR.posH/2)+(styler.smallFont.height/2-2), text, styler.smallFont)
 
         our ProactEvent:: popUptoEditCard;
         popUptoEditCard.setTrigger(tPrimaryClick, RA); popUptoEditCard.setGUI_popupEvent(slipView.boardInfons[slipView.crntBoardIdx].mySymbol()+"/editCardPopped", PR.dataPov)
@@ -227,35 +211,24 @@ struct Presenter{
         registerEvent(popUptoEditCard)
     }
 
-    void: drawItem(our dashDrawing: dr, our POV:data, me GUI_Scalar:posX, me GUI_Scalar:posY, their GUI_Scalar: width, their GUI_Scalar:height, me string: viewModeHint) <- {
-        me ParamRec: PR
-        PR.sourcePov     <- data
-        PR.propertiesPov <- fetchField(data, "properties")
-        PR.titlePov      <- fetchField(PR.propertiesPov, "title")
-        PR.title         <- fetchStringField(PR.titlePov)
-        PR.dataPov       <- fetchField(data, "data")
-        PR.screenPos     <- NULL
-        PR.xPov          <- NULL
-        PR.yPov          <- NULL
-        PR.screenPos <- fetchField(PR.propertiesPov, "screenpos")
-        if(PR.screenPos!=NULL){
-            PR.xPov <- fetchField(PR.screenPos, "xpos")
-            PR.yPov <- fetchField(PR.screenPos, "ypos")
-            posX<-PR.xPov.pItem.fetchDouble()
-            posY<-PR.yPov.pItem.fetchDouble()
-        }
+    void: setNaturalDimensions(their ParamRec: PR) <- {
+        me string: viewStyle <- PR.viewStyle
+        if(viewStyle=="genericString")     {PR.posH <- styler.smallFont.height+ Yborder*2}
+        else if(viewStyle=="genericNumber"){PR.posH <- styler.smallFont.height+ Yborder*2}
+        else if(viewStyle=="task")         {PR.posH <- styler.smallFont.height+ Yborder*2; PR.posW <- vertListWidth-5*2}
+    }
+
+    void: drawItem(our dashDrawing: dr, their ParamRec: PR) <- {
+
         me string: viewStyle <- chooseViewStyle(PR)
-        me GUI_Scalar:yCur   <- posY
-    if(viewStyle=="note" or viewStyle=="role"){viewStyle<-"genericString"}
-    else if(viewStyle=="subtasks" or viewStyle=="members"){viewStyle<-"genericList"}
         log("----:"+viewStyle)
         if(viewStyle=="boardelement"){}
-        else if(viewStyle=="kanban"){drawKanban(dr, data, posX, yCur, width, height, PR)}
-        else if(viewStyle=="tasklist"){drawListWidget(dr, data, posX, yCur, width, height, PR)}
-        else if(viewStyle=="task"){drawTaskCard(dr, data, posX, yCur, width, height, PR)}
-        else if(viewStyle=="genericList"){draw_Y_stack_XYWh(dr, data, posX, yCur, width, height, PR)}
-        else if(viewStyle=="genericString"){drawStringWidget(dr, data, posX, yCur, width, height, PR)}
-        else if(viewStyle=="genericNumber"){drawNumberWidget(dr, data, posX, yCur, width, height, PR)}
+        else if(viewStyle=="kanban"){drawKanban(dr, PR)}
+        else if(viewStyle=="tasklist"){drawListWidget(dr, PR)}
+        else if(viewStyle=="task"){drawTaskCard(dr, PR)}
+        else if(viewStyle=="genericList"){draw_Y_stack_XYWh(dr, PR)}
+        else if(viewStyle=="genericString"){drawStringWidget(dr, PR)}
+        else if(viewStyle=="genericNumber"){drawNumberWidget(dr, PR)}
     }
 
     void: addLabeledButton(our dashDrawing: dr, me GuiCoords:myCoords, me string: btnLabel) <- {
@@ -382,11 +355,8 @@ struct Presenter{
 
         our POV: pov <- dataInf.pItem.value.items.front()
         while(pov){
-            me GUI_Scalar: xPos <- 15
-            me GUI_Scalar: yPos <- 75
-            me GUI_Scalar: returnWidth
-            me GUI_Scalar: returnHeight
-            drawItem(dr, pov, xPos, yPos, returnWidth, returnHeight, "")
+            me ParamRec: iPR; iPR.init(pov, 15, 75, 0, 0)
+            drawItem(dr, iPR)
             pov <- pov.next
         }
 
@@ -397,10 +367,11 @@ struct Presenter{
         me GuiCoords: RA{windowW/2-200, windowH/2-(300/2), 400, 400};
         cardPopup.addRA(cmdDrawRect, RA)
         cardPopup.add1(cmdFill)
-            me GUI_Scalar: popupHeight
-            me ParamRec: PR
+            me GUI_Scalar: popupHeight <- 400
+            me GUI_Scalar: border <- 8
+            me ParamRec: cardEditPR; cardEditPR.init(GDR.pov, windowW/2-200+border, windowH/2-(300/2)+border, 400-(border*2), popupHeight-(border*2))
             log(eCardPopupID+":"+GDR.pov.stringify())
-            draw_Y_stack_XYWh(cardPopup, GDR.pov, windowW/2-200, windowH/2-(300/2), 400, popupHeight, PR)
+            draw_Y_stack_XYWh(cardPopup, cardEditPR)
             slipView.addPopup(cardPopup)
 
             our ProactEvent:: closeCardEdit
