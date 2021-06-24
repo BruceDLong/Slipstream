@@ -72,6 +72,15 @@ struct GLOBAL{
         return(info.pItem.fetchString())
     }
 
+    void: drawACursor(our dashDrawing: dr, me GUI_Scalar: posX, me GUI_Scalar: posY, me GUI_Scalar: cursorHeight) <- {
+        posY <+-3 // adjust for descenders
+        dr.addC(cmdSetColor, styler.Black)
+        dr.add2(cmdSetLineWidth, 1)
+        dr.addXY(cmdMoveTo, posX, posY)
+        dr.addXY(cmdLineTo, posX, posY-cursorHeight)
+        dr.add1(cmdStroke)
+    }
+
 }
 
 struct GuiModelManager{
@@ -89,9 +98,11 @@ struct GuiModelManager{
         case eReqRedraw: {}
         case eGUI_SetXY: {}
         case eBlockEvents: {log("BLOCK_EVENT")}
-        case eGUI_setStr1:    {our GuiDataRec:: GDR; GDR.str1<- ev.text; guiData[ev.dataIdTag] <- GDR}
-        case eGUI_PopupModal: {our GuiDataRec:: GDR; GDR.int1<-1; GDR.pov<-ev.infonX;  guiData[ev.dataIdTag] <- GDR;  log("CLICKED:'"+ev.dataIdTag+"'  "+GDR.pov.stringify())}
-        case eGUI_setInt1:    {our GuiDataRec:: GDR; GDR.int1<- ev.int1; guiData[ev.dataIdTag] <- GDR; log("setInt1["+ev.dataIdTag+"]:"+toString(ev.int1))}
+        case eGUI_setStr1:       {our GuiDataRec:: GDR; GDR.str1<- ev.text; guiData[ev.dataIdTag] <- GDR}
+        case eGUI_PopupModal:    {our GuiDataRec:: GDR; GDR.int1<-1; GDR.pov<-ev.infonX;  guiData[ev.dataIdTag] <- GDR;  log("CLICKED:'"+ev.dataIdTag+"'  "+GDR.pov.stringify())}
+        case eGUI_setInt1:       {our GuiDataRec:: GDR; GDR.int1<- ev.int1; guiData[ev.dataIdTag] <- GDR; log("setInt1["+ev.dataIdTag+"]:"+toString(ev.int1))}
+        case eGUI_setActiveFlag: {proactiveGUI.presenter.grabFocus(ev.dataIdTag)}
+        case ePrimaryClick:      {our GuiDataRec: GDR<-guiData[ev.dataIdTag]; GDR.ctrl.primaryClick(ev.evX, ev.evY)}
         }
         slipView.requestRedraw()
     }
@@ -100,44 +111,93 @@ struct GuiModelManager{
 struct viewStyleTags:inherits=<mode[vsDefault, vsX_stack, vsY_stack, vsZ_stack, vsPlotGraph, vsDataView, vsString, vsNumber, vsDate]> {}
 
 struct TextEditBox: inherits=ReactiveControl{
-    void: setMetrics(their ParamRec: PR) <- {
+    void: setMetrics(our ParamRec: PR) <- {
         me string: text <- PR.sourcePov.pItem.value.str
         me deltaSize: DSize <- getTextSize(text, PR.font)
         PR.posW <- DSize.width + Yborder*2
         PR.posH <- DSize.height + 10*2 // 10 px on top and bottom
     }
-    void: draw(our dashDrawing: dr, their ParamRec: PR, their Presenter: presenter) <- {
+    void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
         dr.addC(cmdSetColor, styler.White)
         me string: text
+        me string: typeID
         if(PR.sourcePov.pItem.type!=NULL){
-            text <- PR.sourcePov.pItem.type.asGiven+": "
+            typeID <- PR.sourcePov.pItem.type.asGiven+": "
         }
-        text <+- PR.sourcePov.pItem.value.str
+        text <- typeID + PR.sourcePov.pItem.value.str
 
-        dr.addC(cmdSetColor, cdColor(200,200,200,200))
-        me GuiCoords:myCoords{PR.posX, PR.posY, PR.posW, PR.posH}
-        dr.addRA(cmdDrawRect, myCoords)
-        dr.add1(cmdFill)
+        me string: GDR_ID <- PR.sourcePov.mySymbol()+"/editBox"
+        our GuiDataRec: textBoxGDR <-  proactiveGUI.presenter.modelMgr.fetchGuiData(GDR_ID)
+        isActive <- 0
+        if(textBoxGDR!=NULL){isActive <- textBoxGDR.isActive}
+        else{Allocate(textBoxGDR); proactiveGUI.presenter.modelMgr.guiData[GDR_ID]<-textBoxGDR}
+        if(isActive==0){
+            dr.addC(cmdSetColor, cdColor(200,200,200,200))
+            me GuiCoords:myCoords{PR.posX, PR.posY, PR.posW, PR.posH}
+            dr.addRA(cmdDrawRect, myCoords)
+            dr.add1(cmdFill)
 
-        dr.addC(cmdSetColor, styler.Black)
-        dr.addTF(cmdRenderText, PR.posX+10, PR.posY+PR.posH/2+(PR.font.height/2)-4, text, PR.font)
-        dr.add1(cmdFill)
+            dr.addC(cmdSetColor, styler.Black)
+            dr.addTF(cmdRenderText, PR.posX+10, PR.posY+PR.posH/2+(PR.font.height/2)-4, text, PR.font)
+            dr.add1(cmdFill)
+
+            our ProactEvent:: clickEvent;
+            clickEvent.setTrigger(tPrimaryClick, myCoords); clickEvent.setGUI_SetActiveFlag(GDR_ID, 1)
+            proactiveGUI.presenter.registerEvent(clickEvent)
+        } else {
+            if(isActive==1){ // This is first time; init GDR
+                textBoxGDR.isActive <- 2 // Set 'not first time'
+                textBoxGDR.int2 <- 0 // cursor position
+                textBoxGDR.str1 <- typeID
+                textBoxGDR.str2 <- PR.sourcePov.pItem.value.str
+                textBoxGDR.ctrl <- self
+            }
+            dr.addC(cmdSetColor, cdColor(200,200,250,200))
+            me GuiCoords:myCoords{PR.posX, PR.posY, PR.posW, PR.posH}
+            dr.addRA(cmdDrawRect, myCoords)
+            dr.add1(cmdFill)
+
+            me GUI_Scalar: xPos <- PR.posX+10
+            me GUI_Scalar: yPos <- PR.posY+PR.posH/2+(PR.font.height/2)-4
+
+            dr.addC(cmdSetColor, styler.Black)
+            dr.addTF(cmdRenderText, xPos, yPos, text, PR.font)
+            dr.add1(cmdFill)
+
+            drawACursor(dr, xPos, yPos, PR.font.height)
+
+            our ProactEvent:: clickEvent;
+            clickEvent.setTrigger(tPrimaryClick, myCoords); clickEvent.setGUI_CallFunc(ePrimaryClick, GDR_ID)
+            proactiveGUI.presenter.registerEvent(clickEvent)
+        }
     }
-    me void: fetchState() <- {}
+    void: fetchState() <- {}
     void: registerStaticEvent() <- {}
     void: registerActiveEvent() <- {}
     me bool: expandsX()<-{return(true)}
-    me bool: expandsY()<-{return(true)}
+    me bool: expandsY()<-{return(false)}
+
+     me bool: mouseMoved(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {
+         return(true)
+     }
+     me bool: primaryClick(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {
+         print("TEXTEDIT_BOX_CLICK!\n")
+         return(true)
+     }
+     me bool: keyTyped(their GUI_KeyboardEvent: event) <- {
+         print("KEY_PRESS:",event.keyval,"\n")
+         return(true)
+        }
 }
 
 struct StringView: inherits=ReactiveControl{
-    void: setMetrics(their ParamRec: PR) <- {
+    void: setMetrics(our ParamRec: PR) <- {
         me string: text <- PR.sourcePov.pItem.value.str
         me deltaSize: DSize <- getTextSize(text, PR.font)
         PR.posW <- DSize.width + Yborder*2
         PR.posH <- DSize.height + Xborder*2
     }
-    void: draw(our dashDrawing: dr, their ParamRec: PR, their Presenter: presenter) <- {
+    void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
         dr.addC(cmdSetColor, styler.White)
         me string: text
         if(PR.sourcePov.pItem.type!=NULL){
@@ -152,13 +212,13 @@ struct StringView: inherits=ReactiveControl{
 }
 
 struct NumberView: inherits=ReactiveControl{
-    void: setMetrics(their ParamRec: PR) <- {
+    void: setMetrics(our ParamRec: PR) <- {
         me string: text <- toString(PR.sourcePov.pItem.value.num)
         me deltaSize: DSize <- getTextSize(text, PR.font)
         PR.posW <- DSize.width + Yborder*2
         PR.posH <- DSize.height + Xborder*2
     }
-    void: draw(our dashDrawing: dr, their ParamRec: PR, their Presenter: presenter) <- {
+    void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
         dr.addC(cmdSetColor, styler.White)
         me string: text
         if(PR.sourcePov.pItem.type!=NULL){
@@ -173,11 +233,11 @@ struct NumberView: inherits=ReactiveControl{
 }
 
 struct TaskCardView: inherits=ReactiveControl{
-    void: setMetrics(their ParamRec: PR) <- {
+    void: setMetrics(our ParamRec: PR) <- {
         PR.posW <- vertListWidth-5*2
         PR.posH <- PR.font.height+ Yborder*2
     }
-    void: draw(our dashDrawing: dr, their ParamRec: PR, their Presenter: presenter) <- {
+    void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
         me string: text<-PR.title
         if(PR.titlePov.pItem.value.format==fUnknown){text<-"<Empty>"}
         me GUI_Scalar:W2 <- PR.posW
@@ -191,10 +251,9 @@ struct TaskCardView: inherits=ReactiveControl{
 
         our ProactEvent:: popUptoEditCard;
         popUptoEditCard.setTrigger(tPrimaryClick, RA); popUptoEditCard.setGUI_popupEvent(slipView.boardInfons[slipView.crntBoardIdx].mySymbol()+"/editCardPopped", PR.dataPov)
-        //log(" drawTaskCard2:'"+slipView.boardInfons[slipView.crntBoardIdx].mySymbol()+"/editCardPopped"+"' for:"+PR.dataPov.mySymbol())
-        presenter.registerEvent(popUptoEditCard)
+        proactiveGUI.presenter.registerEvent(popUptoEditCard)
     }
-    me bool: expandsX()<-{return(true)}
+    me bool: expandsX()<-{return(false)}
     me bool: expandsY()<-{return(false)}
 }
 
@@ -212,11 +271,11 @@ struct WidgetMngr{
 
 struct Presenter{
 
-    void: drawKanban(our dashDrawing: dr, their ParamRec: PR) <- {
+    void: drawKanban(our dashDrawing: dr, our ParamRec: PR) <- {
         // Draw Columns
         me GUI_Scalar: itemHeight
         me GUI_Scalar: itemWidth
-        me ParamRec: listPR; listPR.init(PR.dataPov, PR.posX, PR.posY+headerHeight, 0, 0)
+        our ParamRec:: listPR; listPR.init(PR.dataPov, PR.posX, PR.posY+headerHeight, 0, 0)
         listPR.viewStyleTagArg <- "headeredVList"
         draw_X_stack_XYwh(dr, listPR)
 
@@ -244,7 +303,7 @@ struct Presenter{
         dr.addTF(cmdRenderTextCentered, PR.posX+listPR.posW/2, PR.posY+(headerHeight/2)+(styler.smallFont.height/2-3), PR.title, styler.smallFont)
     }
 
-    void: drawListWidget(our dashDrawing: dr, their ParamRec: PR) <- {
+    void: drawListWidget(our dashDrawing: dr, our ParamRec: PR) <- {
         me GUI_Scalar:yCur <- PR.posY
         dr.addC(cmdSetColor, surfaceBkgnd)
         me GuiCoords:RA{PR.posX, yCur, vertListWidth, 0}
@@ -265,7 +324,7 @@ struct Presenter{
         }
         // Draw the list body
         yCur <+- VListHeaderHeight
-        me ParamRec: listPR; listPR.init(PR.dataPov, PR.posX, yCur, vertListWidth, 0)
+        our ParamRec:: listPR; listPR.init(PR.dataPov, PR.posX, yCur, vertListWidth, 0)
         listPR.viewStyleTagArg <- "cardView"
         draw_Y_stack_XYWh(dr, listPR)
         yCur <+- listPR.posH
@@ -292,40 +351,22 @@ struct Presenter{
         boxDR.h <- PR.posH
     }
 
-    void: drawTaskCard(our dashDrawing: dr, their ParamRec: PR) <- {
-        me string: text<-PR.title
-        if(PR.titlePov.pItem.value.format==fUnknown){text<-"<Empty>"}
-        me GUI_Scalar:W2 <- PR.posW
-        dr.addC(cmdSetColor, taskCardColor)
-        me GuiCoords:RA{PR.posX, PR.posY, W2, PR.posH}
-        dr.addRAA(cmdRoundRect, RA, 13)
-        dr.add1(cmdFill)
-
-        dr.addC(cmdSetColor, cardTextColr)
-        dr.addTF(cmdRenderText, PR.posX+5, PR.posY+(PR.posH/2)+(styler.smallFont.height/2-2), text, styler.smallFont)
-
-        our ProactEvent:: popUptoEditCard;
-        popUptoEditCard.setTrigger(tPrimaryClick, RA); popUptoEditCard.setGUI_popupEvent(slipView.boardInfons[slipView.crntBoardIdx].mySymbol()+"/editCardPopped", PR.dataPov)
-        log(" drawTaskCard:'"+slipView.boardInfons[slipView.crntBoardIdx].mySymbol()+"/editCardPopped"+"' for:"+PR.dataPov.mySymbol())
-        registerEvent(popUptoEditCard)
-    }
-
-    void: setNaturalDimensions(their ParamRec: PR) <- {
+    void: setNaturalDimensions(our ParamRec: PR) <- {
         if(PR.viewStyleCtrl!=NULL){
             PR.viewStyleCtrl.setMetrics(PR)
         }
     }
 
-    void: drawItem(our dashDrawing: dr, their ParamRec: PR) <- {
+    void: drawItem(our dashDrawing: dr, our ParamRec: PR) <- {
         me string: viewStyleTag <- PR.viewStyleTag
         //print("viewStyleTag:"+viewStyleTag+"\n")
         if(viewStyleTag=="boardelement"){}
         else if(viewStyleTag=="kanban"){drawKanban(dr, PR)}
         else if(viewStyleTag=="tasklist"){drawListWidget(dr, PR)}
-        else if(viewStyleTag=="task"){PR.viewStyleCtrl.draw(dr, PR, self)}
+        else if(viewStyleTag=="task"){PR.viewStyleCtrl.draw(dr, PR)}
         else if(viewStyleTag=="genericlist"){draw_Y_stack_XYWh(dr, PR)}
-        else if(viewStyleTag=="genericstring" or viewStyleTag=="genericstring_edit"){PR.viewStyleCtrl.draw(dr, PR, self)}
-        else if(viewStyleTag=="genericnumber"){PR.viewStyleCtrl.draw(dr, PR, self)}
+        else if(viewStyleTag=="genericstring" or viewStyleTag=="genericstring_edit"){PR.viewStyleCtrl.draw(dr, PR)}
+        else if(viewStyleTag=="genericnumber"){PR.viewStyleCtrl.draw(dr, PR)}
     }
 
     void: addLabeledButton(our dashDrawing: dr, me GuiCoords:myCoords, me string: btnLabel) <- {
@@ -452,7 +493,7 @@ struct Presenter{
 
         our POV: pov <- dataInf.pItem.value.items.front()
         while(pov){
-            me ParamRec: iPR; iPR.init(pov, 15, 75, 0, 0)
+            our ParamRec:: iPR; iPR.init(pov, 15, 75, 0, 0)
             chooseviewStyleTag(iPR)
             drawItem(dr, iPR)
             pov <- pov.next
@@ -467,15 +508,15 @@ struct Presenter{
         cardPopup.add1(cmdFill)
             me GUI_Scalar: popupHeight <- 400
             me GUI_Scalar: border <- 8
-            me ParamRec: cardEditPR; cardEditPR.init(GDR.pov, windowW/2-200+border, windowH/2-(300/2)+border, 400-(border*2), popupHeight-(border*2))
+            our ParamRec:: cardEditPR; cardEditPR.init(GDR.pov, windowW/2-200+border, windowH/2-(300/2)+border, 400-(border*2), popupHeight-(border*2))
             cardEditPR.viewStyleTagArg <- "_edit"
             log(eCardPopupID+":"+GDR.pov.stringify())
             draw_Y_stack_XYWh(cardPopup, cardEditPR)
             slipView.addPopup(cardPopup)
 
             our ProactEvent:: closeCardEdit
-            me GuiCoords:null_RA{-1,0,0,0}
-            closeCardEdit.setTrigger(tPrimaryClick, null_RA) // Any click closes the menu
+           // me GuiCoords:null_RA{-1,0,0,0}
+            closeCardEdit.setTrigger(tPrimaryClick, RA) // Any click closes the menu
             closeCardEdit.setGUI_Store_Int1(eCardPopupID, 0)
             registerBroadcastEvent(closeCardEdit)
         }
