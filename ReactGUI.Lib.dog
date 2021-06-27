@@ -16,7 +16,7 @@ struct EventTrigger:inherits=<mode[tPrimaryClick, tSecondaryClick, tPrimaryUp, t
                                   ]> {}
 
 struct EventType:inherits=<mode[eNullEvent, eNormalize, eAddInfon, eDeleteInfon, eEditString, eEditInt, eEditByType,
-                                eMoveInfonInList, eMoveInfonToList, eGUI_PopupModal,
+                                eMoveInfonInList, eMoveInfonToList, eGUI_PopupModal, eClosePopup,
                                 eGUI_SetXY, eGUI_SetColor, eGUI_SetDragMode, eGUI_SetTimer, eGUI_setStr1, eGUI_setInt1,
                                 eGUI_SetViewMode, eReqRedraw, eBlockEvents, eGUI_setActiveFlag,
                                 eMouseMoved, ePrimaryClick, eSecondaryClick, eKeyTyped
@@ -50,6 +50,7 @@ struct ProactEvent{
     me GUI_Scalar: Y
     me GUI_Scalar: W
     me GUI_Scalar: H
+
     me EventType: eventType
     me string: dataIdTag
     me string: text
@@ -79,6 +80,7 @@ struct ProactEvent{
     void: setGUI_Event1(me EventType: evntType)<-{eventType<-evntType; done <- false}
     void: setGUI_Store_Str1(me string: dataID, me string: strVal)<-{eventType<-eGUI_setStr1; dataIdTag<-dataID; text<-strVal; done <- false}
     void: setGUI_Store_Int1(me string: dataID, me int64: intVal)<-{eventType<-eGUI_setInt1; dataIdTag<-dataID; int1<-intVal; done <- false}
+    void: setGUI_ClosePopup(me string: dataID)<-{eventType<-eClosePopup; dataIdTag<-dataID; done <- false}
     void: setGUI_SetActiveFlag(me string: dataID, me bool: active)<-{eventType<-eGUI_setActiveFlag; dataIdTag<-dataID; int1<-active; done <- false}
     void: setGUI_popupEvent(me string: dataID, our POV:POVOfInfonToShow)<-{eventType<-eGUI_PopupModal; dataIdTag<-dataID; infonX<-POVOfInfonToShow; done <- false}
     void: setGUI_Color(me string: colorSlotID, their cdColor: newColor) <- {
@@ -141,12 +143,10 @@ struct ReactiveControl{
     me bool: expandsY()<-{}
     void: setMetrics(our ParamRec: PR) <- {}
     void: draw(our dashDrawing: dr, our ParamRec: PR) <- {}
-    void: fetchState() <- {}
-    void: registerStaticEvent() <- {}
-    void: registerActiveEvent() <- {}
+
     me bool: mouseMoved(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {}
     me bool: primaryClick(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {}
-    me bool: keyTyped(their GUI_KeyboardEvent: event) <- {}
+    me bool: keyTyped(their GUI_KeyboardEvent: event, our GuiDataRec: GDR) <- {}
 }
 
 struct WidgetMngr{
@@ -197,6 +197,13 @@ struct Presenter{
             crntFocusIDStr <- widgetID
             crntGDR <- new_GDR
             log("ACTIVATING:"+widgetID)
+        }
+    }
+    void: clearFocus() <- {
+        if(crntGDR!=NULL){
+            crntGDR.isActive <- 0
+            // save the data
+            crntGDR <- NULL
         }
     }
     void: reset() <- {eventRegistry.clear(); broadcastEventRegistry.clear()}
@@ -637,7 +644,7 @@ struct ProactiveGUIWidget: inherits=DashboardWidget{
         me bool: retval <- false
         our GuiDataRec: GDR <- proactiveGUI.presenter.crntGDR
         if(GDR!=NULL and GDR.ctrl!=NULL){
-            retval <- GDR.ctrl.keyTyped(event)
+            retval <- GDR.ctrl.keyTyped(event, GDR)
         }
         return(retval)
     }

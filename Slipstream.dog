@@ -101,6 +101,7 @@ struct GuiModelManager{
         case eGUI_setStr1:       {our GuiDataRec:: GDR; GDR.str1<- ev.text; guiData[ev.dataIdTag] <- GDR}
         case eGUI_PopupModal:    {our GuiDataRec:: GDR; GDR.int1<-1; GDR.pov<-ev.infonX;  guiData[ev.dataIdTag] <- GDR;  log("CLICKED:'"+ev.dataIdTag+"'  "+GDR.pov.stringify())}
         case eGUI_setInt1:       {our GuiDataRec:: GDR; GDR.int1<- ev.int1; guiData[ev.dataIdTag] <- GDR; log("setInt1["+ev.dataIdTag+"]:"+toString(ev.int1))}
+        case eClosePopup:        {proactiveGUI.presenter.clearFocus(); our GuiDataRec: GDR<-guiData[ev.dataIdTag]; GDR.int1<-0}
         case eGUI_setActiveFlag: {proactiveGUI.presenter.grabFocus(ev.dataIdTag)}
         case ePrimaryClick:      {our GuiDataRec: GDR<-guiData[ev.dataIdTag]; GDR.ctrl.primaryClick(ev.evX, ev.evY)}
         }
@@ -161,7 +162,7 @@ struct TextEditBox: inherits=ReactiveControl{
             me GUI_Scalar: yPos <- PR.posY+PR.posH/2+(PR.font.height/2)-4
 
             dr.addC(cmdSetColor, styler.Black)
-            dr.addTF(cmdRenderText, xPos, yPos, text, PR.font)
+            dr.addTF(cmdRenderText, xPos, yPos, textBoxGDR.str2, PR.font)
             dr.add1(cmdFill)
 
             drawACursor(dr, xPos, yPos, PR.font.height)
@@ -171,9 +172,13 @@ struct TextEditBox: inherits=ReactiveControl{
             proactiveGUI.presenter.registerEvent(clickEvent)
         }
     }
-    void: fetchState() <- {}
-    void: registerStaticEvent() <- {}
-    void: registerActiveEvent() <- {}
+    void: saveBack() <- {
+        if(isActive){
+            //PR.sourcePov.pItem.value.str <- GDR.str2
+            isActive<-false
+
+        }
+    }
     me bool: expandsX()<-{return(true)}
     me bool: expandsY()<-{return(false)}
 
@@ -184,10 +189,12 @@ struct TextEditBox: inherits=ReactiveControl{
          print("TEXTEDIT_BOX_CLICK!\n")
          return(true)
      }
-     me bool: keyTyped(their GUI_KeyboardEvent: event) <- {
-         print("KEY_PRESS:",event.keyval,"\n")
+     me bool: keyTyped(their GUI_KeyboardEvent: event, our GuiDataRec: GDR) <- {
+         GDR.str2 <+- event.keyval
+         slipView.requestRedraw()
+         print("KEY_PRESS:",event.keyval, " ==>", GDR.str2, "\n")
          return(true)
-        }
+    }
 }
 
 struct StringView: inherits=ReactiveControl{
@@ -517,7 +524,7 @@ struct Presenter{
             our ProactEvent:: closeCardEdit
            // me GuiCoords:null_RA{-1,0,0,0}
             closeCardEdit.setTrigger(tPrimaryClick, RA) // Any click closes the menu
-            closeCardEdit.setGUI_Store_Int1(eCardPopupID, 0)
+            closeCardEdit.setGUI_ClosePopup(eCardPopupID)
             registerBroadcastEvent(closeCardEdit)
         }
 
