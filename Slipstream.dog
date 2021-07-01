@@ -111,132 +111,77 @@ struct GuiModelManager{
 
 struct viewStyleTags:inherits=<mode[vsDefault, vsX_stack, vsY_stack, vsZ_stack, vsPlotGraph, vsDataView, vsString, vsNumber, vsDate]> {}
 
-struct TextEditBox: inherits=ReactiveControl{
-    void: setMetrics(our ParamRec: PR) <- {
-        me string: text <- PR.sourcePov.pItem.value.str
-        me deltaSize: DSize <- getTextSize(text, PR.font)
-        PR.posW <- DSize.width + Yborder*2
-        PR.posH <- DSize.height + 10*2 // 10 px on top and bottom
+#include reactiveWidgets.dog
+
+
+struct InfonicStructView: inherits=ReactiveControl{
+    void: drawFromID(me string: guiItemID, our POV: dataInf) <- {
+        me GUI_Scalar: popupHeight <- 400
+        me GUI_Scalar: popupWidth  <- 400
+        me GUI_Scalar: border <- 8
+        our dashDrawing:: cardPopup
+        // Draw background rectangle
+        cardPopup.addC(cmdSetColor, surfaceBkgnd)
+        me GuiCoords: RA{windowW/2-(popupWidth/2), windowH/2-(popupHeight/2), popupWidth, popupHeight};
+        cardPopup.addRA(cmdDrawRect, RA)
+        cardPopup.add1(cmdFill)
+        // Draw the items
+        our ParamRec:: cardEditPR; cardEditPR.init(dataInf, RA.X+border, RA.Y+border, popupWidth-(border*2), popupHeight-(border*2))
+        cardEditPR.viewStyleTagArg <- "_edit"
+        log(guiItemID+":"+dataInf.stringify())
+        proactiveGUI.presenter.draw_Y_stack_XYWh(cardPopup, cardEditPR)
+        slipView.addPopup(cardPopup)
+
+        our ProactEvent:: closeCardEdit
+        closeCardEdit.setTrigger(tPrimaryClick, RA) // Any click closes the menu
+        closeCardEdit.setGUI_ClosePopup(guiItemID)
+        proactiveGUI.presenter.registerBroadcastEvent(closeCardEdit)
     }
-    void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
-        dr.addC(cmdSetColor, styler.White)
-        me string: text
-        me string: typeID
-        if(PR.sourcePov.pItem.type!=NULL){
-            typeID <- PR.sourcePov.pItem.type.asGiven+": "
-        }
-        text <- typeID + PR.sourcePov.pItem.value.str
+    me bool: expandsX()<-{return(false)}
+    me bool: expandsY()<-{return(false)}
+}
 
-        me string: GDR_ID <- PR.sourcePov.mySymbol()+"/editBox"
-        our GuiDataRec: textBoxGDR <-  proactiveGUI.presenter.modelMgr.fetchGuiData(GDR_ID)
-        isActive <- 0
-        if(textBoxGDR!=NULL){isActive <- textBoxGDR.isActive}
-        else{Allocate(textBoxGDR); proactiveGUI.presenter.modelMgr.guiData[GDR_ID]<-textBoxGDR}
-        if(isActive==0){
-            dr.addC(cmdSetColor, cdColor(200,200,200,200))
-            me GuiCoords:myCoords{PR.posX, PR.posY, PR.posW, PR.posH}
-            dr.addRA(cmdDrawRect, myCoords)
-            dr.add1(cmdFill)
+struct InfonicWidgetView: inherits=ReactiveControl{
+    void: drawFromID(me string: guiItemID) <- {
+        our GuiDataRec: GDR <- proactiveGUI.presenter.modelMgr.fetchGuiData(guiItemID)
+        our POV: propertiesInf <- fetchField(GDR.pov, "properties")
+        our POV: titleInf      <- fetchField(propertiesInf, "title")
+        our POV: dataInf       <- fetchField(GDR.pov, "data")
+        me GUI_Scalar: popupHeight <- 400
+        me GUI_Scalar: popupWidth  <- 400
+        me GUI_Scalar: border <- 8
+        me GUI_Scalar: yCur   <- border
+        our dashDrawing:: cardPopup
+        // Draw background rectangle
+        cardPopup.addC(cmdSetColor, surfaceBkgnd)
+        me GuiCoords: RA{windowW/2-(popupWidth/2), windowH/2-(popupHeight/2), popupWidth, popupHeight};
+        cardPopup.addRA(cmdDrawRect, RA)
+        cardPopup.add1(cmdFill)
+        // Draw the title editor
 
-            dr.addC(cmdSetColor, styler.Black)
-            dr.addTF(cmdRenderText, PR.posX+10, PR.posY+PR.posH/2+(PR.font.height/2)-4, text, PR.font)
-            dr.add1(cmdFill)
-
-            our ProactEvent:: clickEvent;
-            clickEvent.setTrigger(tPrimaryClick, myCoords); clickEvent.setGUI_SetActiveFlag(GDR_ID, 1)
-            proactiveGUI.presenter.registerEvent(clickEvent)
-        } else {
-            if(isActive==1){ // This is first time; init GDR
-                textBoxGDR.isActive <- 2 // Set 'not first time'
-                textBoxGDR.int2 <- 0 // cursor position
-                textBoxGDR.str1 <- typeID
-                textBoxGDR.str2 <- PR.sourcePov.pItem.value.str
-                textBoxGDR.ctrl <- self
+            our ParamRec:: innerPR; innerPR.init(titleInf, RA.X+border, RA.Y+yCur, RA.W-(border*2), 0)
+            innerPR.viewStyleTagArg <- "_edit"
+            innerPR.font <- styler.defaultFont
+            proactiveGUI.presenter.chooseviewStyleTag(innerPR)
+            proactiveGUI.presenter.setNaturalDimensions(innerPR)
+            if(innerPR.viewStyleCtrl!=NULL and innerPR.viewStyleCtrl.expandsX()){
+                innerPR.posW <- RA.W-border*2
             }
-            dr.addC(cmdSetColor, cdColor(200,200,250,200))
-            me GuiCoords:myCoords{PR.posX, PR.posY, PR.posW, PR.posH}
-            dr.addRA(cmdDrawRect, myCoords)
-            dr.add1(cmdFill)
+            yCur <+- innerPR.posH
+            proactiveGUI.presenter.drawItem(cardPopup, innerPR)
 
-            me GUI_Scalar: xPos <- PR.posX+10
-            me GUI_Scalar: yPos <- PR.posY+PR.posH/2+(PR.font.height/2)-4
+        // Draw the data items
+        our ParamRec:: cardEditPR; cardEditPR.init(dataInf, RA.X+border, RA.Y+yCur, popupWidth-(border*2), popupHeight-yCur-(border*2))
+        cardEditPR.viewStyleTagArg <- "_edit"
+        log(guiItemID+":"+dataInf.stringify())
+        proactiveGUI.presenter.draw_Y_stack_XYWh(cardPopup, cardEditPR)
+        slipView.addPopup(cardPopup)
 
-            dr.addC(cmdSetColor, styler.Black)
-            dr.addTF(cmdRenderText, xPos, yPos, textBoxGDR.str2, PR.font)
-            dr.add1(cmdFill)
-
-            drawACursor(dr, xPos, yPos, PR.font.height)
-
-            our ProactEvent:: clickEvent;
-            clickEvent.setTrigger(tPrimaryClick, myCoords); clickEvent.setGUI_CallFunc(ePrimaryClick, GDR_ID)
-            proactiveGUI.presenter.registerEvent(clickEvent)
-        }
+        our ProactEvent:: closeCardEdit
+        closeCardEdit.setTrigger(tPrimaryClick, RA) // Any click closes the menu
+        closeCardEdit.setGUI_ClosePopup(guiItemID)
+        proactiveGUI.presenter.registerBroadcastEvent(closeCardEdit)
     }
-    void: saveBack() <- {
-        if(isActive){
-            //PR.sourcePov.pItem.value.str <- GDR.str2
-            isActive<-false
-
-        }
-    }
-    me bool: expandsX()<-{return(true)}
-    me bool: expandsY()<-{return(false)}
-
-     me bool: mouseMoved(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {
-         return(true)
-     }
-     me bool: primaryClick(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {
-         print("TEXTEDIT_BOX_CLICK!\n")
-         return(true)
-     }
-     me bool: keyTyped(their GUI_KeyboardEvent: event, our GuiDataRec: GDR) <- {
-         GDR.str2 <+- event.keyval
-         slipView.requestRedraw()
-         print("KEY_PRESS:",event.keyval, " ==>", GDR.str2, "\n")
-         return(true)
-    }
-}
-
-struct StringView: inherits=ReactiveControl{
-    void: setMetrics(our ParamRec: PR) <- {
-        me string: text <- PR.sourcePov.pItem.value.str
-        me deltaSize: DSize <- getTextSize(text, PR.font)
-        PR.posW <- DSize.width + Yborder*2
-        PR.posH <- DSize.height + Xborder*2
-    }
-    void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
-        dr.addC(cmdSetColor, styler.White)
-        me string: text
-        if(PR.sourcePov.pItem.type!=NULL){
-            text <- PR.sourcePov.pItem.type.asGiven+": "
-        }
-        text <+- PR.sourcePov.pItem.value.str
-        dr.addTF(cmdRenderText, PR.posX, PR.posY, text, PR.font)
-        dr.add1(cmdFill)
-    }
-    me bool: expandsX()<-{return(false)}
-    me bool: expandsY()<-{return(false)}
-}
-
-struct NumberView: inherits=ReactiveControl{
-    void: setMetrics(our ParamRec: PR) <- {
-        me string: text <- toString(PR.sourcePov.pItem.value.num)
-        me deltaSize: DSize <- getTextSize(text, PR.font)
-        PR.posW <- DSize.width + Yborder*2
-        PR.posH <- DSize.height + Xborder*2
-    }
-    void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
-        dr.addC(cmdSetColor, styler.White)
-        me string: text
-        if(PR.sourcePov.pItem.type!=NULL){
-            text <- PR.sourcePov.pItem.type.asGiven+": "
-        }
-        text <+- toString(PR.sourcePov.pItem.value.num)
-        dr.addTF(cmdRenderText, PR.posX, PR.posY, text, PR.font)
-        dr.add1(cmdFill)
-    }
-    me bool: expandsX()<-{return(false)}
-    me bool: expandsY()<-{return(false)}
 }
 
 struct TaskCardView: inherits=ReactiveControl{
@@ -257,7 +202,7 @@ struct TaskCardView: inherits=ReactiveControl{
         dr.addTF(cmdRenderText, PR.posX+5, PR.posY+(PR.posH/2)+(styler.smallFont.height/2-2), text, styler.smallFont)
 
         our ProactEvent:: popUptoEditCard;
-        popUptoEditCard.setTrigger(tPrimaryClick, RA); popUptoEditCard.setGUI_popupEvent(slipView.boardInfons[slipView.crntBoardIdx].mySymbol()+"/editCardPopped", PR.dataPov)
+        popUptoEditCard.setTrigger(tPrimaryClick, RA); popUptoEditCard.setGUI_popupEvent(slipView.boardInfons[slipView.crntBoardIdx].mySymbol()+"/editCardPopped", PR.sourcePov)
         proactiveGUI.presenter.registerEvent(popUptoEditCard)
     }
     me bool: expandsX()<-{return(false)}
@@ -268,11 +213,18 @@ struct TaskCardView: inherits=ReactiveControl{
 struct WidgetMngr{
     our TextEditBox:  staticTextEditBox
     our TaskCardView: staticTaskCardView
+    our InfonicStructView: staticInfonicStructView
+    our InfonicWidgetView: staticInfonicWidgetView
     void: init2() <- {
         Allocate(staticTextEditBox)
         Allocate(staticTaskCardView)
+        Allocate(staticInfonicStructView)
+        Allocate(staticInfonicWidgetView)
         setviewStyleTagCtrl("task", staticTaskCardView)
         setviewStyleTagCtrl("genericString_edit", staticTextEditBox)
+        setviewStyleTagCtrl("genericInfonicStruct_edit", staticInfonicStructView)
+        setviewStyleTagCtrl("genericInfonicWidget_edit", staticInfonicWidgetView)
+        editFont <- styler.defaultFont
     }
 }
 
@@ -470,7 +422,6 @@ struct Presenter{
         me bool: modalPoped <- modelMgr.getBool(modalPopupID, false)
         me bool: boardListPopped <- modelMgr.getBool(boardPopupID, false)
         me bool: editCardPopped  <- modelMgr.getBool(eCardPopupID, false)
-    if(editCardPopped){log("editCardPopped!")}
 
         if(background!=""){dr.addT(cmdDrawBkgndImage, background)}
         dr.addC(cmdSetColor, surfaceBkgnd)
@@ -507,25 +458,7 @@ struct Presenter{
         }
 
         if(editCardPopped){
-            our dashDrawing:: cardPopup
-            our GuiDataRec: GDR <- modelMgr.fetchGuiData(eCardPopupID)
-        cardPopup.addC(cmdSetColor, surfaceBkgnd)
-        me GuiCoords: RA{windowW/2-200, windowH/2-(300/2), 400, 400};
-        cardPopup.addRA(cmdDrawRect, RA)
-        cardPopup.add1(cmdFill)
-            me GUI_Scalar: popupHeight <- 400
-            me GUI_Scalar: border <- 8
-            our ParamRec:: cardEditPR; cardEditPR.init(GDR.pov, windowW/2-200+border, windowH/2-(300/2)+border, 400-(border*2), popupHeight-(border*2))
-            cardEditPR.viewStyleTagArg <- "_edit"
-            log(eCardPopupID+":"+GDR.pov.stringify())
-            draw_Y_stack_XYWh(cardPopup, cardEditPR)
-            slipView.addPopup(cardPopup)
-
-            our ProactEvent:: closeCardEdit
-           // me GuiCoords:null_RA{-1,0,0,0}
-            closeCardEdit.setTrigger(tPrimaryClick, RA) // Any click closes the menu
-            closeCardEdit.setGUI_ClosePopup(eCardPopupID)
-            registerBroadcastEvent(closeCardEdit)
+            widgetMngr.staticInfonicWidgetView.drawFromID(eCardPopupID)
         }
 
         if(boardListPopped){

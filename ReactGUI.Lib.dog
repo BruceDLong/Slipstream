@@ -40,7 +40,7 @@ struct GuiDataRec{
     me GuiCoords:coordinates
     me cdColor: color
     our POV: pov
-    their ReactiveControl: ctrl
+    our ReactiveControl: ctrl
 }
 
 struct ProactEvent{
@@ -143,10 +143,53 @@ struct ReactiveControl{
     me bool: expandsY()<-{}
     void: setMetrics(our ParamRec: PR) <- {}
     void: draw(our dashDrawing: dr, our ParamRec: PR) <- {}
+    void: saveBack() <- {}
 
     me bool: mouseMoved(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {}
     me bool: primaryClick(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {}
-    me bool: keyTyped(their GUI_KeyboardEvent: event, our GuiDataRec: GDR) <- {}
+    me bool: keyTyped(their GUI_KeyboardEvent: event) <- {}
+}
+
+struct StringView: inherits=ReactiveControl{
+    void: setMetrics(our ParamRec: PR) <- {
+        me string: text <- PR.sourcePov.pItem.value.str
+        me deltaSize: DSize <- getTextSize(text, PR.font)
+        PR.posW <- DSize.width + Yborder*2
+        PR.posH <- DSize.height + Xborder*2
+    }
+    void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
+        dr.addC(cmdSetColor, styler.White)
+        me string: text
+        if(PR.sourcePov.pItem.type!=NULL){
+            text <- PR.sourcePov.pItem.type.asGiven+": "
+        }
+        text <+- PR.sourcePov.pItem.value.str
+        dr.addTF(cmdRenderText, PR.posX, PR.posY, text, PR.font)
+        dr.add1(cmdFill)
+    }
+    me bool: expandsX()<-{return(false)}
+    me bool: expandsY()<-{return(false)}
+}
+
+struct NumberView: inherits=ReactiveControl{
+    void: setMetrics(our ParamRec: PR) <- {
+        me string: text <- toString(PR.sourcePov.pItem.value.num)
+        me deltaSize: DSize <- getTextSize(text, PR.font)
+        PR.posW <- DSize.width + Yborder*2
+        PR.posH <- DSize.height + Xborder*2
+    }
+    void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
+        dr.addC(cmdSetColor, styler.White)
+        me string: text
+        if(PR.sourcePov.pItem.type!=NULL){
+            text <- PR.sourcePov.pItem.type.asGiven+": "
+        }
+        text <+- toString(PR.sourcePov.pItem.value.num)
+        dr.addTF(cmdRenderText, PR.posX, PR.posY, text, PR.font)
+        dr.add1(cmdFill)
+    }
+    me bool: expandsX()<-{return(false)}
+    me bool: expandsY()<-{return(false)}
 }
 
 struct WidgetMngr{
@@ -201,8 +244,9 @@ struct Presenter{
     }
     void: clearFocus() <- {
         if(crntGDR!=NULL){
+            print("clearFocus()-B")
+            crntGDR.ctrl.saveBack()
             crntGDR.isActive <- 0
-            // save the data
             crntGDR <- NULL
         }
     }
@@ -251,7 +295,7 @@ struct Presenter{
                 case NUM:{retval<-"genericNumber"}
             }
         }
-    if(retval=="note" or retval=="role"){retval<-"genericString"}
+    if(retval=="note" or retval=="role" or retval=="title"){retval<-"genericString"}
     else if(retval=="subtasks" or retval=="members"){retval<-"genericList"}
 
     if(PR.viewStyleTagArg=="_edit"){retval<+-"_edit"}
@@ -644,7 +688,7 @@ struct ProactiveGUIWidget: inherits=DashboardWidget{
         me bool: retval <- false
         our GuiDataRec: GDR <- proactiveGUI.presenter.crntGDR
         if(GDR!=NULL and GDR.ctrl!=NULL){
-            retval <- GDR.ctrl.keyTyped(event, GDR)
+            retval <- GDR.ctrl.keyTyped(event)
         }
         return(retval)
     }

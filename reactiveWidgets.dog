@@ -1,0 +1,245 @@
+// Some Reactive Widgets
+
+struct GLOBAL{
+
+    me fontSpec: editFont
+    me Map<int32, int>: charWidths
+    me int: getCharWidthX1024(me int32: chr) <- {
+        itr Map<int32, int>: chrWidthItr <- charWidths.find(chr)
+        if(chrWidthItr!=charWidths.end()){
+            return(chrWidthItr.val)
+        }
+        me string: text; text <+- chr
+        me deltaSize: ds <- getTextSizeX1024(text, editFont)
+        me int: width <- ds.width
+        charWidths[chr] <- width
+        return(width)
+    }
+    me int: getCharWidth(me int32: chr) <- {return(getCharWidthX1024(chr)/1024)}
+}
+
+struct TextEditBox: inherits=ReactiveControl{
+    me bool: multiLineMode
+    our ParamRec: thisPR
+    me string: crntLine
+    me int: widthToCur
+    me int: charsToCur
+    me int: curMax           // Most recent width to cursor
+    me bool: overwriteMode   // False = InsertMode
+
+    const int: leftXPad <- 10
+
+    void: setMetrics(our ParamRec: PR) <- {
+        me string: text <- PR.sourcePov.pItem.value.str
+        me deltaSize: DSize <- getTextSize(text, PR.font)
+        PR.posW <- DSize.width + Yborder*2
+        PR.posH <- DSize.height + 10*2 // 10 px on top and bottom
+    }
+
+    me int: calcWidthToCursor(me string: line, me int: charsToCur) <- {
+        me int: wtc <- 0
+        withEach p in RANGE(0..charsToCur){
+            wtc <+- getCharWidthX1024(line[p])
+        }
+        return(wtc/1024)
+    }
+
+    me void: setCursorByWidth(me string: line, me int: maxWidthToCur) <- {
+        me int32: wtc <- 0
+        me int: p <- 0
+        if(line.size()==0){charsToCur<-0; widthToCur<-0; return();}
+        withEach count in RANGE(0..line.size()){
+            me int: chrWidth <- getCharWidth(line[p])
+            if(wtc+(chrWidth/2) >= maxWidthToCur){break()}
+            wtc <+- chrWidth
+            p <+- 1
+        }
+        charsToCur<-p
+        widthToCur<-wtc
+    }
+
+    void: insertChar(me int32: chr) <- {
+        if (!overwriteMode){
+            me string: S; S <+- chr
+            crntLine.insert(charsToCur, S)
+            charsToCur <+- 1
+            widthToCur <+- getCharWidth(chr)
+        } else {} // TODO: Overwrite mode
+        curMax<-widthToCur
+    }
+
+    void: moveLeft() <- {
+        if(charsToCur>0){
+            charsToCur <-- 1
+            widthToCur <-- getCharWidth(crntLine[charsToCur])
+            curMax <- widthToCur
+        } /*else if(!isFirstInSet(currentLine)){
+            moveUp();
+            moveEnd();
+        }*/
+    }
+
+    void: moveRight() <- {
+        if(charsToCur < crntLine.size()){
+            widthToCur <+- getCharWidth(crntLine[charsToCur])
+            charsToCur <+- 1
+            curMax<-widthToCur
+        } /*else if(!isLastInSet(currentLine)){
+            moveDown()
+            moveHome()
+        }*/
+    }
+    void: moveHome() <- {
+        charsToCur<-0
+        widthToCur<-0
+        curMax<-widthToCur
+    }
+    void: moveEnd() <- {
+        charsToCur<-crntLine.size()
+        widthToCur<-calcWidthToCursor(crntLine, charsToCur)
+        curMax<-widthToCur
+    }
+
+    void: doDelete() <- {
+        if(charsToCur==crntLine.size()){return()}
+        crntLine.erase(charsToCur,1)
+        widthToCur <- calcWidthToCursor(crntLine, charsToCur)
+        curMax <- widthToCur
+    }
+
+    void: backspc() <- {if(charsToCur>0){moveLeft(); doDelete();}}
+    void: revert()  <- {
+        crntLine <- thisPR.sourcePov.pItem.value.str
+        moveEnd()
+    }
+
+    void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
+        dr.addC(cmdSetColor, styler.White)
+        me string: text
+        me string: typeID
+        if(PR.sourcePov.pItem.type!=NULL){
+            typeID <- PR.sourcePov.pItem.type.asGiven+": "
+        }
+        text <- typeID + PR.sourcePov.pItem.value.str
+
+        me string: GDR_ID <- PR.sourcePov.mySymbol()+"/editBox"
+        our GuiDataRec: textBoxGDR <-  proactiveGUI.presenter.modelMgr.fetchGuiData(GDR_ID)
+        isActive <- 0
+        if(textBoxGDR!=NULL){isActive <- textBoxGDR.isActive}
+        else{Allocate(textBoxGDR); proactiveGUI.presenter.modelMgr.guiData[GDR_ID]<-textBoxGDR}
+        if(isActive==0){
+            dr.addC(cmdSetColor, cdColor(200,200,200,200))
+            me GuiCoords:myCoords{PR.posX, PR.posY, PR.posW, PR.posH}
+            dr.addRA(cmdDrawRect, myCoords)
+            dr.add1(cmdFill)
+
+            dr.addC(cmdSetColor, styler.Black)
+            dr.addTF(cmdRenderText, PR.posX+leftXPad, PR.posY+PR.posH/2+(PR.font.height/2)-4, text, PR.font)
+            dr.add1(cmdFill)
+
+            our ProactEvent:: clickEvent;
+            clickEvent.setTrigger(tPrimaryClick, myCoords); clickEvent.setGUI_SetActiveFlag(GDR_ID, 1)
+            proactiveGUI.presenter.registerEvent(clickEvent)
+        } else {
+            our TextEditBox: TEBox
+            if(isActive==1){ // This is first time; init GDR
+                textBoxGDR.isActive <- 2 // Set 'not first time'
+                textBoxGDR.str1 <- typeID
+                Allocate(TEBox)
+                TEBox.thisPR <- PR
+                TEBox.crntLine <- PR.sourcePov.pItem.value.str
+                TEBox.moveEnd()
+                textBoxGDR.ctrl <- TEBox
+            } else {TEBox <- asClass(TextEditBox, textBoxGDR.ctrl)}
+            dr.addC(cmdSetColor, cdColor(200,200,250,200))
+            me GuiCoords:myCoords{PR.posX, PR.posY, PR.posW, PR.posH}
+            dr.addRA(cmdDrawRect, myCoords)
+            dr.add1(cmdFill)
+
+            me GUI_Scalar: xPos <- PR.posX+leftXPad
+            me GUI_Scalar: yPos <- PR.posY+PR.posH/2+(PR.font.height/2)-4
+
+            dr.addC(cmdSetColor, styler.Black)
+            dr.addTF(cmdRenderText, xPos, yPos, TEBox.crntLine, PR.font)
+            dr.add1(cmdFill)
+
+            me GUI_Scalar: cursorPos <- xPos + TEBox.widthToCur
+            drawACursor(dr, cursorPos, yPos, PR.font.height)
+
+            our ProactEvent:: clickEvent;
+            clickEvent.setTrigger(tPrimaryClick, myCoords); clickEvent.setGUI_CallFunc(ePrimaryClick, GDR_ID)
+            proactiveGUI.presenter.registerEvent(clickEvent)
+        }
+    }
+    void: saveBack() <- {
+            print("saveBack()-A\n")
+     //   if(isActive){
+            our infon: inf <- thisPR.sourcePov.pItem
+            inf.value.fType  <-STR
+            inf.value.format <- fLiteral
+            inf.value.str <- crntLine
+            isActive<-false
+
+     //   }
+    }
+    me bool: expandsX()<-{return(true)}
+    me bool: expandsY()<-{return(false)}
+
+     me bool: mouseMoved(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {
+         return(true)
+     }
+     me bool: primaryClick(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {
+         setCursorByWidth(crntLine, posX-(thisPR.posX+leftXPad))
+         print("TEXTEDIT_BOX_CLICK!:",posX-(thisPR.posX+leftXPad), "\n")
+         return(true)
+     }
+     me bool: keyTyped(their GUI_KeyboardEvent: event) <- {
+         me int32: cmd <- event.keyval
+         if((event.state & CONTROL_MASK) or cmd == 127 or cmd > 255){
+             me bool: cmdHandled <- false;
+             if(multiLineMode){}  // handle miltiline cmds then set cmdHandled<-true
+             if(!cmdHandled){
+                if(event.state & CONTROL_MASK) {
+                    switch(cmd){
+                        case KEY_a: {}                            // CTRL-A - Select all
+                        case 3: {}                                // CTRL-C - Copy
+                        case 22: {}                               // CTRL-V - Paste
+                        case KEY_s: {thisPR.sourcePov.pItem.value.str <- crntLine} // CTRL-S - Save back
+                        case 23: {}                               // CTRL-W - Toggle word-wrap Mode
+                        case 24: {}                               // CTRL-X - Cut
+                        case 25: {}                               // CTRL-Y - Redo
+                        case 26: {}                               // CTRL-Z - Undo
+                    }
+                } else {
+                    switch(cmd){
+                        case KEY_LEFT:      {moveLeft()}
+                        case KEY_RIGHT:     {moveRight()}
+                        case KEY_HOME:      {moveHome()}
+                        case KEY_END:       {moveEnd()}
+                        case KEY_DELETE:    {doDelete()}
+                        case KEY_RETURN:    {saveBack()}
+                        case KP_LEFT:       {moveLeft()}
+                        case KP_RIGHT:      {moveRight()}
+                        case KP_HOME:       {moveHome()}
+                        case KP_END:        {moveEnd()}
+                        case KP_DELETE:     {doDelete()}
+                        case KP_ENTER:      {saveBack()}
+                        case KEY_BACKSPACE: {backspc()}
+                        case KEY_ESCAPE:    {revert()}
+                    }
+                }
+             }
+         } else {
+             insertChar(event.keyval)
+        }
+         slipView.requestRedraw()
+         print("KEY_PRESS:",event.keyval, " ==>", crntLine, "\n")
+         return(true)
+    }
+
+    void: INIT() <- {
+        widthToCur<-0
+        charsToCur<-0
+        multiLineMode <- false
+    }
+}
