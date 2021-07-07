@@ -1,0 +1,14 @@
+// Quic test
+LinuxBuild: Platform='Linux' CPU='amd64' Lang='CPP' optimize='speed';
+
+Title = "Quic Protocol"
+FileName = "Quic"
+Version = "1.0"
+CopyrightMesg = "Copyright 2020-2021 Bruce Long; All rights reserved."
+Authors = "Bruce Long"
+Description = "Quic Protocol"
+ProgramOrLibrary = "program"
+
+featuresNeeded = [Quic]
+
+LicenseText = `All rights reserved.`
