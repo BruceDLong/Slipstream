@@ -119,8 +119,10 @@ struct TextEditBox: inherits=ReactiveControl{
         me string: typeID
         if(PR.sourcePov.pItem.type!=NULL){
             typeID <- PR.sourcePov.pItem.type.asGiven+": "
+            typeID <- deCamelCase(typeID)
+            print("LABEL:"+typeID+"\n")
         }
-        text <- typeID + PR.sourcePov.pItem.value.str
+        text <- PR.sourcePov.pItem.value.str
 
         me string: GDR_ID <- PR.sourcePov.mySymbol()+"/editBox"
         our GuiDataRec: textBoxGDR <-  proactiveGUI.presenter.modelMgr.fetchGuiData(GDR_ID)
@@ -133,8 +135,14 @@ struct TextEditBox: inherits=ReactiveControl{
             dr.addRA(cmdDrawRect, myCoords)
             dr.add1(cmdFill)
 
+            // Draw the label
             dr.addC(cmdSetColor, styler.Black)
-            dr.addTF(cmdRenderText, PR.posX+leftXPad, PR.posY+PR.posH/2+(PR.font.height/2)-4, text, PR.font)
+            dr.addTF(cmdRenderText, PR.posX+leftXPad/2, PR.posY+PR.posH/2+(styler.smallFont.height/2)-4-8, typeID, styler.smallFont)
+            dr.add1(cmdFill)
+
+            // Draw the text
+            dr.addC(cmdSetColor, styler.Black)
+            dr.addTF(cmdRenderText, PR.posX+leftXPad, PR.posY+PR.posH/2+(PR.font.height/2)-4+10, text, PR.font)
             dr.add1(cmdFill)
 
             our ProactEvent:: clickEvent;
@@ -151,7 +159,7 @@ struct TextEditBox: inherits=ReactiveControl{
                 TEBox.moveEnd()
                 textBoxGDR.ctrl <- TEBox
             } else {TEBox <- asClass(TextEditBox, textBoxGDR.ctrl)}
-            dr.addC(cmdSetColor, cdColor(200,200,250,200))
+            dr.addC(cmdSetColor, cdColor(200,230,200,200))
             me GuiCoords:myCoords{PR.posX, PR.posY, PR.posW, PR.posH}
             dr.addRA(cmdDrawRect, myCoords)
             dr.add1(cmdFill)

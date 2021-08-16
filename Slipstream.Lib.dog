@@ -11,7 +11,7 @@ Authors = "Bruce Long"
 Description = "The Slipstream Engine"
 ProgramOrLibrary = "program"
 
-featuresNeeded = [Proteus, Logger, Unicode, BigNumbers, Threads, IOBuffer, EarleyParser] // Crypto, P2P_Manager, Quic]
+featuresNeeded = [Proteus, Logger, Unicode, BigNumbers, Threads, IOBuffer, EarleyParser, Quic] // Crypto, P2P_Manager]
 
 LicenseText = `This file is part of the "Slipstream Development Suite" All Rights Reserved.`
 
@@ -28,7 +28,7 @@ runCode=`
 struct RepositoryManager{ // Load, track, save, pull, push, pullReq, etc.
 }
 
-model InfonConnector{
+model BidiConnector{
     me strBuf: inputBuf
     me strBuf: outputBuf
     me int:    statusCode
@@ -37,9 +37,9 @@ model InfonConnector{
     bool: pumpInputBuf()  <- {}
     bool: pumpOutputBuf() <- {}
 }
-struct InfonConnector{}
+struct BidiConnector{}
 
-struct FileConnector: inherits=InfonConnector {
+struct FileConnector: inherits=BidiConnector {
     me FileStream: dataFile
     void: init(me string: itemRefStr) <- {
         me string: fileDir <- getAssetsDir() +"/"+itemRefStr //+"/repos"
@@ -56,43 +56,65 @@ struct FileConnector: inherits=InfonConnector {
     }
     bool: pumpOutputBuf() <- {return(false)}
 }
-struct ClipConnector: inherits=InfonConnector {}
-struct UserConnector: inherits=InfonConnector {}
-struct IPFSConnector: inherits=InfonConnector {}
-struct IPNSConnector: inherits=InfonConnector {}
-struct RepoConnector: inherits=InfonConnector {}     // Connector to a RepositoryManager instance.
-struct GUI_Connector: inherits=InfonConnector {}     // Kbd, mouse/touchScn, screen, clipboard, etc.
-struct MediaConnector:inherits=InfonConnector {}     // Microphones, audioOut, videoSource
-struct AgentConnector:inherits=InfonConnector {}     // Connect to other agents
-struct SensorConnector  : inherits=InfonConnector {}
-struct RobotConnector   : inherits=InfonConnector {}
-struct InternetConnector: inherits=InfonConnector {}
-struct PhoneConnector   : inherits=InfonConnector {} // Services offered by phones
+struct ClipConnector: inherits=BidiConnector {}
+struct UserConnector: inherits=BidiConnector {}
+struct IPFSConnector: inherits=BidiConnector {}
+struct IPNSConnector: inherits=BidiConnector {}
+struct RepoConnector: inherits=BidiConnector {}     // Connector to a RepositoryManager instance.
+struct GUI_Connector: inherits=BidiConnector {}     // Kbd, mouse/touchScn, screen, clipboard, etc.
+struct MediaConnector:inherits=BidiConnector {}     // Microphones, audioOut, videoSource
+struct AgentConnector:inherits=BidiConnector {      // Connect to other agents
+    me QuicEngine_Client: clientQuicEngine
+    void: init(me string: specString) <- {
+        me int: colonPos <- specString.find(":")
+        me string: connectionTypeStr <- specString.subStr(0, colonPos)
+        me string: connectionIDStr   <- specString.subStr(colonPos+1)
+        colonPos <- connectionIDStr.find(":")
+        me string: fileToFetch <- connectionIDStr.subStr(0, colonPos)
+        me string: IPAddr <- connectionIDStr
+        me string: portNumStr <- connectionIDStr
+        clientQuicEngine.inputBuf <- inputBuf
+        clientQuicEngine.init("xferText.pr", false, IPAddr, stoi(portNumStr))
+    }
+    bool: pumpInputBuf()  <- {
+        //~ if(!dataFile.EOF()){
+            //~ me string: line <- dataFile.getLine()
+            //~ inputBuf.putStr(line)
+            //~ return(true)
+        //~ }
+        return(false)
+    }
+    bool: pumpOutputBuf() <- {return(false)}
+}
+struct SensorConnector  : inherits=BidiConnector {}
+struct RobotConnector   : inherits=BidiConnector {}
+struct InternetConnector: inherits=BidiConnector {}
+struct PhoneConnector   : inherits=BidiConnector {} // Services offered by phones
 
 
 //////////////////////////////////////////////////////////////////////
 
-struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
-    our InfonConnector: source
+struct InfonStream{ // BidiConnector -> Parse -> Extract -> Normalize
+    our BidiConnector: source
     their Agent: parentAgent
     our EParser: parser
     me Threaded_infonParseAndExtractor: parseAndExtractor
     me ThreadedNormalizer: threadedNormalizer
 
-    void: init(our InfonConnector: connector, their Agent: agent, our EParser: eParser) <- {
+    void: init(our BidiConnector: connector, their Agent: agent, our EParser: eParser) <- {
         source <- connector
         parentAgent <- agent
         parser <- eParser
     }
     void: start() <- {
-        our infon:: returnInfon
+        our infon:: returnInfon  log("AT-A")
         threadedNormalizer.init(parentAgent, returnInfon)
-        threadedNormalizer.start()
+        threadedNormalizer.start()   log("AT-B")
         parseAndExtractor.start(parser, source.inputBuf, returnInfon)
         while(source.pumpInputBuf()){}
-        source.inputBuf.close()
-        threadedNormalizer.waitForExit()
-parseAndExtractor.waitForThreadsToExit()
+        source.inputBuf.close()   log("AT-C")
+        threadedNormalizer.waitForExit()  log("AT-D")
+parseAndExtractor.waitForThreadsToExit()  log("AT-E")
         log("Result:"+toString(returnInfon))
     }
     void: requestFinish() <- {}
@@ -109,22 +131,24 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
         parser.populateGrammar()
     }
     me bool: startNewConnection(me string: specString) <- {
-        our InfonConnector: connector <- makeInfonConnector(specString)
+        our BidiConnector: connector <- makeBidiConnector(specString)
         our InfonStream:: iStream
         iStream.init(connector, agent, parser)
         connections.append(iStream)
         iStream.start()
         return(true)
     }
-    our InfonConnector: makeInfonConnector(me string: specString)<-{ // connector factory
-       me int: colonPos <- specString.find(":")
-       me string: connectionTypeStr <- specString.subStr(0, colonPos)
-       if     (connectionTypeStr=="file"){our FileConnector:: retval; retval.init(specString.subStr(colonPos+1)); return(retval)}
-       else if(connectionTypeStr=="repo"){our RepoConnector:: retval; retval.init(specString.subStr(colonPos+1)); return(retval)}
-       else if(connectionTypeStr=="user"){our UserConnector:: retval; retval.init(specString.subStr(colonPos+1)); return(retval)}
-       else if(connectionTypeStr=="ipfs"){our IPFSConnector:: retval; retval.init(specString.subStr(colonPos+1)); return(retval)}
-       else if(connectionTypeStr=="ipns"){our IPNSConnector:: retval; retval.init(specString.subStr(colonPos+1)); return(retval)}
-       else {}
+    our BidiConnector: makeBidiConnector(me string: specString)<-{ // connector factory
+        me int: colonPos <- specString.find(":")
+        me string: connectionTypeStr <- specString.subStr(0, colonPos)
+        me string: connectionIDStr   <- specString.subStr(colonPos+1)
+        if     (connectionTypeStr=="file"){our FileConnector:: retval; retval.init(connectionIDStr); return(retval)}
+        else if(connectionTypeStr=="repo"){our RepoConnector:: retval; retval.init(connectionIDStr); return(retval)}
+        else if(connectionTypeStr=="user"){our UserConnector:: retval; retval.init(connectionIDStr); return(retval)}
+        else if(connectionTypeStr=="ipfs"){our IPFSConnector:: retval; retval.init(connectionIDStr); return(retval)}
+        else if(connectionTypeStr=="ipns"){our IPNSConnector:: retval; retval.init(connectionIDStr); return(retval)}
+        else if(connectionTypeStr=="agnt"){our AgentConnector:: retval; retval.init(connectionIDStr); return(retval)}
+        else {}
     }
 }
 
@@ -142,21 +166,22 @@ struct SlipstreamCore{ // Create and manage a slipstream node
         streamingNormMode <- true
         statusMsg <- ""  // Empty == OK
         masterFile <- "file:"+topFile
+     //   masterFile <- "quic:getFile:"+topFile
 log("Masterfile:"+ masterFile)
         initCoreServices()
         our Map<string, string>:: settings
         agent.init2(settings)
         connectionMgr.init(agent)
-log("WORLD:"+toString(agent.world))
-log("LOCALE:"+agent.getLocaleBaseName())
         stillIdling <- false
     }
     void: start() <- {
+log("LOCALE:"+agent.getLocaleBaseName())
         stillIdling <- true
         connectionMgr.startNewConnection(masterFile)
 
 
         //agent.extendAndNorm(agent.world, "file:"+topFile)
+log("WORLD:"+toString(agent.world))
     }
     void: idle()<-{
         while(stillIdling){
@@ -170,6 +195,7 @@ log("LOCALE:"+agent.getLocaleBaseName())
     void: run(me string: topFile) <- {
         init(topFile)
         start()
+        sleep(1000)
        // idle()
         shutdown()
     }

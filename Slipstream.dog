@@ -13,13 +13,21 @@ Authors = "Bruce Long"
 Description = "The Slipstream Browser"
 ProgramOrLibrary = "program"
 
-featuresNeeded = [GUI_ToolKit, Dashboard, ReactGUI, Proteus]
+featuresNeeded = [GUI_ToolKit, Dashboard, ReactGUI, Slipstream, Proteus]
 
 LicenseText = `All rights reserved.`
 
 runCode=`
     logMgr.init(OFile)
-    thisApp.loadAndParseSettingsAndData()
+    CommandLineManager.processCmdLine(joinCmdStrings(argc, argv), false);
+    CommandLineManager.defineOption("Slip", "topFile", "-f", "--file", "The top-level file to load.")
+    me string: topFile <- CommandLineManager.getOption("Slip", "topFile")
+    if(topFile==""){topFile <- "user.pr"}
+    CORE.run(topFile)
+    //thisApp.loadAndParseSettingsAndData()
+
+        widgetMngr.init()
+        widgetMngr.init2()
     isFirstRun<-true
 `
 ////////////   A p p l i c a t i o n   a n d   G l o b a l s
@@ -157,6 +165,10 @@ struct InfonicWidgetView: inherits=ReactiveControl{
         me GuiCoords: RA{windowW/2-(popupWidth/2), windowH/2-(popupHeight/2), popupWidth, popupHeight};
         cardPopup.addRA(cmdDrawRect, RA)
         cardPopup.add1(cmdFill)
+
+        our ProactEvent:: blockEvents;
+        blockEvents.setTrigger(tPrimaryClick, RA); blockEvents.setGUI_Event1(eBlockEvents)
+        proactiveGUI.presenter.registerEvent(blockEvents)
         // Draw the title editor
 
             our ParamRec:: innerPR; innerPR.init(titleInf, RA.X+border, RA.Y+yCur, RA.W-(border*2), 0)
@@ -536,7 +548,7 @@ struct SlipView: inherits=ProactiveGUIWidget{
 }
 
 struct GLOBAL{
-    me ProteusCore: CORE
+    me SlipstreamCore: CORE
     me ProactiveGUI: proactiveGUI
     me bool: isFirstRun
     their GUI_canvas: drawing_area
@@ -546,10 +558,10 @@ struct GLOBAL{
 struct APP{
     me bool: loadAndParseSettingsAndData() <- {
         me string: worldFileName <- "user.pr"
-        CORE.init(worldFileName, false)
-        if(CORE.WORLD==NULL){
+        CORE.init(worldFileName)
+        if(CORE.agent.world==NULL){
             // TODO: Show system pop-up explaining why we are exiting. Waiting for popup support in GUI_toolkit
-            print(CORE.errorMesg, "\n")
+            print(CORE.statusMsg, "\n")
             exit(1)
         }
         widgetMngr.init()
@@ -560,7 +572,7 @@ struct APP{
     me void: createAppArea(me GUI_Frame: frame) <- {
         Allocate(slipView)
         drawing_area  <- slipView.initProactiveGUI()
-        slipView.loadData(CORE.WORLD)
+        if(slipView.loadData(CORE.agent.world)) {logFatalError("Could not load infon.")}
         addToContainerAndExpand (frame, drawing_area)
     }
 }
