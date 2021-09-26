@@ -33,8 +33,9 @@ model InfonConnector{
     me strBuf: outputBuf
     me int:    statusCode
     me string: statusMesg
+    me bool:   inputEOF
     void: init(me string: itemRefStr) <- {}
-    bool: pumpInputBuf()  <- {}
+    me string: readInputStream()  <- {}
     bool: pumpOutputBuf() <- {}
 }
 struct InfonConnector{}
@@ -45,14 +46,14 @@ struct FileConnector: inherits=InfonConnector {
         me string: fileDir <- getAssetsDir() +"/"+itemRefStr //+"/repos"
         dataFile.open(fileDir)
         if (dataFile.failure()){logFatalError("Failed to open file: " + fileDir + "\n")}
+        inputEOF<-false
     }
-    bool: pumpInputBuf()  <- {
+    me string: readInputStream()  <- {
+        me string: data
         if(!dataFile.EOF()){
-            me string: line <- dataFile.getLine()
-            inputBuf.putStr(line)
-            return(true)
-        }
-        return(false)
+            data <- dataFile.getLine()+"\n"
+        } else{inputEOF<-true}
+        return(data)
     }
     bool: pumpOutputBuf() <- {return(false)}
 }
@@ -75,11 +76,20 @@ struct PhoneConnector   : inherits=InfonConnector {} // Services offered by phon
 struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
     our InfonConnector: source
     their Agent: parentAgent
-    our EParser: parser
+    our ProteusParser: parser
     me Threaded_infonParseAndExtractor: parseAndExtractor
     me ThreadedNormalizer: threadedNormalizer
 
-    void: init(our InfonConnector: connector, their Agent: agent, our EParser: eParser) <- {
+    bool: pumpParserInputBuf() <- {
+        me string: data <- source.readInputStream()
+        if(!source.inputEOF and data.size()>0){
+            parser.addSlotsToSSets(data.size())
+            source.inputBuf.putStr(data)
+        }
+        return(source.inputEOF)
+    }
+
+    void: init(our InfonConnector: connector, their Agent: agent, our ProteusParser: eParser) <- {
         source <- connector
         parentAgent <- agent
         parser <- eParser
@@ -87,12 +97,13 @@ struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
     void: start() <- {
         our infon:: returnInfon
         threadedNormalizer.init(parentAgent, returnInfon)
-        threadedNormalizer.start()
+        //threadedNormalizer.start()
         parseAndExtractor.start(parser, source.inputBuf, returnInfon)
-        while(source.pumpInputBuf()){}
+        while(!pumpParserInputBuf()){}
         source.inputBuf.close()
-        threadedNormalizer.waitForExit()
 parseAndExtractor.waitForThreadsToExit()
+threadedNormalizer.start()
+        threadedNormalizer.waitForExit()
         log("Result:"+toString(returnInfon))
     }
     void: requestFinish() <- {}
@@ -101,7 +112,7 @@ parseAndExtractor.waitForThreadsToExit()
 struct ConnectionManager{ // Manage connections to a Proteus Agent
     their Agent: agent
     me List<our InfonStream>: connections
-    our EParser: parser
+    our ProteusParser: parser
     void: init(their Agent: agnt) <- {
         agent <- agnt
         connections.clear()
@@ -133,13 +144,14 @@ struct SlipstreamCore{ // Create and manage a slipstream node
     me string: masterFile
     me ConnectionManager: connectionMgr
     me string: statusMsg
-    me bool: stillIdling
+    me bool: idling
     void: initCoreServices()<-{
         // Init P2P connections and DHTs
         // Etc.
     }
     void: init(me string: topFile) <- {
         streamingNormMode <- true
+        initHardFuncNames()
         statusMsg <- ""  // Empty == OK
         masterFile <- "file:"+topFile
 log("Masterfile:"+ masterFile)
@@ -149,27 +161,28 @@ log("Masterfile:"+ masterFile)
         connectionMgr.init(agent)
 log("WORLD:"+toString(agent.world))
 log("LOCALE:"+agent.getLocaleBaseName())
-        stillIdling <- false
+        idling <- false
     }
     void: start() <- {
-        stillIdling <- true
         connectionMgr.startNewConnection(masterFile)
 
 
         //agent.extendAndNorm(agent.world, "file:"+topFile)
     }
     void: idle()<-{
-        while(stillIdling){
+        idling <- true
+        while(idling){
             // process events if needed
             sleep(10)
         }
     }
-    void: stopIdling()<-{stillIdling <- false}
+    void: stopIdling()<-{idling <- false}
     void: shutdown()<-{} // TODO: Ask all streams to quit then wait for them. Dealloc anything
 
     void: run(me string: topFile) <- {
         init(topFile)
         start()
+        sleep(2000)
        // idle()
         shutdown()
     }

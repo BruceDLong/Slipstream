@@ -139,15 +139,15 @@ struct ParamRec{
 struct ReactiveControl{
     our ParamRec: PR
     me int64: isActive
-    me bool: expandsX()<-{}
-    me bool: expandsY()<-{}
+    me bool: expandsX()<-{return(false)}
+    me bool: expandsY()<-{return(false)}
     void: setMetrics(our ParamRec: PR) <- {}
     void: draw(our dashDrawing: dr, our ParamRec: PR) <- {}
     void: saveBack() <- {}
 
-    me bool: mouseMoved(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {}
-    me bool: primaryClick(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {}
-    me bool: keyTyped(their GUI_KeyboardEvent: event) <- {}
+    me bool: mouseMoved(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {return(false)}
+    me bool: primaryClick(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {return(false)}
+    me bool: keyTyped(their GUI_KeyboardEvent: event) <- {return(false)}
 }
 
 struct StringView: inherits=ReactiveControl{
@@ -656,6 +656,7 @@ struct ProactiveGUIWidget: inherits=DashboardWidget{
         primaryBtnIsDown <- true
         primaryButtonDownX <- event.x
         primaryButtonDownY <- event.y
+        return(false)
     }
     me bool: primaryClick(their GUI_ButtonEvent: event) <- {
         me bool: retval <- false

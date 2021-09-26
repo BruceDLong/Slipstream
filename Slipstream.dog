@@ -157,6 +157,10 @@ struct InfonicWidgetView: inherits=ReactiveControl{
         me GuiCoords: RA{windowW/2-(popupWidth/2), windowH/2-(popupHeight/2), popupWidth, popupHeight};
         cardPopup.addRA(cmdDrawRect, RA)
         cardPopup.add1(cmdFill)
+
+        our ProactEvent:: blockEvents;
+        blockEvents.setTrigger(tPrimaryClick, RA); blockEvents.setGUI_Event1(eBlockEvents)
+        proactiveGUI.presenter.registerEvent(blockEvents)
         // Draw the title editor
 
             our ParamRec:: innerPR; innerPR.init(titleInf, RA.X+border, RA.Y+yCur, RA.W-(border*2), 0)
@@ -536,7 +540,7 @@ struct SlipView: inherits=ProactiveGUIWidget{
 }
 
 struct GLOBAL{
-    me ProteusCore: CORE
+    me ProteusCore: CORE   // SlipstreamCore: CORE
     me ProactiveGUI: proactiveGUI
     me bool: isFirstRun
     their GUI_canvas: drawing_area
@@ -545,13 +549,8 @@ struct GLOBAL{
 
 struct APP{
     me bool: loadAndParseSettingsAndData() <- {
-        me string: worldFileName <- "user.pr"
-        CORE.init(worldFileName, false)
-        if(CORE.WORLD==NULL){
-            // TODO: Show system pop-up explaining why we are exiting. Waiting for popup support in GUI_toolkit
-            print(CORE.errorMesg, "\n")
-            exit(1)
-        }
+        me string: worldFileName <- "user.pr"   //// TODO: Make this load null -> device -> user -> world. Then fetch apps data from user or world.
+        CORE.init(worldFileName      , false)
         widgetMngr.init()
         widgetMngr.init2()
         return(true)
@@ -560,7 +559,7 @@ struct APP{
     me void: createAppArea(me GUI_Frame: frame) <- {
         Allocate(slipView)
         drawing_area  <- slipView.initProactiveGUI()
-        slipView.loadData(CORE.WORLD)
+        slipView.loadData(CORE.WORLD)               //// This cannot be CORE.WORLD, but must be a fetched infon.
         addToContainerAndExpand (frame, drawing_area)
     }
 }
