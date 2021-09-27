@@ -13,13 +13,21 @@ Authors = "Bruce Long"
 Description = "The Slipstream Browser"
 ProgramOrLibrary = "program"
 
-featuresNeeded = [GUI_ToolKit, Dashboard, ReactGUI, Proteus]
+featuresNeeded = [GUI_ToolKit, Dashboard, ReactGUI, Slipstream, Proteus]
 
 LicenseText = `All rights reserved.`
 
 runCode=`
     logMgr.init(OFile)
-    thisApp.loadAndParseSettingsAndData()
+    CommandLineManager.processCmdLine(joinCmdStrings(argc, argv), false);
+    CommandLineManager.defineOption("Slip", "topFile", "-f", "--file", "The top-level file to load.")
+    me string: topFile <- CommandLineManager.getOption("Slip", "topFile")
+    if(topFile==""){topFile <- "user.pr"}
+    CORE.run(topFile)
+    //thisApp.loadAndParseSettingsAndData()
+
+        widgetMngr.init()
+        widgetMngr.init2()
     isFirstRun<-true
 `
 ////////////   A p p l i c a t i o n   a n d   G l o b a l s
