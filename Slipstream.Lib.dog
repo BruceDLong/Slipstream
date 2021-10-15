@@ -25,7 +25,19 @@ runCode=`
     if(topFile==""){topFile <- "world.pr"}
     CORE.run(topFile)
 `
-struct RepositoryManager{ // Load, track, save, pull, push, pullReq, etc.
+struct Repository{ // Load, track, save, pull, push, pullReq, etc.
+    me string: repoName
+    me string: repoLocator
+    our infon: repoInfon
+    our infon: initAndLoad(their ConnectionManager: connectionMgr, me string: name, me string:locator) <- {
+        log("Starting repository:"+name+" at "+repoLocator)
+        Allocate(repoInfon)
+        repoName    <- name
+        repoLocator <- locator
+        connectionMgr.startNewConnection(repoInfon, repoLocator)
+        log("Started repository:"+name+" at "+repoLocator)
+        return(repoInfon)
+    }
 }
 
 model InfonConnector{
@@ -35,8 +47,12 @@ model InfonConnector{
     me string: statusMesg
     me bool:   inputEOF
     void: init(me string: itemRefStr) <- {}
-    me string: readInputStream()  <- {}
-    bool: pumpOutputBuf() <- {}
+    me string: readInputStream() <- {return("")}
+    bool: pumpOutputBuf()        <- {return(false)}
+    void: submitProteusResult()  <- {}
+    void: handleSystemError()    <- {}
+    void: handleSyntaxError()    <- {}
+    void: handleProteusError()   <- {}
 }
 struct InfonConnector{}
 
@@ -47,12 +63,13 @@ struct FileConnector: inherits=InfonConnector {
         dataFile.open(fileDir)
         if (dataFile.failure()){logFatalError("Failed to open file: " + fileDir + "\n")}
         inputEOF<-false
+        log("Initialized:"+itemRefStr)
     }
     me string: readInputStream()  <- {
         me string: data
         if(!dataFile.EOF()){
             data <- dataFile.getLine()+"\n"
-        } else{inputEOF<-true}
+        } else{inputEOF<-true; log("INPUT_EOF")}
         return(data)
     }
     bool: pumpOutputBuf() <- {return(false)}
@@ -61,7 +78,7 @@ struct ClipConnector: inherits=InfonConnector {}
 struct UserConnector: inherits=InfonConnector {}
 struct IPFSConnector: inherits=InfonConnector {}
 struct IPNSConnector: inherits=InfonConnector {}
-struct RepoConnector: inherits=InfonConnector {}     // Connector to a RepositoryManager instance.
+struct RepoConnector: inherits=InfonConnector {}     // Connector to a Repository instance.
 struct GUI_Connector: inherits=InfonConnector {}     // Kbd, mouse/touchScn, screen, clipboard, etc.
 struct MediaConnector:inherits=InfonConnector {}     // Microphones, audioOut, videoSource
 struct AgentConnector:inherits=InfonConnector {      // Connect to other agents
@@ -99,6 +116,7 @@ struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
     our InfonConnector: source
     their Agent: parentAgent
     our ProteusParser: parser
+    our infon: toFill
     me Threaded_infonParseAndExtractor: parseAndExtractor
     me ThreadedNormalizer: threadedNormalizer
 
@@ -108,50 +126,57 @@ struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
             parser.addSlotsToSSets(data.size())
             source.inputBuf.putStr(data)
         }
-        return(source.inputEOF)
+        return(!source.inputEOF)
     }
 
-    void: init(our InfonConnector: connector, their Agent: agent, our ProteusParser: eParser) <- {
+    void: init(our InfonConnector: connector, their Agent: agent, our ProteusParser: eParser, our infon: infToFill<-NULL) <- {
         source <- connector
         parentAgent <- agent
         parser <- eParser
+        toFill <- infToFill
+        if(toFill==NULL){Allocate(toFill)}
     }
     void: start() <- {
-        our infon:: returnInfon  log("AT-A")
-        threadedNormalizer.init(parentAgent, returnInfon)
-        threadedNormalizer.start()   log("AT-B")
-        parseAndExtractor.start(parser, source.inputBuf, returnInfon)
-        while(source.pumpInputBuf()){}
-        source.inputBuf.close()   log("AT-C")
-        threadedNormalizer.waitForExit()  log("AT-D")
-parseAndExtractor.waitForThreadsToExit()  log("AT-E")
-        log("Result:"+toString(returnInfon))
+        threadedNormalizer.init(parentAgent, toFill)
+        threadedNormalizer.start()
+        parseAndExtractor.start(parser, source.inputBuf, toFill)
+        while(pumpParserInputBuf()){}
+        source.inputBuf.close()
+//parseAndExtractor.waitForThreadsToExit() 
+        threadedNormalizer.waitForExit()
+        //log("Result:"+toString(toFill))
     }
     void: requestFinish() <- {}
 }
 
 struct ConnectionManager{ // Manage connections to a Proteus Agent
     their Agent: agent
+    me Repository: device
+    me Repository: user
+    me Repository: world
     me List<our InfonStream>: connections
     our ProteusParser: parser
+
     void: init(their Agent: agnt) <- {
         agent <- agnt
         connections.clear()
         Allocate(parser)
         parser.populateGrammar()
     }
-    me bool: startNewConnection(me string: specString) <- {
+    me bool: startNewConnection(our infon: toFill, me string: specString) <- {
+        log("Starting Connection:"+specString)
         our InfonConnector: connector <- makeInfonConnector(specString)
         our InfonStream:: iStream
-        iStream.init(connector, agent, parser)
+        iStream.init(connector, agent, parser, toFill)
         connections.append(iStream)
         iStream.start()
         return(true)
     }
     our InfonConnector: makeInfonConnector(me string: specString)<-{ // connector factory
+        trimWS(specString)
         me int: colonPos <- specString.find(":")
         me string: connectionTypeStr <- specString.subStr(0, colonPos)
-        me string: connectionIDStr   <- specString.subStr(colonPos+1)
+        me string: connectionIDStr   <- specString.subStr(colonPos+1) // Skip :
         if     (connectionTypeStr=="file"){our FileConnector:: retval; retval.init(connectionIDStr); return(retval)}
         else if(connectionTypeStr=="repo"){our RepoConnector:: retval; retval.init(connectionIDStr); return(retval)}
         else if(connectionTypeStr=="user"){our UserConnector:: retval; retval.init(connectionIDStr); return(retval)}
@@ -159,15 +184,22 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
         else if(connectionTypeStr=="ipns"){our IPNSConnector:: retval; retval.init(connectionIDStr); return(retval)}
         else if(connectionTypeStr=="agnt"){our AgentConnector:: retval; retval.init(connectionIDStr); return(retval)}
         else {}
+        log("WARNING, No connection was made for: "+specString)
+        return(NULL)
     }
 }
 
-struct SlipstreamCore{ // Create and manage a slipstream node
+struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream node
     me Agent: agent
     me string: masterFile
     me ConnectionManager: connectionMgr
     me string: statusMsg
     me bool: idling
+
+    me bool: normalizeFromStreamSpec(our infon: infToFill, me string: streamSpec) <- {
+        return(connectionMgr.startNewConnection(infToFill, streamSpec))
+    }
+
     void: initCoreServices()<-{
         // Init P2P connections and DHTs
         // Etc.
@@ -177,22 +209,17 @@ struct SlipstreamCore{ // Create and manage a slipstream node
         initHardFuncNames()
         statusMsg <- ""  // Empty == OK
         masterFile <- "file:"+topFile
-     //   masterFile <- "quic:getFile:"+topFile
-log("Masterfile:"+ masterFile)
         initCoreServices()
-        our Map<string, string>:: settings
-        agent.init2(settings)
+        agent.init(this)
+        idling <- true
         connectionMgr.init(agent)
-log("WORLD:"+toString(agent.world))
-log("LOCALE:"+agent.getLocaleBaseName())
-        idling <- false
     }
     void: start() <- {
-        connectionMgr.startNewConnection(masterFile)
+        //agent.device <- connectionMgr.device.initAndLoad(connectionMgr, "device", masterFile)
+        //agent.user   <- connectionMgr.user.initAndLoad(connectionMgr,  "user", "file:user.pr")
+        agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","file:user.pr")
 
-
-        //agent.extendAndNorm(agent.world, "file:"+topFile)
-log("WORLD:"+toString(agent.world))
+//log("WORLD:"+toString(agent.world))
     }
     void: idle()<-{
         idling <- true
@@ -205,10 +232,10 @@ log("WORLD:"+toString(agent.world))
     void: shutdown()<-{} // TODO: Ask all streams to quit then wait for them. Dealloc anything
 
     void: run(me string: topFile) <- {
+        // This is an example or for testing. Normally use a GUI's event loop.
         init(topFile)
         start()
-        sleep(2000)
-       // idle()
+        idle()
         shutdown()
     }
 }

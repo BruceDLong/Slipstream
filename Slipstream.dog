@@ -1,6 +1,6 @@
 // Slipstream.dog
 
-LinuxBuild: Platform='Linux' CPU='amd64' Lang='CPP' optimize='speed';
+LinuxBuild: Platform='Linux' CPU='amd64' Lang='CPP' LangVersion='GNU' optimize='speed';
 //SwingBuild: Platform='Java' CPU='JavaVM' Lang='Java' optimize='speed';
 //AndroidBuild: Platform='Android' CPU='JavaVM' Lang='Java' optimize='power';
 //iPhoneBuild: Platform='IOS' CPU='amd64' Lang='Swift' optimize='speed';
@@ -19,17 +19,12 @@ LicenseText = `All rights reserved.`
 
 runCode=`
     logMgr.init(OFile)
-    CommandLineManager.processCmdLine(joinCmdStrings(argc, argv), false);
     CommandLineManager.defineOption("Slip", "topFile", "-f", "--file", "The top-level file to load.")
     me string: topFile <- CommandLineManager.getOption("Slip", "topFile")
     if(topFile==""){topFile <- "user.pr"}
-    CORE.run(topFile)
-    //thisApp.loadAndParseSettingsAndData()
-
-        widgetMngr.init()
-        widgetMngr.init2()
-    isFirstRun<-true
+    thisApp.loadAndParseSettingsAndData(topFile)
 `
+
 ////////////   A p p l i c a t i o n   a n d   G l o b a l s
 
 mainStyle = {
@@ -43,6 +38,7 @@ mainStyle = {
 }
 
 
+do ManageCmdLine(cmd)
 do makeStyler(mainStyle)
 do makeGUI(GUI_Spec)
 
@@ -509,6 +505,7 @@ struct SlipView: inherits=ProactiveGUIWidget{
         proactiveGUI.presenter.reset()
         setCrntBoard(proactiveGUI.presenter.modelMgr.getInt64(myInfon.mySymbol()+"/crntBorad", 1))
         setwindowMetrics()
+        if(crntBoardIdx >= boardInfons.size()){logFatalError("Non-existant board requested.")}
         our dashDrawing:: dr
         proactiveGUI.presenter.drawDashboard(dr, boardInfons[crntBoardIdx], 0,0,windowW,windowH)
         dr.render(cr)
@@ -548,17 +545,16 @@ struct SlipView: inherits=ProactiveGUIWidget{
 }
 
 struct GLOBAL{
-    me ProteusCore: CORE   // SlipstreamCore: CORE
+    me SlipstreamCore: CORE
     me ProactiveGUI: proactiveGUI
-    me bool: isFirstRun
     their GUI_canvas: drawing_area
     their SlipView: slipView
 }
 
 struct APP{
-    me bool: loadAndParseSettingsAndData() <- {
-        me string: worldFileName <- "user.pr"   //// TODO: Make this load null -> device -> user -> world. Then fetch apps data from user or world.
-        CORE.init(worldFileName      , false)
+    me bool: loadAndParseSettingsAndData(me string: topFileName) <- {
+        CORE.init(topFileName)
+        CORE.start()
         widgetMngr.init()
         widgetMngr.init2()
         return(true)
@@ -567,7 +563,7 @@ struct APP{
     me void: createAppArea(me GUI_Frame: frame) <- {
         Allocate(slipView)
         drawing_area  <- slipView.initProactiveGUI()
-        slipView.loadData(CORE.WORLD)               //// This cannot be CORE.WORLD, but must be a fetched infon.
+        slipView.loadData(CORE.agent.world)               //// This cannot be CORE.WORLD, but must be a fetched infon.
         addToContainerAndExpand (frame, drawing_area)
     }
 }

@@ -1,6 +1,7 @@
 {
     123
     'hello'
+    %include file:user.pr
     {4 5 6{7 8 9}}
     ...
 }

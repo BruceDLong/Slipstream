@@ -90,7 +90,7 @@ projects:{
                                         subTasks:{1 2 3}
                                         note:"This string is a note"
                                         role:"software engineer II"
-                                        members:{"Bruce". "Bob"}
+                                        members:{"Bruce" "Bob"}
                                     }
                                 }
                             }
