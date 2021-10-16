@@ -4,7 +4,7 @@
 //LinuxTestBuild: Platform='Linux' CPU='amd64' Lang='CPP' testMode='makeTests';
 LinuxBuild:     Platform='Linux' CPU='amd64' Lang='CPP' optimize='speed';
 
-FileName = "slipstream"
+FileName = "slipstreamCore"
 Version = "0.1"
 CopyrightMesg = "Copyright (c) 2020-<YEAR> Bruce Long"
 Authors = "Bruce Long"
@@ -142,7 +142,7 @@ struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
         parseAndExtractor.start(parser, source.inputBuf, toFill)
         while(pumpParserInputBuf()){}
         source.inputBuf.close()
-//parseAndExtractor.waitForThreadsToExit() 
+//parseAndExtractor.waitForThreadsToExit()
         threadedNormalizer.waitForExit()
         //log("Result:"+toString(toFill))
     }
@@ -176,7 +176,7 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
         trimWS(specString)
         me int: colonPos <- specString.find(":")
         me string: connectionTypeStr <- specString.subStr(0, colonPos)
-        me string: connectionIDStr   <- specString.subStr(colonPos+1) // Skip :
+        me string: connectionIDStr   <- specString.subStr(colonPos+3) // Skip ://
         if     (connectionTypeStr=="file"){our FileConnector:: retval; retval.init(connectionIDStr); return(retval)}
         else if(connectionTypeStr=="repo"){our RepoConnector:: retval; retval.init(connectionIDStr); return(retval)}
         else if(connectionTypeStr=="user"){our UserConnector:: retval; retval.init(connectionIDStr); return(retval)}
@@ -196,8 +196,8 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
     me string: statusMsg
     me bool: idling
 
-    me bool: normalizeFromStreamSpec(our infon: infToFill, me string: streamSpec) <- {
-        return(connectionMgr.startNewConnection(infToFill, streamSpec))
+    me bool: normalizeFromStreamSpec(our POV: infToFill, me string: streamSpec) <- {
+        return(connectionMgr.startNewConnection(infToFill.pItem, streamSpec))
     }
 
     void: initCoreServices()<-{
@@ -208,7 +208,7 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
         streamingNormMode <- true
         initHardFuncNames()
         statusMsg <- ""  // Empty == OK
-        masterFile <- "file:"+topFile
+        masterFile <- "file://"+topFile
         initCoreServices()
         agent.init(this)
         idling <- true
@@ -216,8 +216,8 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
     }
     void: start() <- {
         //agent.device <- connectionMgr.device.initAndLoad(connectionMgr, "device", masterFile)
-        //agent.user   <- connectionMgr.user.initAndLoad(connectionMgr,  "user", "file:user.pr")
-        agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","file:user.pr")
+        agent.user   <- connectionMgr.user.initAndLoad(connectionMgr,  "user", "file://user.pr")
+        agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","file://WORLD/World.pr")
 
 //log("WORLD:"+toString(agent.world))
     }

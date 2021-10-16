@@ -524,8 +524,8 @@ struct SlipView: inherits=ProactiveGUIWidget{
         crntBoardIdx <- boardIdx
     }
     bool: loadData(our infon: theInfon) <- {
-        myInfon<-theInfon;
-        our POV: projectsInf   <- myInfon.fetchField("projects");             if(projectsInf==NULL){log("extract projectsInf = NULL"); return(true)}
+        our POV: userInfon     <- theInfon.fetchField("brucelong");             if(userInfon==NULL){log("extract userInfon = NULL"); return(true)}
+        our POV: projectsInf   <- fetchField(userInfon, "projects")
         our POV: propertiesInf <- fetchField(projectsInf, "properties")
         our POV: titleInf      <- fetchField(propertiesInf, "title")
             title      <- fetchStringField(titleInf)
@@ -539,7 +539,7 @@ struct SlipView: inherits=ProactiveGUIWidget{
             }
             pov <- pov.next
         }
-        setCrntBoard(proactiveGUI.presenter.modelMgr.getInt64(myInfon.mySymbol()+"/crntBorad", 1)) // Default to last board for now
+        setCrntBoard(proactiveGUI.presenter.modelMgr.getInt64(theInfon.mySymbol()+"/crntBorad", 1)) // Default to last board for now
         return(false) // No errors
     }
 }
@@ -563,7 +563,7 @@ struct APP{
     me void: createAppArea(me GUI_Frame: frame) <- {
         Allocate(slipView)
         drawing_area  <- slipView.initProactiveGUI()
-        slipView.loadData(CORE.agent.world)               //// This cannot be CORE.WORLD, but must be a fetched infon.
+        slipView.loadData(CORE.agent.user)
         addToContainerAndExpand (frame, drawing_area)
     }
 }
