@@ -25,6 +25,7 @@ runCode=`
     if(topFile==""){topFile <- "world.pr"}
     CORE.run(topFile)
 `
+
 struct Repository{ // Load, track, save, pull, push, pullReq, etc.
     me string: repoName
     me string: repoLocator
@@ -41,6 +42,8 @@ struct Repository{ // Load, track, save, pull, push, pullReq, etc.
 }
 
 model InfonConnector{
+    me string: typeID
+    me string: sourcePath
     me strBuf: inputBuf
     me strBuf: outputBuf
     me int:    statusCode
@@ -59,9 +62,12 @@ struct InfonConnector{}
 struct FileConnector: inherits=InfonConnector {
     me FileStream: dataFile
     void: init(me string: itemRefStr) <- {
-        me string: fileDir <- getAssetsDir() +"/"+itemRefStr //+"/repos"
-        dataFile.open(fileDir)
-        if (dataFile.failure()){logFatalError("Failed to open file: " + fileDir + "\n")}
+        typeID <- "file"
+        sourcePath <- itemRefStr //+"/repos"
+        //TODO: Make sure sourcePath does not have '..' in it.
+        me string: filePath <- getAssetsDir() +"/"+sourcePath
+        dataFile.open(filePath)
+        if (dataFile.failure()){logFatalError("Failed to open file: " + filePath + "\n")}
         inputEOF<-false
         log("Initialized:"+itemRefStr)
     }
@@ -114,6 +120,7 @@ struct PhoneConnector   : inherits=InfonConnector {} // Services offered by phon
 
 struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
     our InfonConnector: source
+    me uint64: sourceID
     their Agent: parentAgent
     our ProteusParser: parser
     our infon: toFill
@@ -129,8 +136,9 @@ struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
         return(!source.inputEOF)
     }
 
-    void: init(our InfonConnector: connector, their Agent: agent, our ProteusParser: eParser, our infon: infToFill<-NULL) <- {
-        source <- connector
+    void: init(our InfonConnector: connector, their Agent: agent, our ProteusParser: eParser, our infon: infToFill, me uint64: SourceID) <- {
+        source   <- connector
+        sourceID <- SourceID
         parentAgent <- agent
         parser <- eParser
         toFill <- infToFill
@@ -154,29 +162,43 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
     me Repository: device
     me Repository: user
     me Repository: world
-    me List<our InfonStream>: connections
-    our ProteusParser: parser
+    me uint64: lastSourceID
+    me Map<uint64, our InfonStream>: infonSourceRecords // Maps infon::sourceID to the stream it came from.
+
 
     void: init(their Agent: agnt) <- {
         agent <- agnt
-        connections.clear()
-        Allocate(parser)
-        parser.populateGrammar()
+        lastSourceID <- 0
     }
     me bool: startNewConnection(our infon: toFill, me string: specString) <- {
+        me string: parentPath <- ""
+        if(infonSourceRecords.containsKey(toFill.sourceID)){
+            parentPath <- infonSourceRecords[toFill.sourceID].source.sourcePath
+            // Check for issues and remove slug from parentPath
+            me int: lastSlashPos <- findLastSubString(parentPath, "/")
+            if(lastSlashPos>=0){
+                parentPath <- parentPath.subStr(0, lastSlashPos+1)
+            }
+        }
         log("Starting Connection:"+specString)
-        our InfonConnector: connector <- makeInfonConnector(specString)
+        lastSourceID <+- 1
+        //TODO: Should need the next line as a proxy. Fix bug by checking modelArgs in codeNewVarStr() for {} constructor calls.
+        their SlipstreamCore: tmpCore <- CORE
+        our ProteusParser:: parser{CORE.infonGrammar, tmpCore, true, lastSourceID}
+        our InfonConnector: connector <- makeInfonConnector(specString, parentPath)
         our InfonStream:: iStream
-        iStream.init(connector, agent, parser, toFill)
-        connections.append(iStream)
+        iStream.init(connector, agent, parser, toFill, lastSourceID)
+        infonSourceRecords[lastSourceID] <- iStream
         iStream.start()
         return(true)
     }
-    our InfonConnector: makeInfonConnector(me string: specString)<-{ // connector factory
+    our InfonConnector: makeInfonConnector(me string: specString, me string: parentPath)<-{ // connector factory
         trimWS(specString)
+// if there is no schema: and no '//' concat specString and parentPath.
+//TODO: gracefully handle errors
         me int: colonPos <- specString.find(":")
         me string: connectionTypeStr <- specString.subStr(0, colonPos)
-        me string: connectionIDStr   <- specString.subStr(colonPos+3) // Skip ://
+        me string: connectionIDStr   <- parentPath+specString.subStr(colonPos+3) // Skip ://
         if     (connectionTypeStr=="file"){our FileConnector:: retval; retval.init(connectionIDStr); return(retval)}
         else if(connectionTypeStr=="repo"){our RepoConnector:: retval; retval.init(connectionIDStr); return(retval)}
         else if(connectionTypeStr=="user"){our UserConnector:: retval; retval.init(connectionIDStr); return(retval)}
@@ -207,6 +229,7 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
     void: init(me string: topFile) <- {
         streamingNormMode <- true
         initHardFuncNames()
+        Allocate(infonGrammar)
         statusMsg <- ""  // Empty == OK
         masterFile <- "file://"+topFile
         initCoreServices()
