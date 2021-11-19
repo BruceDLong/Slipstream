@@ -1,0 +1,12 @@
+// Nature model: This is the top-level model of the physical world.
+// Proteus: beta
+// Language: en
+
+{
+%INSERT file://Physics/Physics.pr
+%INSERT file://Chemistry/Chemistry.pr
+%INSERT file://Biology/Biology.pr
+%INSERT file://Space/Space.pr
+%INSERT file://Earth/Earth.pr
+
+}

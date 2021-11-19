@@ -1,0 +1,27 @@
+{
+//engTitle=Eric Cantor Concerned Immigration Reform Push Might Force House Members To Do Things Like 'Read Words'
+//summary=House Majority Leader Eric Cantor (R-Va.) tells Yahoo! News' Chris Moody he's concerned that the Senate's passage of a comprehensive immigration reform bill might put him in the position of having to read some words that are published in the English language. And there might be no end to the widespread need for members of Congress to do the same.
+//image=huffPost/CantorArticle.png
+//link=http://www.huffingtonpost.com/2013/06/28/eric-cantor-immigration-bill_n_3518075.html
+//category=politics
+//posted= 06/28/2013 2:45 pm EDT
+//updated= 06/28/2013 3:58 pm EDT
+//author= Jason Linkins (jason@huffingtonpost.com)
+//import=4
+%>
+House Majority Leader Eric Cantor (R-Va.) tells Yahoo! News' Chris Moody he's concerned that the Senate's passage of a comprehensive immigration reform bill might put him in the position of having to read some words that are published in the English language. And there might be no end to the widespread need for members of Congress to do the same:
+
+    “I can’t tell you what’s in that big Senate bill, and the well over 1,000 or 1,500 pages that it may be, and that’s my concern...I don’t know if you could ask a lot of the senators what’s in that bill. And that’s my concern.”
+<% %\<comprehensive immigration reform bill>:pages=*1500+{page|...} %>
+As always, I'll point out that back when various members of the House were kvetching about how they had to read the House Health Care Reform bill, the folks over at Computational Legal Studies noted that "those versed in the typesetting practices of the United States Congress know that the printed version of a bill contains a significant amount of whitespace including non-trivial space between lines, large headers and margins, an embedded table of contents, and large font." Consequently, a mere page count "vastly overstates the actual length of [the] bill." CLS went on to note that the House Health Care Reform Bill had 363,086 words. By contrast, "Harry Potter And The Order Of The Phoenix" contained 257,000 words.
+
+Two additional data points:
+
+1. "Harry Potter And The Order Of The Phoenix" is a book for small children.
+
+2. "Nearly One in Five Members of Congress Gets Paid Twice."
+
+Suck it up, Eric.
+
+<%
+}

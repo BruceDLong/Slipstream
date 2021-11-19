@@ -1,0 +1,16 @@
+// Infomatics model: Time-line for history, present and future of math, logic, linguistics etc.
+// Proteus: beta
+// Language: en
+
+// This contains math and Proteus concepts necessary for all the other models.
+// For example, time & space, causality, etc.  --  This is to Proteus what cLib is to C and C++.
+// The reason the history is included is that is how we attribute authorship to people in the past.
+
+//&Infomatics = 
+{
+%INSERT file://MathLogic.pr
+%INSERT file://Linguistics.pr
+%INSERT file://Programming.pr
+%INSERT file://Foundation.pr
+}
+
