@@ -1,0 +1,80 @@
+
+
+struct FetchFile: inherits=QProtocol {
+    me string: fileName
+
+    me bool: doStep() <- {return(true)}
+    void: init() <- {myStream.nextOpIsRead()}
+    our QProtocol: createClone() <- {
+        our FetchFile:: retval
+        retval <deep- self
+        return(retval)
+    }
+    void: INIT() <- {
+        protocolIDPrefix <- "FetchFile"
+    }
+    uint64: onServerRead(their QuicStream: qStream, their string: data, me bool: finished) <- {
+        print("\nFETCH SERVER READ:",step,"\n")
+        me uint64: bytesUsed
+        switch(step){
+        case 1:{
+            bytesUsed <- qStream.readLine(data)
+            if(qStream.readNotDone){return(bytesUsed)}
+            qStream.nextOpIsWrite()
+            fileName <- qStream.readBuffer
+            step <+- 1
+            }
+        }
+        return(bytesUsed)
+    }
+    bool: onServerWrite(their QuicStream: qStream) <- {
+        print("\nFETCH SERVER WRITE STEP:",step,"\n")
+        switch(step){
+        case 2:{
+            me FileStream: fileStream
+            fileStream.open(fileName)
+            while(!fileStream.EOF()){ //read from file then write to stream
+                me uint64: bytesUsed <- fileStream.read(qStream.buff)
+                //if(fileStream.failure()){print("ERROR: reading buff, fileName:'",fileName,"'\n")}
+                qStream.write(qStream.buff.subStr(0, bytesUsed))
+            }
+            fileStream.close()
+            qStream.close()
+            step <+- 1
+            return(false)
+            }
+        }
+    }
+    uint64: onClientRead(their QuicStream: qStream, their string: data, me bool: finished)<- {
+        print("\nFETCH CLIENT READ STEP:",step,"\n")
+        print("data:\n",data)
+        me uint64: bytesUsed
+        switch(step){
+        case 2:{
+            qStream.readBuff <+- data
+            bytesUsed <- data.size()
+            step <+- 1
+            if(finished){print("READ BUFF:\n",qStream.readBuff)}
+            }
+        }
+        return(bytesUsed)
+    }
+    bool: onClientWrite(their QuicStream: qStream) <- {
+        print("\nFETCH CLIENT WRITE STEP:",step,"\n")
+        switch(step){
+        case 0:{
+            qStream.write(protocolIDPrefix+"\n")
+            qStream.nextOpIsWrite()
+            step <+- 1
+            return(true)
+            }
+        case 1:{
+            qStream.write(fileName+"\n")
+            qStream.nextOpIsRead()
+            step <+- 1
+            return(false)
+            }
+        }
+        return(false)
+    }
+}

@@ -41,6 +41,8 @@ struct Repository{ // Load, track, save, pull, push, pullReq, etc.
     }
 }
 
+#include quicProtocols.dog
+
 model InfonConnector{
     me string: typeID
     me string: sourcePath
@@ -90,23 +92,26 @@ struct MediaConnector:inherits=InfonConnector {}     // Microphones, audioOut, v
 struct AgentConnector:inherits=InfonConnector {      // Connect to other agents
     me QuicEngine_Client: clientQuicEngine
     void: init(me string: specString) <- {
-        me int: colonPos <- specString.find(":")
-        me string: connectionTypeStr <- specString.subStr(0, colonPos)
-        me string: connectionIDStr   <- specString.subStr(colonPos+1)
-        colonPos <- connectionIDStr.find(":")
-        me string: fileToFetch <- connectionIDStr.subStr(0, colonPos)
-        me string: IPAddr <- connectionIDStr
-        me string: portNumStr <- connectionIDStr
+        me int: colonPos       <- specString.find(":")
+        me string: fileToFetch <- specString.subStr(0, colonPos-1)
+        specString             <- specString.subStr(colonPos)
+        colonPos               <- specString.find("|")
+        me string: IPAddr      <- specString.subStr(0, colonPos)
+        me string: portNumStr  <- specString.subStr(colonPos+1)
         clientQuicEngine.inputBuf <- inputBuf
         clientQuicEngine.init("xferText.pr", false, IPAddr, stoi(portNumStr))
+        our FetchFile:: fetchFile
+        fetchFile.fileName <- fileToFetch
+        clientQuicEngine.addProtocol(fetchFile)
     }
-    bool: pumpInputBuf()  <- {
+    me string: readInputStream()  <- {
+        clientQuicEngine.run()
         //~ if(!dataFile.EOF()){
             //~ me string: line <- dataFile.getLine()
             //~ inputBuf.putStr(line)
             //~ return(true)
         //~ }
-        return(false)
+        return("")
     }
     bool: pumpOutputBuf() <- {return(false)}
 }
@@ -205,6 +210,7 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
         else if(connectionTypeStr=="ipfs"){our IPFSConnector:: retval; retval.init(connectionIDStr); return(retval)}
         else if(connectionTypeStr=="ipns"){our IPNSConnector:: retval; retval.init(connectionIDStr); return(retval)}
         else if(connectionTypeStr=="agnt"){our AgentConnector:: retval; retval.init(connectionIDStr); return(retval)}
+        else if(connectionTypeStr=="quic"){our AgentConnector:: retval; retval.init(connectionIDStr); return(retval)}
         else {}
         log("WARNING, No connection was made for: "+specString)
         return(NULL)
@@ -239,7 +245,7 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
     }
     void: start() <- {
         agent.device <- connectionMgr.device.initAndLoad(connectionMgr, "device", masterFile)
-        agent.user   <- connectionMgr.user.initAndLoad(connectionMgr,  "user", "file://user.pr")
+        agent.user   <- connectionMgr.user.initAndLoad(connectionMgr,  "user", "quic://user.pr|::1|12345")
         agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","file://WORLD/World.pr")
 
 //log("WORLD:"+toString(agent.world))
