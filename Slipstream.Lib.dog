@@ -51,7 +51,9 @@ model InfonConnector{
     me int:    statusCode
     me string: statusMesg
     me bool:   inputEOF
+    their InfonStream: iStreamParent
     void: init(me string: itemRefStr) <- {}
+    void: pumpInputBuff()        <- {}
     me string: readInputStream() <- {return("")}
     bool: pumpOutputBuf()        <- {return(false)}
     void: submitProteusResult()  <- {}
@@ -72,6 +74,10 @@ struct FileConnector: inherits=InfonConnector {
         if (dataFile.failure()){logFatalError("Failed to open file: " + filePath + "\n")}
         inputEOF<-false
         log("Initialized:"+itemRefStr)
+    }
+    void: pumpInputBuff() <- {
+        while(iStreamParent.pumpParserInputBuf()){}
+        inputBuf.close()
     }
     me string: readInputStream()  <- {
         me string: data
@@ -99,13 +105,12 @@ struct AgentConnector:inherits=InfonConnector {      // Connect to other agents
         me string: IPAddr      <- specString.subStr(0, colonPos)
         me string: portNumStr  <- specString.subStr(colonPos+1)
         clientQuicEngine.inputBuf <- inputBuf
-        clientQuicEngine.init("xferText.pr", false, IPAddr, stoi(portNumStr))
+        clientQuicEngine.init(fileToFetch, false, IPAddr, stoi(portNumStr))
         our FetchFile:: fetchFile
         fetchFile.fileName <- fileToFetch
         clientQuicEngine.addProtocol(fetchFile)
     }
     me string: readInputStream()  <- {
-        clientQuicEngine.run()
         //~ if(!dataFile.EOF()){
             //~ me string: line <- dataFile.getLine()
             //~ inputBuf.putStr(line)
@@ -113,6 +118,7 @@ struct AgentConnector:inherits=InfonConnector {      // Connect to other agents
         //~ }
         return("")
     }
+    void: pumpInputBuff() <- {clientQuicEngine.run()}
     bool: pumpOutputBuf() <- {return(false)}
 }
 struct SensorConnector  : inherits=InfonConnector {}
@@ -147,14 +153,14 @@ struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
         parentAgent <- agent
         parser <- eParser
         toFill <- infToFill
+        source.iStreamParent <- self
         if(toFill==NULL){Allocate(toFill)}
     }
     void: start() <- {
         threadedNormalizer.init(parentAgent, toFill)
         threadedNormalizer.start()
         parseAndExtractor.start(parser, source.inputBuf, toFill)
-        while(pumpParserInputBuf()){}
-        source.inputBuf.close()
+        source.pumpInputBuff()
 //parseAndExtractor.waitForThreadsToExit()
         threadedNormalizer.waitForExit()
         //log("Result:"+toString(toFill))

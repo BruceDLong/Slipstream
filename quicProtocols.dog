@@ -1,22 +1,44 @@
 
 
+model errableProtocol: inherits=QProtocol {
+
+    void: INIT() <- {
+        protocolIDPrefix <- "slip/fetchFile"
+    }
+
+}
+
+
 struct FetchFile: inherits=QProtocol {
     me string: fileName
+    their QuicStream: dataStream
 
-    me bool: doStep() <- {return(true)}
-    void: init() <- {myStream.nextOpIsRead()}
     our QProtocol: createClone() <- {
         our FetchFile:: retval
         retval <deep- self
         return(retval)
     }
+    void: init() <- {
+        // Set up data stream.
+        print("############# New Stream\n")
+        if(dataStream==NULL){
+            myStream.getConnection().createNewStream()
+        }
+    }
+    void: onNewStream_CB(their QuicStream: qStream) <- {
+        me uint64: streamID <- qStream.getStreamID()
+        if(streamID==0){}
+        else {dataStream <- qStream}
+    }
     void: INIT() <- {
-        protocolIDPrefix <- "FetchFile"
+        dataStream <- NULL
+        protocolIDPrefix <- "FetchFile" //"slip/fetchFile"
     }
     uint64: onServerRead(their QuicStream: qStream, their string: data, me bool: finished) <- {
         print("\nFETCH SERVER READ:",step,"\n")
         me uint64: bytesUsed
         switch(step){
+        case 0:{step <- 1; myStream.nextOpIsRead()}
         case 1:{
             bytesUsed <- qStream.readLine(data)
             if(qStream.readNotDone){return(bytesUsed)}
@@ -53,8 +75,8 @@ struct FetchFile: inherits=QProtocol {
         case 2:{
             qStream.readBuff <+- data
             bytesUsed <- data.size()
-            step <+- 1
-            if(finished){print("READ BUFF:\n",qStream.readBuff)}
+
+            if(finished and bytesUsed == data.size()){step <+- 1}
             }
         }
         return(bytesUsed)
