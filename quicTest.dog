@@ -54,7 +54,7 @@ struct SlipQuicConnection_Server: inherits=QuicConnection{
 
 
 struct SlipQuicStream_Server: inherits=QuicStream{
-    void: onRead_CB (their QuicStream: h) <- <%{
+    uint64: onRead_CB (their QuicStream: h) <- <%{
         //struct server_stream_ctx *const tssc = (void *) h;
     }
     void: onWrite_CB(their QuicStream: h) <- {
@@ -98,7 +98,7 @@ struct SlipQuicConnection_Client: inherits=QuicConnection{
     their QuicStream: __allocNewStream() <- {their SlipQuicStream_Client: retval; Allocate(retval); return(retval);}
 }
 struct SlipQuicStream_Client: inherits=QuicStream{
-    void: onRead_CB(their QuicStream: h) <- <%{
+    uint64: onRead_CB(their QuicStream: h) <- <%{
         logMgr.Mesg.LogEntry("MESG: ", "SLIP:C4 client::onRead()");
         lsquic_conn_t *conn;
         QuicEngine *quicEng;

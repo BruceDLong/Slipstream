@@ -1,0 +1,70 @@
+{
+
+    @ the   <eng det> = "Word: the"
+    @ this  <eng det> = "Word: this"
+    @ that  <eng det> = "Word: that"
+    @ these <eng det plurl> = "Word: these"
+    @ those <eng det plurl> = "Word: those"
+
+    @ which     <eng det> = "Word: which"
+    @ whichever <eng det> = "Word: whichever"
+    @ what      <eng det> = "Word: what"
+    @ whatever  <eng det> = "Word: whatever"
+
+
+    @ a    <eng det singlr countabl> = "Word: a"
+    @ an   <eng det singlr countabl> = "Word: an"
+    @ some <eng det plurl nonCount>  = "Word: some"
+    @ any  <eng det plurl nonCount>  = "Word: any"
+
+    @ masculine <eng adj> = "masc"
+    @ feminine <eng adj>  = "femn"
+    @ neuter <eng adj>    = "neut"
+    @ nonbinary <eng adj> = "nonb"
+    @ queer <eng adj>     = "queer"
+    @ gender <eng >       = $
+    @ person <eng noun>   = {name  gender}
+
+    @ it      <eng pronoun singlr neut>          = "it"
+    @ its     <eng pronoun singlr neut possiv>   = "its"
+    @ itself  <eng pronoun singlr neut reflexiv> = "itself"
+
+    @ he      <eng pronoun singlr masc subj>          = "he"
+    @ him     <eng pronoun singlr masc objectiv>      = "him"
+    @ his     <eng pronoun singlr masc possiv>        = "his"
+    @ himself <eng pronoun singlr masc reflexiv>      = "himself"
+
+    @ she     <eng pronoun singlr femn subj>          = "she"
+    @ her     <eng pronoun singlr femn objectiv>      = "her"
+    @ hers    <eng pronoun singlr femn possiv>        = "hers"
+    @ herself <eng pronoun singlr femn reflexiv>      = "herself"
+
+    @ they      <eng pronoun singlr subj>        = "they"
+    @ xi        <eng pronoun singlr subj>        = "xi"
+    @ pers      <eng pronoun singlr subj>        = "pers"
+    @ them      <eng pronoun singlr objectiv>    = "them"
+    @ their     <eng pronoun singlr possiv>      = "their"
+    @ theirs    <eng pronoun singlr possiv>      = "theirs"
+    @ themself  <eng pronoun singlr reflexiv>    = "themself"
+    @ theirself <eng pronoun singlr reflexiv>    = "theirself"
+
+    @ we      <eng pronoun plurl femn subj>         = "we"
+    @ us      <eng pronoun plurl femn objectiv>     = "us"
+    @ our     <eng pronoun plurl femn possiv>       = "our"
+    @ ours    <eng pronoun plurl femn possiv>       = "ours"
+    @ ourself <eng pronoun plurl femn reflexiv>     = "ourself"
+
+    @ you        <eng pronoun  femn subj>          = "you"
+    @ your       <eng pronoun  femn objectiv>      = "your"
+    @ yours      <eng pronoun  femn possiv>        = "yours"
+    @ yourself   <eng pronoun singlr femn reflexiv>     = "yourself"
+    @ yourselves <eng pronoun plurl femn reflexiv>      = "yourselves"
+
+    @ they        <eng pronoun plurl subj>          = "they"
+    @ them        <eng pronoun plurl objectiv dep>  = "them"
+    @ their       <eng pronoun plurl possiv indep>  = "their"
+    @ theirs      <eng pronoun plurl possiv>        = "theirs"
+    @ themselves  <eng pronoun plurl reflexiv>      = "themselves"
+
+    ...
+}

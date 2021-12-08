@@ -2,7 +2,7 @@
 // Slipstream.Lib.dog
 
 //LinuxTestBuild: Platform='Linux' CPU='amd64' Lang='CPP' testMode='makeTests';
-LinuxBuild:     Platform='Linux' CPU='amd64' Lang='CPP' optimize='speed';
+LinuxBuild:     Platform='Linux' CPU='amd64' Lang='CPP' LangVersion='GNU' optimize='speed';
 
 FileName = "slipstreamCore"
 Version = "0.1"
@@ -96,7 +96,7 @@ struct RepoConnector: inherits=InfonConnector {}     // Connector to a Repositor
 struct GUI_Connector: inherits=InfonConnector {}     // Kbd, mouse/touchScn, screen, clipboard, etc.
 struct MediaConnector:inherits=InfonConnector {}     // Microphones, audioOut, videoSource
 struct AgentConnector:inherits=InfonConnector {      // Connect to other agents
-    me QuicEngine_Client: clientQuicEngine
+
     void: init(me string: specString) <- {
         me int: colonPos       <- specString.find(":")
         me string: fileToFetch <- specString.subStr(0, colonPos-1)
@@ -104,11 +104,11 @@ struct AgentConnector:inherits=InfonConnector {      // Connect to other agents
         colonPos               <- specString.find("|")
         me string: IPAddr      <- specString.subStr(0, colonPos)
         me string: portNumStr  <- specString.subStr(colonPos+1)
-        clientQuicEngine.inputBuf <- inputBuf
-        clientQuicEngine.init(fileToFetch, false, IPAddr, stoi(portNumStr))
+        CORE.quicClient.inputBuf <- inputBuf
         our FetchFile:: fetchFile
-        fetchFile.fileName <- fileToFetch
-        clientQuicEngine.addProtocol(fetchFile)
+        fetchFile.setArgs(fileToFetch)
+        CORE.quicClient.qConn.addProtocol(fetchFile)
+        CORE.quicClient.start()
     }
     me string: readInputStream()  <- {
         //~ if(!dataFile.EOF()){
@@ -118,7 +118,7 @@ struct AgentConnector:inherits=InfonConnector {      // Connect to other agents
         //~ }
         return("")
     }
-    void: pumpInputBuff() <- {clientQuicEngine.run()}
+    void: pumpInputBuff() <- {CORE.quicClient.run()}
     bool: pumpOutputBuf() <- {return(false)}
 }
 struct SensorConnector  : inherits=InfonConnector {}
@@ -234,9 +234,14 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
         return(connectionMgr.startNewConnection(infToFill.pItem, streamSpec))
     }
 
+    me QuicClient_Engine: quicClient
+
     void: initCoreServices()<-{
         // Init P2P connections and DHTs
         // Etc.
+    me string: ipAddr <- "::1"
+    me string: portNum<- "12345"
+        quicClient.init("CFile", false, ipAddr, stoi(portNum))
     }
     void: init(me string: topFile) <- {
         streamingNormMode <- true

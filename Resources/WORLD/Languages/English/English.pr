@@ -6,48 +6,48 @@
 //       Therefore, this is not the compete description.
 
 
-&English = {  // In case you are browsing and cannot tell, this is a work in progress. :)
-	&Engligh Grammar = {
+@English = {  // In case you are browsing and cannot tell, this is a work in progress. :)
+    @Engligh Grammar = {
 
-		&language element = {parse==words, meaning}
+        @language element = {parse==words, meaning}
 
-	 //   &parse = {language element | ...}
+     //   @parse = {language element | ...}
 
-		// &language utterance = // negotiator or sentence
-		// $sentence = finite clause
+        // @language utterance = // negotiator or sentence
+        // @sentence = finite clause
 
-		&clause = (
-		    language element = { // oneOf:
-		            {(\<parse> = {subject, predicate }), (\<meaning> = {(\<parse>:<subject> = \<parse>:<predicate>)})},
-		            {(\<parse> = {adjunct, clause}), (\<meaning> = {})},
-		            {(\<parse> = {clause, adjunct }), (\<meaning> = {})},
-		            {(\<parse> = {subject, adjunct, predicate }), (\<meaning> = {})}
+        @clause = (
+            language element = { // oneOf:
+                    {(\<parse> = {subject, predicate }), (\<meaning> = {(\<parse>:<subject> = \<parse>:<predicate>)})},
+                    {(\<parse> = {adjunct, clause}), (\<meaning> = {})},
+                    {(\<parse> = {clause, adjunct }), (\<meaning> = {})},
+                    {(\<parse> = {subject, adjunct, predicate }), (\<meaning> = {})}
 
-		    }*_+[...]
-		)
+            }*_+[...]
+        )
 
-		&subject            = (language element = noun phrase)
-		&subject complement = (language element = noun phrase)
-		&object             = (language element = noun phrase)
-		&object complement  = (language element = noun phrase)
-		&indirect object    = (language element = noun phrase)
+        @subject            = (language element = noun phrase)
+        @subject complement = (language element = noun phrase)
+        @object             = (language element = noun phrase)
+        @object complement  = (language element = noun phrase)
+        @indirect object    = (language element = noun phrase)
 
-		&noun phrase = { // oneOf:
-		            {(\<parse> = {determiner, selector }), (\<meaning> = {(\<parse>:<subject> = \<parse>:<predicate>)})},
-		            {(\<parse> = {possessor chain, selector }), (\<meaning> = {})},// TODO: handle 'all of the', 'many of the', etc. Also, "the X of Y('s)"
+        @noun phrase = { // oneOf:
+                    {(\<parse> = {determiner, selector }), (\<meaning> = {(\<parse>:<subject> = \<parse>:<predicate>)})},
+                    {(\<parse> = {possessor chain, selector }), (\<meaning> = {})},// TODO: handle 'all of the', 'many of the', etc. Also, "the X of Y('s)"
 
-		    }*_+[...]
+            }*_+[...]
 
-		&selector = { // oneOf:
-		            {(\<parse> = {modifier,   selector }), (\<meaning> = {(\<parse>:<subject> = \<parse>:<predicate>)})},
-		            {(\<parse> = {quantifier, selector }), (\<meaning> = {})},
-		            {(\<parse> = {selector,   selector }), (\<meaning> = {})}
-		            {(\<parse> = noun), (\<meaning> = {})},
-		            {(\<parse> = {selector, selector postmodifier }), (\<meaning> = {})},
+        @selector = { // oneOf:
+                    {(\<parse> = {modifier,   selector }), (\<meaning> = {(\<parse>:<subject> = \<parse>:<predicate>)})},
+                    {(\<parse> = {quantifier, selector }), (\<meaning> = {})},
+                    {(\<parse> = {selector,   selector }), (\<meaning> = {})}
+                    {(\<parse> = noun), (\<meaning> = {})},
+                    {(\<parse> = {selector, selector postmodifier }), (\<meaning> = {})},
 
-		    }*_+[...]
-		}
-	}
+            }*_+[...]
+        }
+    }
 
 
 /*   Temporary notes:
@@ -67,4 +67,3 @@
 // TODO: History and Etymology
 
 }
-

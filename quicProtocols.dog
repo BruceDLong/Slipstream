@@ -1,102 +1,70 @@
 
 
-model errableProtocol: inherits=QProtocol {
-
-    void: INIT() <- {
-        protocolIDPrefix <- "slip/fetchFile"
-    }
-
-}
-
-
 struct FetchFile: inherits=QProtocol {
     me string: fileName
-    their QuicStream: dataStream
+    me FileStream: fileStream
 
     our QProtocol: createClone() <- {
         our FetchFile:: retval
-        retval <deep- self
         return(retval)
     }
-    void: init() <- {
-        // Set up data stream.
-        print("############# New Stream\n")
-        if(dataStream==NULL){
-            myStream.getConnection().createNewStream()
-        }
-    }
-    void: onNewStream_CB(their QuicStream: qStream) <- {
-        me uint64: streamID <- qStream.getStreamID()
-        if(streamID==0){}
-        else {dataStream <- qStream}
-    }
+    void: init() <- {}
+    void: onNewStream_CB(their QuicStream: qStream) <- {}
     void: INIT() <- {
-        dataStream <- NULL
         protocolIDPrefix <- "FetchFile" //"slip/fetchFile"
     }
+
+    me string: serverInit() <- {
+        print("INIT SERVER: ", protocolArgs,"\n")
+        fileName <- protocolArgs
+        fileStream.open(fileName)
+        if(fileStream.failure()){
+            print("ERROR: opening file:'",fileName,"'\n")
+            return("ERR:"+taskID+":ERROR opening file:'"+fileName+"\n")
+        }
+        return("OK:"+taskID+"\n")
+    }
+
     uint64: onServerRead(their QuicStream: qStream, their string: data, me bool: finished) <- {
         print("\nFETCH SERVER READ:",step,"\n")
         me uint64: bytesUsed
-        switch(step){
-        case 0:{step <- 1; myStream.nextOpIsRead()}
-        case 1:{
-            bytesUsed <- qStream.readLine(data)
-            if(qStream.readNotDone){return(bytesUsed)}
-            qStream.nextOpIsWrite()
-            fileName <- qStream.readBuffer
-            step <+- 1
-            }
-        }
+
         return(bytesUsed)
     }
     bool: onServerWrite(their QuicStream: qStream) <- {
-        print("\nFETCH SERVER WRITE STEP:",step,"\n")
-        switch(step){
-        case 2:{
-            me FileStream: fileStream
-            fileStream.open(fileName)
-            while(!fileStream.EOF()){ //read from file then write to stream
-                me uint64: bytesUsed <- fileStream.read(qStream.buff)
-                //if(fileStream.failure()){print("ERROR: reading buff, fileName:'",fileName,"'\n")}
-                qStream.write(qStream.buff.subStr(0, bytesUsed))
-            }
+        me uint64: streamID <- qStream.getStreamID()
+        print("\nFETCH SERVER WRITE STEP:",step," fileName:", fileName,"  STREAM_ID:",streamID,"\n")
+        me uint64: bytesUsed <- fileStream.read(qStream.buff)
+        if(fileStream.failure()){print("ERROR: reading buff, file:'",fileName,"'\n")}
+        qStream.write(qStream.buff.subStr(0, bytesUsed))
+        print(qStream.buff.subStr(0, bytesUsed))
+        if(fileStream.EOF()){
             fileStream.close()
             qStream.close()
             step <+- 1
-            return(false)
-            }
         }
+        return(false)
     }
-    uint64: onClientRead(their QuicStream: qStream, their string: data, me bool: finished)<- {
-        print("\nFETCH CLIENT READ STEP:",step,"\n")
-        print("data:\n",data)
-        me uint64: bytesUsed
-        switch(step){
-        case 2:{
-            qStream.readBuff <+- data
-            bytesUsed <- data.size()
 
-            if(finished and bytesUsed == data.size()){step <+- 1}
+    void: clientInit() <- {}
+    uint64: onClientRead(their QuicStream: qStream, their string: data, me bool: finished)<- {
+        me uint64: streamID <- qStream.getStreamID()
+        me uint64: bytesUsed
+        print("\nFETCH CLIENT READ STEP:",step,"  STREAM_ID:",streamID,"\n")
+        if(streamID==0){}
+        else{
+            print(data)
+            qStream.readBuffer <- data
+            bytesUsed <- data.size()
+            if(finished and bytesUsed == data.size()){
+                qStream.close()
             }
         }
         return(bytesUsed)
     }
     bool: onClientWrite(their QuicStream: qStream) <- {
         print("\nFETCH CLIENT WRITE STEP:",step,"\n")
-        switch(step){
-        case 0:{
-            qStream.write(protocolIDPrefix+"\n")
-            qStream.nextOpIsWrite()
-            step <+- 1
-            return(true)
-            }
-        case 1:{
-            qStream.write(fileName+"\n")
-            qStream.nextOpIsRead()
-            step <+- 1
-            return(false)
-            }
-        }
+
         return(false)
     }
 }
