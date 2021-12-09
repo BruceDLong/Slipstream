@@ -18,14 +18,17 @@ LicenseText = `This file is part of the "Slipstream Development Suite" All Right
 runCode=`
     logMgr.init(OFile)
     log("Slipstream CORE started")
-    me SlipstreamCore: CORE
     CommandLineManager.processCmdLine(joinCmdStrings(argc, argv), false);
-    CommandLineManager.defineOption("Slip", "topFile", "-f", "--file", "The top-level file to load.")
+    CommandLineManager.defineOption("Slip", "topFile", "-f", "--file", "The top-level file to load.", "")
     me string: topFile <- CommandLineManager.getOption("Slip", "topFile")
     if(topFile==""){topFile <- "world.pr"}
     CORE.run(topFile)
 `
+do ManageCmdLine(cmd)
 
+struct GLOBAL{
+    me SlipstreamCore: CORE
+}
 struct Repository{ // Load, track, save, pull, push, pullReq, etc.
     me string: repoName
     me string: repoLocator
@@ -104,10 +107,14 @@ struct AgentConnector:inherits=InfonConnector {      // Connect to other agents
         colonPos               <- specString.find("|")
         me string: IPAddr      <- specString.subStr(0, colonPos)
         me string: portNumStr  <- specString.subStr(colonPos+1)
-        CORE.quicClient.inputBuf <- inputBuf
+        //CORE.quicClient.inputBuf <- inputBuf
+        their QuicClient_Connection: qConn  <- CORE.quicClient.getClientConnection(IPAddr, portNumStr)
+        if(qConn==NULL){log("ERROR setting up QuicClient_Connection."); return()}
+
         our FetchFile:: fetchFile
         fetchFile.setArgs(fileToFetch)
-        CORE.quicClient.qConn.addProtocol(fetchFile)
+        fetchFile.source <- self
+        qConn.addProtocol(fetchFile)
         CORE.quicClient.start()
     }
     me string: readInputStream()  <- {
@@ -118,7 +125,7 @@ struct AgentConnector:inherits=InfonConnector {      // Connect to other agents
         //~ }
         return("")
     }
-    void: pumpInputBuff() <- {CORE.quicClient.run()}
+    void: pumpInputBuff() <- {}
     bool: pumpOutputBuf() <- {return(false)}
 }
 struct SensorConnector  : inherits=InfonConnector {}

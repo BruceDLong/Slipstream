@@ -3,6 +3,7 @@
 struct FetchFile: inherits=QProtocol {
     me string: fileName
     me FileStream: fileStream
+    their InfonConnector: source
 
     our QProtocol: createClone() <- {
         our FetchFile:: retval
@@ -53,9 +54,11 @@ struct FetchFile: inherits=QProtocol {
         print("\nFETCH CLIENT READ STEP:",step,"  STREAM_ID:",streamID,"\n")
         if(streamID==0){}
         else{
-            print(data)
+            print(data+'\n')
             qStream.readBuffer <- data
             bytesUsed <- data.size()
+            source.iStreamParent.parser.addSlotsToSSets(data.size())
+            source.inputBuf.putStr(data)
             if(finished and bytesUsed == data.size()){
                 qStream.close()
             }
