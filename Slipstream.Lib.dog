@@ -262,9 +262,10 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
         connectionMgr.init(agent)
     }
     void: start() <- {
-        agent.device <- connectionMgr.device.initAndLoad(connectionMgr, "device", masterFile)
-        agent.user   <- connectionMgr.user.initAndLoad(connectionMgr,  "user", "quic://user.pr|::1|12345")
-        agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","file://WORLD/World.pr")
+        //agent.device <- connectionMgr.device.initAndLoad(connectionMgr, "device", masterFile)
+        //agent.user   <- connectionMgr.user.initAndLoad(connectionMgr,  "user", "quic://user.pr|::1|12345")
+        agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","quic://WORLD/World.pr|::1|12345")
+        //agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","file://WORLD/World.pr")
 
 //log("WORLD:"+toString(agent.world))
     }
