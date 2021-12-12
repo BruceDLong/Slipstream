@@ -16,8 +16,8 @@
     @Avogadro-constant  <SI> = *_+602214076000000000000000         // 1/mole
     @Lumun-constant     <SI> = *_+683 // lumins/watt
 
-%INSERT file://Foundation.pr
-%INSERT file://MathLogic.pr
-%INSERT file://Linguistics.pr
-%INSERT file://Programming.pr
+%INSERT /Foundation.pr
+%INSERT /MathLogic.pr
+%INSERT /Linguistics.pr
+%INSERT /Programming.pr
 }

@@ -4,11 +4,11 @@
 
 {
 // Open these files to see what they contain.
-//%INSERT file://Informatics/Informatics.pr
-%INSERT file://Languages/Languages.pr
-%INSERT file://Nature/Nature.pr
-%INSERT file://People/People.pr
-%INSERT file://Self/Self.pr
-%INSERT file://Things/Things.pr
-%INSERT file://ThisDevice/ThisDevice.pr
+//%INSERT /Informatics/Informatics.pr
+%INSERT /Languages/Languages.pr
+%INSERT /Nature/Nature.pr
+%INSERT /People/People.pr
+%INSERT /Self/Self.pr
+%INSERT /Things/Things.pr
+%INSERT /ThisDevice/ThisDevice.pr
 }

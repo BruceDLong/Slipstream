@@ -7,6 +7,6 @@
 // NOTE: Adding a language to the Proteus Core involves coding in C++. Please ask for help on the mailing list.
 
 {
-%INSERT file://English/English.pr
-
+%INSERT /English/English.pr
+...
 }

@@ -3,10 +3,10 @@
 // Language: en
 
 {
-%INSERT file://Physics/Physics.pr
-%INSERT file://Chemistry/Chemistry.pr
-%INSERT file://Biology/Biology.pr
-%INSERT file://Space/Space.pr
-%INSERT file://Earth/Earth.pr
+%INSERT /Physics/Physics.pr
+%INSERT /Chemistry/Chemistry.pr
+%INSERT /Biology/Biology.pr
+%INSERT /Space/Space.pr
+%INSERT /Earth/Earth.pr
 
 }

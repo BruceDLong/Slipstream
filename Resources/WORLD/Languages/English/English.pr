@@ -5,7 +5,8 @@
 // NOTE: Part of natural languages is described in the C++ code of Proteus Core.
 //       Therefore, this is not the compete description.
 
-
+{
+/*
 @English = {  // In case you are browsing and cannot tell, this is a work in progress. :)
     @Engligh Grammar = {
 
@@ -48,7 +49,7 @@
             }*_+[...]
         }
     }
-
+*/
 
 /*   Temporary notes:
     addRule(1, pred_VP,  1, "$predicate",   "$verbPhrase");
@@ -60,9 +61,9 @@
     addRule(1, VP_verb,  1, "$verbPhrase",  "%verb");
 */
 
-%INSERT file://EnglishWords.pr
-%INSERT file://EnglishFirstNames.pr
-%INSERT file://EnglishLastNames.pr
+%INSERT /EnglishWords.pr
+%INSERT /EnglishFirstNames.pr
+%INSERT /EnglishLastNames.pr
 
 // TODO: History and Etymology
 

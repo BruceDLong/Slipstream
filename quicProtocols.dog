@@ -1,73 +1,128 @@
 
+struct GLOBAL{
+    const string: slipnode_default_port <- "2006"
+}
+
+struct SStreamSpec { // Slipstream Protocols
+    me string: spec
+    me string: protocolTag
+    me string: connectArgs
+    me string: contentArgs
+    me string: ipAddr
+    me string: portNum
+    me bool: setSpec(me string: fullSpec)    <- {spec <- fullSpec;    toParts()}
+    me bool: setProtocolTag(me string: spec) <- {protocolTag <- spec;  toSpec()}
+    me bool: setConnectArgs(me string: spec) <- {connectArgs <- spec;  toSpec()}
+    me bool: setContentArgs(me string: spec) <- {contentArgs <- spec;  toSpec()}
+
+    // TODO: Validate and handle errors
+    void: toSpec() <- {
+        spec <- ""
+        if(protocolTag!=""){spec <+- protocolTag+"://"}
+        if(connectArgs!=""){spec <+- connectArgs}
+        if(contentArgs!=""){spec <+- "/"+contentArgs}
+        //TODO: Make sure spec does not have '..' in it.
+    }
+    void: toParts() <- {
+        trimWS(spec)
+        me string: temp <- spec
+        me int: markPos <- temp.find("://")
+        if(markPos>=0){
+            protocolTag <- temp.subStr(0, markPos)
+            temp <- temp.subStr(markPos+3)
+        } else{protocolTag <- "file"}
+
+        markPos <- temp.find("/")
+        if(markPos>=0){connectArgs <- temp.subStr(0, markPos)}
+        contentArgs <- temp.subStr(markPos+1)
+
+        if(connectArgs!=""){
+            temp <- connectArgs
+            markPos <- connectArgs.find("]")
+            if(markPos>=0){
+                 ipAddr <- connectArgs.subStr(1, markPos-1)
+                 temp   <- connectArgs.subStr(markPos+1)
+                 markPos <- temp.find(":")
+                if(markPos>=0){portNum <- temp.subStr(markPos+1)}
+                else {portNum <- slipnode_default_port}
+            } else {
+                markPos <- connectArgs.find(":")
+                if(markPos>=0){
+                    ipAddr  <- connectArgs.subStr(0, markPos)
+                    portNum <- connectArgs.subStr(markPos+1)
+                } else {
+                    ipAddr  <- connectArgs
+                    portNum <- slipnode_default_port
+                }
+            }
+
+            if(ipAddr[0]=="["){ipAddr <- ipAddr.subStr(1, ipAddr.size()-2)}
+        }
+    }
+}
 
 struct FetchFile: inherits=QProtocol {
     me string: fileName
     me FileStream: fileStream
     their InfonConnector: source
 
+    void: init() <- {}
     our QProtocol: createClone() <- {
         our FetchFile:: retval
         return(retval)
     }
-    void: init() <- {}
-    void: onNewStream_CB(their QuicStream: qStream) <- {}
     void: INIT() <- {
         protocolIDPrefix <- "FetchFile" //"slip/fetchFile"
     }
+    void: onNewStream_CB(their QuicStream: qStream) <- {}
 
     me string: serverInit() <- {
-        print("INIT SERVER: ", protocolArgs,"\n")
+        print("                 INIT FetchFile SERVER: ", protocolArgs,"\n")
         fileName <- protocolArgs
         fileStream.open(fileName)
         if(fileStream.failure()){
-            print("ERROR: opening file:'",fileName,"'\n")
+            print("                  ERROR: opening file:'",fileName,"'\n")
             return("ERR:"+taskID+":ERROR opening file:'"+fileName+"\n")
         }
         return("OK:"+taskID+"\n")
     }
-
     uint64: onServerRead(their QuicStream: qStream, their string: data, me bool: finished) <- {
-        print("\nFETCH SERVER READ:",step,"\n")
-        me uint64: bytesUsed
-
+        me uint64: streamID <- qStream.getStreamID()
+        print("\n               FetchFile SERVER READ STEP:",step,"  STREAM_ID:",streamID,"\n")
+        print("    DATA:",data,"\n")
+        me uint64: bytesUsed <- 0
         return(bytesUsed)
     }
     bool: onServerWrite(their QuicStream: qStream) <- {
         me uint64: streamID <- qStream.getStreamID()
-        print("\nFETCH SERVER WRITE STEP:",step," fileName:", fileName,"  STREAM_ID:",streamID,"\n")
+        print("\n                  FetchFile SERVER WRITE STEP:",step," fileName:", fileName,"  STREAM_ID:",streamID,"\n")
         me uint64: bytesUsed <- fileStream.read(qStream.buff)
-        if(fileStream.failure()){print("ERROR: reading buff, file:'",fileName,"'\n")}
+        if(fileStream.failure()){print("                  ERROR: reading buff, file:'",fileName,"'\n")}
         qStream.write(qStream.buff.subStr(0, bytesUsed))
         print(qStream.buff.subStr(0, bytesUsed))
         if(fileStream.EOF()){
             fileStream.close()
             qStream.close()
             step <+- 1
+            return(false)
         }
-        return(false)
+        return(true)
     }
 
     void: clientInit() <- {}
     uint64: onClientRead(their QuicStream: qStream, their string: data, me bool: finished)<- {
         me uint64: streamID <- qStream.getStreamID()
         me uint64: bytesUsed
-        print("\nFETCH CLIENT READ STEP:",step,"  STREAM_ID:",streamID,"\n")
-        if(streamID==0){}
-        else{
-            print(data+'\n')
-            qStream.readBuffer <- data
-            bytesUsed <- data.size()
-            source.iStreamParent.parser.addSlotsToSSets(data.size())
-            source.inputBuf.putStr(data)
-            if(finished and bytesUsed == data.size()){
-                qStream.close()
-            }
+        print("\n                  FetchFile CLIENT READ STEP:",step,"  STREAM_ID:",streamID,"\n")
+        qStream.readBuffer <- data
+        bytesUsed <- data.size()
+        source.iStreamParent.parser.addSlotsToSSets(data.size())
+        source.inputBuf.putStr(data)
+        if(finished and bytesUsed == data.size()){
+            source.inputBuf.close()
+            qStream.close()
         }
         return(bytesUsed)
     }
-    bool: onClientWrite(their QuicStream: qStream) <- {
-        print("\nFETCH CLIENT WRITE STEP:",step,"\n")
-
-        return(false)
-    }
+    bool: onClientWrite(their QuicStream: qStream) <- {return(false)}
 }
