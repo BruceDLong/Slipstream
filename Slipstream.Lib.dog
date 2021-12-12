@@ -47,7 +47,7 @@ struct Repository{ // Load, track, save, pull, push, pullReq, etc.
     }
 }
 
-#include quicProtocols.dog
+#include Protocols.dog
 
 model InfonConnector{
     our SStreamSpec: streamSpec
