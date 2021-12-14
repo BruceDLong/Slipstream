@@ -10,20 +10,21 @@ struct SStreamSpec { // Slipstream Protocols
     me string: contentArgs
     me string: ipAddr
     me string: portNum
-    me bool: setSpec(me string: fullSpec)    <- {spec <- fullSpec;    toParts()}
-    me bool: setProtocolTag(me string: spec) <- {protocolTag <- spec;  toSpec()}
-    me bool: setConnectArgs(me string: spec) <- {connectArgs <- spec;  toSpec()}
-    me bool: setContentArgs(me string: spec) <- {contentArgs <- spec;  toSpec()}
+    me bool: setSpec(me string: fullSpec)    <- {spec <- fullSpec;     return(toParts())}
+    me bool: setProtocolTag(me string: spec) <- {protocolTag <- spec;  return(toSpec())}
+    me bool: setConnectArgs(me string: spec) <- {connectArgs <- spec;  return(toSpec())}
+    me bool: setContentArgs(me string: spec) <- {contentArgs <- spec;  return(toSpec())}
 
     // TODO: Validate and handle errors
-    void: toSpec() <- {
+    me bool: toSpec() <- {
         spec <- ""
         if(protocolTag!=""){spec <+- protocolTag+"://"}
         if(connectArgs!=""){spec <+- connectArgs}
         if(contentArgs!=""){spec <+- "/"+contentArgs}
         //TODO: Make sure spec does not have '..' in it.
+        return(true)
     }
-    void: toParts() <- {
+    me bool: toParts() <- {
         trimWS(spec)
         me string: temp <- spec
         me int: markPos <- temp.find("://")
@@ -58,6 +59,7 @@ struct SStreamSpec { // Slipstream Protocols
 
             if(ipAddr[0]=="["){ipAddr <- ipAddr.subStr(1, ipAddr.size()-2)}
         }
+        return(true)
     }
 }
 
@@ -126,3 +128,65 @@ struct FetchFile: inherits=QProtocol {
     }
     bool: onClientWrite(their QuicStream: qStream) <- {return(false)}
 }
+/*
+// Protocol to facilitate interactions via stdio
+struct STDIO: inherits=QProtocol {
+    me string: fileName
+    me FileStream: fileStream
+    their InfonConnector: source
+
+    void: init() <- {}
+    our QProtocol: createClone() <- {
+        our FetchFile:: retval
+        return(retval)
+    }
+    void: INIT() <- {
+        protocolIDPrefix <- "slip/STDIO"
+    }
+    void: onNewStream_CB(their QuicStream: qStream) <- {}
+
+    me string: serverInit() <- {
+        print("                 INIT FetchFile SERVER: ", protocolArgs,"\n")
+        fileName <- protocolArgs
+        return("OK:"+taskID+"\n")
+    }
+    uint64: onServerRead(their QuicStream: qStream, their string: data, me bool: finished) <- {
+        me uint64: streamID <- qStream.getStreamID()
+        print("\n               FetchFile SERVER READ STEP:",step,"  STREAM_ID:",streamID,"\n")
+        print("    DATA:",data,"\n")
+        me uint64: bytesUsed <- 0
+        /// Write data to stdout
+        return(bytesUsed)
+    }
+    bool: onServerWrite(their QuicStream: qStream) <- {
+        me uint64: streamID <- qStream.getStreamID()
+        print("\n                  FetchFile SERVER WRITE STEP:",step," fileName:", fileName,"  STREAM_ID:",streamID,"\n")
+        me string: buff bytesUsed <- fileStream.read(qStream.buff)
+}
+        qStream.write(qStream.buff.subStr(0, bytesUsed))
+        //print(qStream.buff.subStr(0, bytesUsed))
+        //if(EOF()){return(false)}
+        return(true)
+    }
+
+    void: clientInit() <- {}
+    uint64: onClientRead(their QuicStream: qStream, their string: data, me bool: finished)<- {
+        me uint64: streamID <- qStream.getStreamID()
+        me uint64: bytesUsed
+        print("\n                  FetchFile CLIENT READ STEP:",step,"  STREAM_ID:",streamID,"\n")
+        qStream.readBuffer <- data
+        bytesUsed <- data.size()
+        source.iStreamParent.parser.addSlotsToSSets(data.size())
+        source.inputBuf.putStr(data)
+        if(finished and bytesUsed == data.size()){
+            source.inputBuf.close()
+            qStream.close()
+        }
+        return(bytesUsed)
+    }
+    bool: onClientWrite(their QuicStream: qStream) <- {
+        // get chars from source.iStreamParent and write them
+        return(true)
+    }
+}
+*/

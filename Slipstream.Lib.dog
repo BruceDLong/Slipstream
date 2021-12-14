@@ -60,11 +60,11 @@ model InfonConnector{
     void: init(our SStreamSpec: SP) <- {}
     void: pumpInputBuff()        <- {}
     me string: readInputStream() <- {return("")}
-    bool: pumpOutputBuf()        <- {return(false)}
-    void: submitProteusResult()  <- {}
-    void: handleSystemError()    <- {}
-    void: handleSyntaxError()    <- {}
-    void: handleProteusError()   <- {}
+    bool: pumpOutputBuf(me string: mesg)        <- {print(mesg); return(false)}  // send to outputstream
+    void: submitProteusResult(me string: mesg)  <- {pumpOutputBuf(mesg+"\n")}
+    void: handleSystemError  (me string: mesg)  <- {pumpOutputBuf(mesg+"\n")}
+    void: handleSyntaxError  (me string: mesg)  <- {pumpOutputBuf(mesg+"\n")}
+    void: handleProteusError (me string: mesg)  <- {pumpOutputBuf(mesg+"\n")}
 }
 struct InfonConnector{}
 
@@ -91,7 +91,24 @@ struct FileConnector: inherits=InfonConnector {
     }
     bool: pumpOutputBuf() <- {return(false)}
 }
-struct ClipConnector: inherits=InfonConnector {}
+struct ClipConnector: inherits=InfonConnector {
+    void: init(our SStreamSpec: SP) <- {
+        streamSpec <- SP
+        inputEOF<-false
+        log("Initialized CLIP connection")
+    }
+    void: pumpInputBuff() <- {
+        while(iStreamParent.pumpParserInputBuf()){}
+        inputBuf.close()
+    }
+    me string: readInputStream()  <- {
+        me string: data
+        input(data)
+        if(data=="quit"){inputEOF<-true}
+        return(data+"\n")
+    }
+    bool: pumpOutputBuf() <- {return(false)}
+}
 struct UserConnector: inherits=InfonConnector {}
 struct IPFSConnector: inherits=InfonConnector {}
 struct IPNSConnector: inherits=InfonConnector {}
@@ -118,14 +135,21 @@ struct PhoneConnector   : inherits=InfonConnector {} // Services offered by phon
 
 
 //////////////////////////////////////////////////////////////////////
-
+struct InfonThreadedParserExtractor: inherits=Threaded_infonParseAndExtractor{
+    our InfonConnector: sourceConnector
+    me string: streamName() <- {return(sourceConnector.streamSpec.spec)}
+    void: handleSyntaxError(me string: mesg) <- {
+        log("Syntax Error:"+mesg)
+        sourceConnector.handleSyntaxError(streamName() + mesg)
+    }
+}
 struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
     our InfonConnector: source
     me uint64: originID
     their Agent: parentAgent
     our ProteusParser: parser
     our infon: toFill
-    me Threaded_infonParseAndExtractor: parseAndExtractor
+    me InfonThreadedParserExtractor: parseAndExtractor
     me ThreadedNormalizer: threadedNormalizer
 
     bool: pumpParserInputBuf() <- {
@@ -146,6 +170,7 @@ struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
         source.iStreamParent <- self
         if(toFill==NULL){Allocate(toFill)}
         toFill.originID <- originID
+        parseAndExtractor.sourceConnector <- source
     }
     void: start() <- {
         threadedNormalizer.init(parentAgent, toFill)
@@ -171,8 +196,7 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
     }
     me bool: startNewConnection(our infon: toFill, me string: specString) <- {
         me string: parentPath <- ""
-print("toFill.originID:", toFill.originID,"\n")
-        if(infonSourceRecords.containsKey(toFill.originID)){
+        if(specString[0]=="/" and infonSourceRecords.containsKey(toFill.originID)){
             parentPath <- infonSourceRecords[toFill.originID].source.streamSpec.spec
             // Check for issues and remove slug from parentPath
             me int: lastSlashPos <- findLastSubString(parentPath, "/")
@@ -197,7 +221,7 @@ print("toFill.originID:", toFill.originID,"\n")
 // if there is no schema: and no '//' concat specString and parentPath.
 //TODO: gracefully handle errors
         if(specString[0]=="/"){specString <- specString.subStr(1)}
-print("TO_LOAD:",parentPath, specString, "\n")
+print("LOADING:",parentPath, specString, "\n")
         our SStreamSpec:: SP; SP.setSpec(parentPath+specString)
         //~ print("Protocol:'",    SP.protocolTag,"'\n")
         //~ print("connectArgs:'", SP.connectArgs,"'\n")
@@ -207,6 +231,7 @@ print("TO_LOAD:",parentPath, specString, "\n")
 
         me string: protocolTag <- SP.protocolTag
         if     (protocolTag=="file"){our FileConnector:: retval;  retval.init(SP); return(retval)}
+        if     (protocolTag=="clip"){our ClipConnector:: retval;  retval.init(SP); return(retval)}
         else if(protocolTag=="repo"){our RepoConnector:: retval;  retval.init(SP); return(retval)}
         else if(protocolTag=="user"){our UserConnector:: retval;  retval.init(SP); return(retval)}
         else if(protocolTag=="ipfs"){our IPFSConnector:: retval;  retval.init(SP); return(retval)}
@@ -253,8 +278,8 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
     void: start() <- {
         //agent.device <- connectionMgr.device.initAndLoad(connectionMgr, "device", masterFile)
         //agent.user   <- connectionMgr.user.initAndLoad(connectionMgr,  "user", "quic://[::1]:2006/user.pr")
-        agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","quic://[::1]:2006/WORLD/World.pr")
-        //agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","file:///WORLD/World.pr")
+        //agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","quic://[::1]:2006/WORLD/World.pr")
+        agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","file:///WORLD/World.pr")
 
 //log("WORLD:"+toString(agent.world))
     }

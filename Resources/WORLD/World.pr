@@ -11,4 +11,6 @@
 %INSERT /Self/Self.pr
 %INSERT /Things/Things.pr
 %INSERT /ThisDevice/ThisDevice.pr
+
+%INSERT clip://localhost/bruce
 }
