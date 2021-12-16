@@ -86,7 +86,8 @@ struct FileConnector: inherits=InfonConnector {
         me string: data
         if(!dataFile.EOF()){
             data <- dataFile.getLine()+"\n"
-        } else{inputEOF<-true; log("INPUT_EOF")}
+       // log("READ:"+to_string(data.size())+" chars from:"+streamSpec.spec+"\t"+data)
+        } else{inputEOF<-true; log("INPUT_EOF:"+streamSpec.spec)}
         return(data)
     }
     bool: pumpOutputBuf() <- {return(false)}
@@ -104,7 +105,7 @@ struct ClipConnector: inherits=InfonConnector {
     me string: readInputStream()  <- {
         me string: data
         input(data)
-        if(data=="quit"){inputEOF<-true}
+        if(data=="quit"){inputEOF<-true; return("")}
         return(data+"\n")
     }
     bool: pumpOutputBuf() <- {return(false)}
@@ -144,6 +145,7 @@ struct InfonThreadedParserExtractor: inherits=Threaded_infonParseAndExtractor{
     }
 }
 struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
+    me string: name
     our InfonConnector: source
     me uint64: originID
     their Agent: parentAgent
@@ -151,6 +153,7 @@ struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
     our infon: toFill
     me InfonThreadedParserExtractor: parseAndExtractor
     me ThreadedNormalizer: threadedNormalizer
+    bool: isActive  // True is a thread is still operating.
 
     bool: pumpParserInputBuf() <- {
         me string: data <- source.readInputStream()
@@ -172,16 +175,19 @@ struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
         toFill.originID <- originID
         parseAndExtractor.sourceConnector <- source
     }
-    void: start() <- {
+    void: start(me string:name) <- {
+        toFill.parseFinished <- false
         threadedNormalizer.init(parentAgent, toFill)
-        threadedNormalizer.start()
-        parseAndExtractor.start(parser, source.inputBuf, toFill)
+        threadedNormalizer.start(name+"_NRM")
+        parseAndExtractor.start(parser, source.inputBuf, toFill, name+"_PnE")
         source.pumpInputBuff()
-parseAndExtractor.waitForThreadsToExit()
-        threadedNormalizer.waitForExit()
         //log("Result:"+toString(toFill))
     }
-    void: requestFinish() <- {}
+    void: waitForCompletion() <-{
+        parseAndExtractor.waitForThreadsToExit()
+        threadedNormalizer.waitForExit()
+    }
+    void: requestFinish() <- {} // For long-running streams, request to end the stream.
 }
 
 struct ConnectionManager{ // Manage connections to a Proteus Agent
@@ -189,6 +195,7 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
     me Repository: device
     me Repository: user
     me Repository: world
+    me int: numFilesLoaded <- 0
 
     void: init(their Agent: agnt) <- {
         agent <- agnt
@@ -213,7 +220,7 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
         our InfonStream:: iStream
         iStream.init(connector, agent, parser, toFill, lastOriginID)
         infonSourceRecords[lastOriginID] <- iStream
-        iStream.start()
+        iStream.start("IS"+toString(numFilesLoaded))
         return(true)
     }
 
@@ -221,7 +228,8 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
 // if there is no schema: and no '//' concat specString and parentPath.
 //TODO: gracefully handle errors
         if(specString[0]=="/"){specString <- specString.subStr(1)}
-print("LOADING:",parentPath, specString, "\n")
+        numFilesLoaded <+- 1
+print("LOADING:(",numFilesLoaded,") ",parentPath, specString, "\n")
         our SStreamSpec:: SP; SP.setSpec(parentPath+specString)
         //~ print("Protocol:'",    SP.protocolTag,"'\n")
         //~ print("connectArgs:'", SP.connectArgs,"'\n")
@@ -230,15 +238,17 @@ print("LOADING:",parentPath, specString, "\n")
         //~ print("portNum:'",     SP.portNum,"'\n")
 
         me string: protocolTag <- SP.protocolTag
-        if     (protocolTag=="file"){our FileConnector:: retval;  retval.init(SP); return(retval)}
-        if     (protocolTag=="clip"){our ClipConnector:: retval;  retval.init(SP); return(retval)}
-        else if(protocolTag=="repo"){our RepoConnector:: retval;  retval.init(SP); return(retval)}
-        else if(protocolTag=="user"){our UserConnector:: retval;  retval.init(SP); return(retval)}
-        else if(protocolTag=="ipfs"){our IPFSConnector:: retval;  retval.init(SP); return(retval)}
-        else if(protocolTag=="ipns"){our IPNSConnector:: retval;  retval.init(SP); return(retval)}
-        else if(protocolTag=="agnt"){our AgentConnector:: retval; retval.init(SP); return(retval)}
-        else if(protocolTag=="quic"){our AgentConnector:: retval; retval.init(SP); return(retval)}
-        else {}
+
+        switch(protocolTag){
+            case "file":{our FileConnector:: retval;  retval.init(SP); return(retval)}
+            case "clip":{our ClipConnector:: retval;  retval.init(SP); return(retval)}
+            case "repo":{our RepoConnector:: retval;  retval.init(SP); return(retval)}
+            case "user":{our UserConnector:: retval;  retval.init(SP); return(retval)}
+            case "ipfs":{our IPFSConnector:: retval;  retval.init(SP); return(retval)}
+            case "ipns":{our IPNSConnector:: retval;  retval.init(SP); return(retval)}
+            case "agnt":{our AgentConnector:: retval; retval.init(SP); return(retval)}
+            case "quic":{our AgentConnector:: retval; retval.init(SP); return(retval)}
+        }
         log("WARNING, No connection was made for: "+specString)
         return(NULL)
     }
@@ -284,11 +294,17 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
 //log("WORLD:"+toString(agent.world))
     }
     void: idle()<-{
+        me int: count<-0
         idling <- true
         while(idling){
             // process events if needed
             print(".")
             sleep(10)
+            count <+- 1
+            if(count>250){
+                print("\nnumFilesLoaded:", connectionMgr.numFilesLoaded,"\n")
+                exit(17-connectionMgr.numFilesLoaded)
+            }
         }
     }
     void: stopIdling()<-{idling <- false}
