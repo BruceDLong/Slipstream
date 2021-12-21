@@ -18,7 +18,6 @@ featuresNeeded = [GUI_ToolKit, Dashboard, ReactGUI, Slipstream, Proteus]
 LicenseText = `All rights reserved.`
 
 runCode=`
-    logMgr.init(OFile)
     CommandLineManager.defineOption("Slip", "topFile", "-f", "--file", "The top-level file to load.", "deviceData.pr")
     me string: topFile <- CommandLineManager.getOption("Slip", "topFile")
     thisApp.loadAndParseSettingsAndData(topFile)

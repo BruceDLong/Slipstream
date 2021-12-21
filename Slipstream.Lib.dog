@@ -16,7 +16,6 @@ featuresNeeded = [Proteus, Logger, Unicode, BigNumbers, Threads, IOBuffer, Earle
 LicenseText = `This file is part of the "Slipstream Development Suite" All Rights Reserved.`
 
 runCode=`
-    logMgr.init(OFile)
     log("Slipstream CORE started")
     CommandLineManager.processCmdLine(joinCmdStrings(argc, argv), false);
     CommandLineManager.defineOption("Slip", "topFile", "-f", "--file", "The top-level file to load.", "")
@@ -229,13 +228,8 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
 //TODO: gracefully handle errors
         if(specString[0]=="/"){specString <- specString.subStr(1)}
         numFilesLoaded <+- 1
-print("LOADING:(",numFilesLoaded,") ",parentPath, specString, "\n")
+        log("LOADING:("+toString(numFilesLoaded)+") "+parentPath+ specString+"\n")
         our SStreamSpec:: SP; SP.setSpec(parentPath+specString)
-        //~ print("Protocol:'",    SP.protocolTag,"'\n")
-        //~ print("connectArgs:'", SP.connectArgs,"'\n")
-        //~ print("contentArgs:'", SP.contentArgs,"'\n")
-        //~ print("ipAddr:'",      SP.ipAddr,"'\n")
-        //~ print("portNum:'",     SP.portNum,"'\n")
 
         me string: protocolTag <- SP.protocolTag
 
@@ -289,7 +283,8 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
         //agent.device <- connectionMgr.device.initAndLoad(connectionMgr, "device", masterFile)
         //agent.user   <- connectionMgr.user.initAndLoad(connectionMgr,  "user", "quic://[::1]:2006/user.pr")
         //agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","quic://[::1]:2006/WORLD/World.pr")
-        agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","file:///WORLD/World.pr")
+     //   agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","file:///WORLD/World.pr")
+        agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","clip://localhost/bruce")
 
 //log("WORLD:"+toString(agent.world))
     }
@@ -298,13 +293,13 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
         idling <- true
         while(idling){
             // process events if needed
-            print(".")
+           // print(".")
             sleep(10)
-            count <+- 1
-            if(count>250){
-                print("\nnumFilesLoaded:", connectionMgr.numFilesLoaded,"\n")
-                exit(17-connectionMgr.numFilesLoaded)
-            }
+            //~ count <+- 1
+            //~ if(count>250){
+                //~ print("\nnumFilesLoaded:", connectionMgr.numFilesLoaded,"\n")
+                //~ exit(17-connectionMgr.numFilesLoaded)
+            //~ }
         }
     }
     void: stopIdling()<-{idling <- false}
