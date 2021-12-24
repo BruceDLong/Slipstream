@@ -27,20 +27,18 @@ do ManageCmdLine(cmd)
 
 struct GLOBAL{
     me SlipstreamCore: CORE
-
-    me uint64: lastOriginID
-    me Map<uint64, our InfonStream>: infonSourceRecords // Maps infon::originID to the stream it came from.
 }
 struct Repository{ // Load, track, save, pull, push, pullReq, etc.
     me string: repoName
     me string: repoLocator
     our infon: repoInfon
+    our InfonStream: iStream
     our infon: initAndLoad(their ConnectionManager: connectionMgr, me string: name, me string:locator) <- {
         log("Starting repository:"+name+" at "+repoLocator)
         Allocate(repoInfon)
         repoName    <- name
         repoLocator <- locator
-        connectionMgr.startNewConnection(repoInfon, repoLocator)
+        iStream <- connectionMgr.startNewConnection(repoInfon, repoLocator)
         log("Started repository:"+name+" at "+repoLocator)
         return(repoInfon)
     }
@@ -196,11 +194,14 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
     me Repository: world
     me int: numFilesLoaded <- 0
 
+    me uint64: lastOriginID
+    me Map<uint64, our InfonStream>: infonSourceRecords // Maps infon::originID to the stream it came from.
+
     void: init(their Agent: agnt) <- {
         agent <- agnt
         lastOriginID <- 0
     }
-    me bool: startNewConnection(our infon: toFill, me string: specString) <- {
+    our InfonStream: startNewConnection(our infon: toFill, me string: specString) <- {
         me string: parentPath <- ""
         if(specString[0]=="/" and infonSourceRecords.containsKey(toFill.originID)){
             parentPath <- infonSourceRecords[toFill.originID].source.streamSpec.spec
@@ -220,7 +221,7 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
         iStream.init(connector, agent, parser, toFill, lastOriginID)
         infonSourceRecords[lastOriginID] <- iStream
         iStream.start("IS"+toString(numFilesLoaded))
-        return(true)
+        return(iStream)
     }
 
     our InfonConnector: makeInfonConnector(me string: specString, me string: parentPath)<-{ // connector factory
@@ -228,7 +229,7 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
 //TODO: gracefully handle errors
         if(specString[0]=="/"){specString <- specString.subStr(1)}
         numFilesLoaded <+- 1
-        log("LOADING:("+toString(numFilesLoaded)+") "+parentPath+ specString+"\n")
+        print("LOADING:("+toString(numFilesLoaded)+") "+parentPath+ specString+"\n")
         our SStreamSpec:: SP; SP.setSpec(parentPath+specString)
 
         me string: protocolTag <- SP.protocolTag
@@ -256,9 +257,12 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
     me bool: idling
 
     me bool: normalizeFromStreamSpec(our POV: infToFill, me string: streamSpec) <- {
-        return(connectionMgr.startNewConnection(infToFill.pItem, streamSpec))
+        me bool: success <- connectionMgr.startNewConnection(infToFill.pItem, streamSpec)==NULL
+        return(success)
     }
-
+    me string: getOriginIDString(me uint64: originID) <- {
+        return(connectionMgr.infonSourceRecords[originID].source.streamSpec.spec)
+    }
     me QuicClient_Engine: quicClient
 
     void: initCoreServices()<-{
@@ -281,10 +285,10 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
     }
     void: start() <- {
         //agent.device <- connectionMgr.device.initAndLoad(connectionMgr, "device", masterFile)
-        //agent.user   <- connectionMgr.user.initAndLoad(connectionMgr,  "user", "quic://[::1]:2006/user.pr")
+        agent.user   <- connectionMgr.user.initAndLoad(connectionMgr,  "user", "file:///user.pr")
         //agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","quic://[::1]:2006/WORLD/World.pr")
-     //   agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","file:///WORLD/World.pr")
-        agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","clip://localhost/bruce")
+        agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","file:///WORLD/World.pr")
+        //agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","clip://localhost/bruce")
 
 //log("WORLD:"+toString(agent.world))
     }

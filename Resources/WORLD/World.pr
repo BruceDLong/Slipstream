@@ -12,5 +12,5 @@
 %INSERT /Things/Things.pr
 %INSERT /ThisDevice/ThisDevice.pr
 
-%INSERT clip://localhost/bruce
+//%INSERT clip://localhost/bruce
 }

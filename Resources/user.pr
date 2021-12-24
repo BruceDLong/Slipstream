@@ -44,6 +44,7 @@ bruceLong:{
                         task:{properties:{title:"Library: Speech recognition and production" member:"Mats"} data:{}}
                     }
                 }
+                ...
             }
         }
 
@@ -54,7 +55,7 @@ bruceLong:{
                 title:"CodeDog Project"
                 backgroundPic:"HD-Peaceful-Background.png"
             }
-            data:{
+            data:{tasklist:{properties:{title:"<New Dash>" screenPos:{xPos:40 yPos:90}} data:{task:{properties:{title:$ member:""} data:{}}|  task:{properties:{title:$ member:""} data:{}}...}}|
                 kanban:{
                     properties:{
                         title:"Kanban"
@@ -85,7 +86,7 @@ bruceLong:{
                             data:{
                                 task:{properties:{title:"comment System" member:"Bruce"} data:{}}
                                 task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{}}
-                                task:{properties:{title:"Library: Speech recognition" member:"John"}
+                                task:{properties:{title:"Library: Speech Production" member:"John"}
                                     data:{
                                         subTasks:{1 2 3}
                                         note:"This string is a note"
@@ -107,8 +108,10 @@ bruceLong:{
                         ...
                     }
                 }
+                ...
             }
         }
+        ...
     }
   }
 ...

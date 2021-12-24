@@ -95,7 +95,9 @@ struct GuiModelManager{
                 newPov.pItem.isTentative<-false;
                 CORE.agent.normalize(ev.infonX);
                 log("\nAdded Item:"+newPov.stringify())
-            } // TODO: give some sign as to why nothing was added
+            } else {// TODO: give some sign as to why nothing was added
+                print("ITEM WAS NOT ADDED!\n")
+            }
         }
         case eReqRedraw: {}
         case eGUI_SetXY: {}
@@ -543,7 +545,6 @@ struct SlipView: inherits=ProactiveGUIWidget{
 }
 
 struct GLOBAL{
-    me SlipstreamCore: CORE
     me ProactiveGUI: proactiveGUI
     their GUI_canvas: drawing_area
     their SlipView: slipView
@@ -553,8 +554,11 @@ struct APP{
     me bool: loadAndParseSettingsAndData(me string: topFileName) <- {
         CORE.init(topFileName)
         CORE.start()
+        CORE.connectionMgr.user.iStream.parseAndExtractor.waitForThreadsToExit()
+    sleep(10000)
         widgetMngr.init()
         widgetMngr.init2()
+        CORE.shutdown()
         return(true)
     }
 
