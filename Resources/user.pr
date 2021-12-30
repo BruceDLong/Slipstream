@@ -5,13 +5,13 @@ bruceLong:{
         title:"Slipstream Projects"
     }
 
-    data:{
+    data:{ boardelement:{properties:{title:$  backgroundPic:$} data:{...}} |
         boardElement:{
             properties:{
                 title:"Awesome World"
                 backgroundPic:"Lake-Summer-Mountain.png"
             }
-            data:{
+            data:{tasklist:{properties:{title:$ screenPos:{xPos:40 yPos:90}} data:{task:{properties:{title:$ member:""} data:{}}|  task:{properties:{title:$ member:""} data:{}}...}}|
                 TaskList:{
                     properties:{title:"CodeDog" screenPos:{xPos:20 yPos:100}}
                     data:{
@@ -55,7 +55,7 @@ bruceLong:{
                 title:"CodeDog Project"
                 backgroundPic:"HD-Peaceful-Background.png"
             }
-            data:{tasklist:{properties:{title:"<New Dash>" screenPos:{xPos:40 yPos:90}} data:{task:{properties:{title:$ member:""} data:{}}|  task:{properties:{title:$ member:""} data:{}}...}}|
+            data:{terminal:{properties:{title:$ screenPos:{xPos:40 yPos:90}} data:{term-entry:{properties:{source:$} data:$}| ...}}|
                 kanban:{
                     properties:{
                         title:"Kanban"

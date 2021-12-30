@@ -110,6 +110,7 @@ struct ParamRec{
     their fontSpec: font
 
     // Drag args
+    flag: isADash  // Draggable, Z-Stackable, Can have multiple views of same data, has a config-dialog, can be on Dashboard
     our POV: screenPos   <- NULL
     our POV: xPov        <- NULL
     our POV: yPov        <- NULL
@@ -137,12 +138,12 @@ struct ParamRec{
 }
 
 struct ReactiveControl{
-    our ParamRec: PR
+   // our ParamRec: PR
     me int64: isActive
     me bool: expandsX()<-{return(false)}
     me bool: expandsY()<-{return(false)}
     void: setMetrics(our ParamRec: PR) <- {}
-    void: draw(our dashDrawing: dr, our ParamRec: PR) <- {}
+    void: draw(our dashDrawing: dr, our ParamRec: iPR) <- {}
     void: saveBack() <- {}
 
     me bool: mouseMoved(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {return(false)}
@@ -284,7 +285,7 @@ struct Presenter{
             }
         }
         me string: itemsType
-        if(PR.sourcePov.pItem.type!=NULL){
+        if(PR.sourcePov!=NULL and PR.sourcePov.pItem.type!=NULL){
             itemsType <- PR.sourcePov.pItem.type.asGiven
         }
         if(itemsType!=""){retval<-itemsType}
@@ -424,13 +425,20 @@ struct GuiModelManager{
 
     // TODO: Use these next 5 fields to better organize sessions
     our POV: session
-    void: NewUserSession() <- {}
+    void: NewUserSession()  <- {}
     void: openUserSession() <- {}
     void: saveUserSession() <- {}
-    void: sendSaveSignal() <- {log("TODO: Request and save the model")}
+    void: sendSaveSignal()  <- {log("TODO: Request and save the model")}
 
-    our GuiDataRec: fetchGuiData(me string: itemID) <-{
-        itr Map<me string, our GuiDataRec>: it <- guiData.find(itemID)
+    void: setGuiData(me string: dataID, our GuiDataRec: GDR) <- {guiData[dataID] <- GDR}
+    void: setString(me string: dataID,  me string: val) <- {our GuiDataRec:: GDR; GDR.str1<-val; setGuiData(dataID, GDR)}
+    void: setBool  (me string: dataID,  me bool:   val) <- {our GuiDataRec:: GDR; GDR.int1<-val; setGuiData(dataID, GDR)}
+    void: setInt64 (me string: dataID,  me int64:  val) <- {our GuiDataRec:: GDR; GDR.int1<-val; setGuiData(dataID, GDR)}
+    void: setColor (me string: dataID,  their cdColor: val)  <- {our GuiDataRec:: GDR; GDR.color<-val;       setGuiData(dataID, GDR)}
+    void: setCoords(me string: dataID,  their GuiCoords: val)<- {our GuiDataRec:: GDR; GDR.coordinates<-val; setGuiData(dataID, GDR)}
+
+    our GuiDataRec: fetchGuiData(me string: dataID) <-{
+        itr Map<me string, our GuiDataRec>: it <- guiData.find(dataID)
         if(it == guiData.end()){return(NULL)}
         return(it.val)
     }
@@ -450,7 +458,7 @@ struct GuiModelManager{
         if(result==NULL){return(Default)}
         return(result.int1 != 0)
     }
-    me bool: getInt64(me string: dataID, me int64: Default) <- {
+    me int64: getInt64(me string: dataID, me int64: Default) <- {
         our GuiDataRec: result <- fetchGuiData(dataID)
         if(result==NULL){return(Default)}
         return(result.int1)

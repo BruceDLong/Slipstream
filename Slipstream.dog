@@ -48,7 +48,7 @@ struct GLOBAL{
     me int: horizListOPad  <- 5
     me int: Yborder <- 3
     me int: Xborder <- 3
-    me int: VListHeaderHeight <- 56
+    me int: VListHeaderHeight <- 30
 
     me int: buttonWidth  <-55
     me int: buttonHeight <-22
@@ -71,7 +71,9 @@ struct GLOBAL{
 
     me string: fetchStringField(our POV: info) <- {
         if(info==NULL){return("")}
-        return(info.pItem.fetchString())
+        me string: retVal <- info.pItem.fetchString()
+        if(info.pItem.value.format==fUnknown){retVal <- ""}
+        return(retVal)
     }
 
     void: drawACursor(our dashDrawing: dr, me GUI_Scalar: posX, me GUI_Scalar: posY, me GUI_Scalar: cursorHeight) <- {
@@ -95,6 +97,9 @@ struct GuiModelManager{
                 newPov.pItem.isTentative<-false;
                 CORE.agent.normalize(ev.infonX);
                 log("\nAdded Item:"+newPov.stringify())
+                our ProactEvent:: EditTheNewItem
+                EditTheNewItem.setGUI_popupEvent(slipView.boardInfons[slipView.crntBoardIdx].mySymbol()+"/editCardPopped", newPov)
+                processCommand(EditTheNewItem)
             } else {// TODO: give some sign as to why nothing was added
                 print("ITEM WAS NOT ADDED!\n")
             }
@@ -102,10 +107,10 @@ struct GuiModelManager{
         case eReqRedraw: {}
         case eGUI_SetXY: {}
         case eBlockEvents: {log("BLOCK_EVENT")}
-        case eGUI_setStr1:       {our GuiDataRec:: GDR; GDR.str1<- ev.text; guiData[ev.dataIdTag] <- GDR}
+        case eGUI_setStr1:       {setString(ev.dataIdTag, ev.text)}
         case eGUI_PopupModal:    {our GuiDataRec:: GDR; GDR.int1<-1; GDR.pov<-ev.infonX;  guiData[ev.dataIdTag] <- GDR;  log("CLICKED:'"+ev.dataIdTag+"'  "+GDR.pov.stringify())}
         case eGUI_setInt1:       {our GuiDataRec:: GDR; GDR.int1<- ev.int1; guiData[ev.dataIdTag] <- GDR; log("setInt1["+ev.dataIdTag+"]:"+toString(ev.int1))}
-        case eClosePopup:        {proactiveGUI.presenter.clearFocus(); our GuiDataRec: GDR<-guiData[ev.dataIdTag]; GDR.int1<-0}
+        case eClosePopup:        {proactiveGUI.presenter.clearFocus(); our GuiDataRec: GDR<-fetchGuiData(ev.dataIdTag); GDR.int1<-0}
         case eGUI_setActiveFlag: {proactiveGUI.presenter.grabFocus(ev.dataIdTag)}
         case ePrimaryClick:      {our GuiDataRec: GDR<-guiData[ev.dataIdTag]; GDR.ctrl.primaryClick(ev.evX, ev.evY)}
         }
@@ -165,8 +170,8 @@ struct InfonicWidgetView: inherits=ReactiveControl{
         our ProactEvent:: blockEvents;
         blockEvents.setTrigger(tPrimaryClick, RA); blockEvents.setGUI_Event1(eBlockEvents)
         proactiveGUI.presenter.registerEvent(blockEvents)
-        // Draw the title editor
 
+        // Draw the title editor
             our ParamRec:: innerPR; innerPR.init(titleInf, RA.X+border, RA.Y+yCur, RA.W-(border*2), 0)
             innerPR.viewStyleTagArg <- "_edit"
             innerPR.font <- styler.defaultFont
@@ -217,7 +222,6 @@ struct TaskCardView: inherits=ReactiveControl{
     me bool: expandsY()<-{return(false)}
 }
 
-
 struct WidgetMngr{
     our TextEditBox:  staticTextEditBox
     our TaskCardView: staticTaskCardView
@@ -238,17 +242,43 @@ struct WidgetMngr{
 
 struct Presenter{
 
+    void: drawTerminal(our dashDrawing: dr, our ParamRec: PR) <- {
+        me int: height <- 400
+        me int: width  <- 500
+        me GuiCoords:RA{PR.posX, PR.posY, width, height}
+        dr.addC(cmdSetColor, surfaceBkgnd)
+        dr.addRAA(cmdRoundRect, RA, 15)
+        dr.add1(cmdFill)
+
+        // Block click-under
+        our ProactEvent:: blockEvents;
+        blockEvents.setTrigger(tPrimaryClick, RA); blockEvents.setGUI_Event1(eBlockEvents)
+        registerEvent(blockEvents)
+
+        // dragging header
+        PR.posW <- width
+        PR.posH <- height;
+
+        dr.addC(cmdSetColor, surfaceBkgnd)
+        me GuiCoords:HedrRectXYWH{PR.posX, PR.posY, width, headerHeight-2};
+        dr.addRAA(cmdRoundTopRect, HedrRectXYWH, 15)
+        dr.add1(cmdFill)
+        if(PR.screenPos!=NULL){
+            our ProactEvent:: dragEvent;
+            dragEvent.setTrigger(tDragStart, HedrRectXYWH); dragEvent.setInfonEvent(eGUI_SetXY, PR.xPov, PR.yPov)
+            registerEvent(dragEvent)
+        }
+    }
+
     void: drawKanban(our dashDrawing: dr, our ParamRec: PR) <- {
         // Draw Columns
-        me GUI_Scalar: itemHeight
-        me GUI_Scalar: itemWidth
         our ParamRec:: listPR; listPR.init(PR.dataPov, PR.posX, PR.posY+headerHeight, 0, 0)
         listPR.viewStyleTagArg <- "headeredVList"
         draw_X_stack_XYwh(dr, listPR)
 
         // Kanban header
-        PR.posW <deep- listPR.posW
-        PR.posH <deep- listPR.posH+headerHeight;
+        PR.posW <- listPR.posW
+        PR.posH <- listPR.posH+headerHeight;
 
         dr.addC(cmdSetColor, surfaceBkgnd)
         me GuiCoords:HedrRectXYWH{PR.posX, PR.posY, listPR.posW, headerHeight-2};
@@ -263,7 +293,7 @@ struct Presenter{
         me GuiCoords:RA1{PR.posX+listPR.posW-25, PR.posY+3, 16, 16}
         drawCircleButton(dr, RA1.X, RA1.Y, RA1.W/2, 3, "+", PR.sourcePov.mySymbol()+"AddItem")
         our ProactEvent:: addListEvent;
-        addListEvent.setTrigger(tPrimaryClick, RA1); addListEvent.setInfonEvent(eAddInfon, PR.dataPov, NULL)
+        addListEvent.setTrigger(tPrimaryClick, RA1); addListEvent.setInfonEvent(eAddInfon, PR.dataPov, NULL) // ADD New Column
         registerEvent(addListEvent)
 
         dr.addC(cmdSetColor, titleTextColr)
@@ -305,11 +335,14 @@ struct Presenter{
 
         me GuiCoords:RA1{PR.posX+10, yCur+3, 16, 16}
         drawCircleButton(dr, RA1.X, RA1.Y, RA1.W/2, 3, "menu", PR.sourcePov.mySymbol()+"Menu")
+        our ProactEvent:: popupPropertyEditor;
+        popupPropertyEditor.setTrigger(tPrimaryClick, RA1); popupPropertyEditor.setGUI_popupEvent(slipView.boardInfons[slipView.crntBoardIdx].mySymbol()+"/editCardPopped", PR.sourcePov)
+        registerEvent(popupPropertyEditor)
 
         me GuiCoords:RA2{PR.posX+vertListWidth-23, yCur+3, 16, 16}
         drawCircleButton(dr, RA2.X, RA2.Y, RA2.W/2, 3, "+", PR.sourcePov.mySymbol()+"AddItem")
         our ProactEvent:: addListEvent2;
-        addListEvent2.setTrigger(tPrimaryClick, RA2); addListEvent2.setInfonEvent(eAddInfon, PR.dataPov, NULL)
+        addListEvent2.setTrigger(tPrimaryClick, RA2); addListEvent2.setInfonEvent(eAddInfon, PR.dataPov, NULL) // ADD New List-Item
         registerEvent(addListEvent2)
 
         yCur <+- footerHeight
@@ -330,6 +363,7 @@ struct Presenter{
         if(viewStyleTag=="boardelement"){}
         else if(viewStyleTag=="kanban"){drawKanban(dr, PR)}
         else if(viewStyleTag=="tasklist"){drawListWidget(dr, PR)}
+        else if(viewStyleTag=="terminal"){drawTerminal(dr, PR)}
         else if(viewStyleTag=="task"){PR.viewStyleCtrl.draw(dr, PR)}
         else if(viewStyleTag=="genericlist"){draw_Y_stack_XYWh(dr, PR)}
         else if(viewStyleTag=="genericstring" or viewStyleTag=="genericstring_edit"){PR.viewStyleCtrl.draw(dr, PR)}
@@ -389,12 +423,45 @@ struct Presenter{
         }
     }
 
+    void: drawSelectFromList(our dashDrawing: dr, our POV: listInfon, me GUI_Scalar:posX, me GUI_Scalar:posY) <- {
+        me int: width <- 250
+        me int: itemHeight <- 60
+        me int: numItems <- listInfon.pItem.value.items.size()
+        me GuiCoords: RA{posX, posY, width, itemHeight*numItems}
+        dr.addC(cmdSetColor, popupBkgnd);    dr.addRAA(cmdRoundBotRect, RA, 15); dr.add1(cmdFill)
+        dr.addC(cmdSetColor, titleTextColr); dr.addRAA(cmdRoundBotRect, RA, 15); dr.add1(cmdStroke)
+        me int: yCur <- RA.Y
+        me int: xCur <- RA.X+10
+        me int: count <- 0
+        our POV: pov <- listInfon.pItem.value.listSpec.value.items.front()
+        while(pov){
+            our POV: propertiesInf <- fetchField(pov, "properties")
+            our POV: titleInf      <- fetchField(propertiesInf, "title")
+            me string: title       <- fetchStringField(titleInf)
+
+            me GuiCoords: ItmRA{posX, yCur, width, itemHeight}
+            dr.addC(cmdSetColor, titleTextColr); dr.addRA(cmdDrawRect, ItmRA); dr.add1(cmdStroke)
+            dr.addC(cmdSetColor, titleTextColr)
+            dr.addTF(cmdRenderText, xCur, yCur+(itemHeight/2)+(styler.titleFont.height/2-9), title, styler.titleFont)
+
+            our ProactEvent:: brdItmEvent;
+            brdItmEvent.setTrigger(tPrimaryClick, ItmRA); brdItmEvent.setGUI_Store_Int1(listInfon.mySymbol()+"/dropdown", count)
+            registerEvent(brdItmEvent)
+            yCur <+- itemHeight
+            count <+- 1
+            pov <- pov.next
+        }
+    }
+
     void: drawBoardMenu(our dashDrawing: dr, me GUI_Scalar:posX, me GUI_Scalar:posY) <- {
+        me int: width <- 250
+        me int: footerHeight <- 35
+        slipView.scanBoards()
         me int: numboards <- slipView.boardInfons.size()
         me int: boardItemHeight <- 60
-        me GuiCoords: RA{posX, posY, 250, boardItemHeight*numboards}
-        dr.addC(cmdSetColor, popupBkgnd); dr.addRA(cmdDrawRect, RA); dr.add1(cmdFill)
-        dr.addC(cmdSetColor, titleTextColr); dr.addRA(cmdDrawRect, RA); dr.add1(cmdStroke)
+        me GuiCoords: RA{posX, posY, width, boardItemHeight*numboards+footerHeight}
+        dr.addC(cmdSetColor, popupBkgnd);    dr.addRAA(cmdRoundBotRect, RA, 15); dr.add1(cmdFill)
+        dr.addC(cmdSetColor, titleTextColr); dr.addRAA(cmdRoundBotRect, RA, 15); dr.add1(cmdStroke)
         me int: yCur <- RA.Y
         me int: xCur <- RA.X+10
         me int: count <- 0
@@ -403,17 +470,32 @@ struct Presenter{
             our POV: titleInf      <- fetchField(propertiesInf, "title")
             me string: title       <- fetchStringField(titleInf)
 
-            me GuiCoords: ItmRA{posX, yCur, 250, boardItemHeight}
+            me GuiCoords: ItmRA{posX, yCur, width, boardItemHeight}
             dr.addC(cmdSetColor, titleTextColr); dr.addRA(cmdDrawRect, ItmRA); dr.add1(cmdStroke)
             dr.addC(cmdSetColor, titleTextColr)
             dr.addTF(cmdRenderText, xCur, yCur+(boardItemHeight/2)+(styler.titleFont.height/2-9), title, styler.titleFont)
 
             our ProactEvent:: brdItmEvent;
-            brdItmEvent.setTrigger(tPrimaryClick, ItmRA); brdItmEvent.setGUI_Store_Int1(slipView.myInfon.mySymbol()+"/crntBorad", count)
+            brdItmEvent.setTrigger(tPrimaryClick, ItmRA); brdItmEvent.setGUI_Store_Int1(slipView.myInfon.mySymbol()+"/crntBoard", count)
             registerEvent(brdItmEvent)
             yCur <+- boardItemHeight
             count <+- 1
         }
+// Draw the footer
+        dr.addC(cmdSetColor, footerBoxColr)
+        me GuiCoords:RAf{posX+5, yCur+5, width-10, footerHeight-9}
+        dr.addRAA(cmdRoundBotRect, RAf, 15)
+        dr.add1(cmdFill)
+
+        me GuiCoords: addBtnRA{posX, yCur, width, footerHeight}
+        dr.addC(cmdSetColor, footerBoxColr); dr.addRAA(cmdRoundBotRect, addBtnRA, 15); dr.add1(cmdStroke)
+        dr.addC(cmdSetColor, titleTextColr)
+        dr.addTF(cmdRenderTextCentered, posX+width/2, yCur+(footerHeight/2)+(styler.smallFont.height/2-1), "Create a new board", styler.smallFont)
+
+        our ProactEvent:: addBoardEvent;
+        addBoardEvent.setTrigger(tPrimaryClick, addBtnRA); addBoardEvent.setInfonEvent(eAddInfon, slipView.dataInf, NULL) // ADD New Board
+        registerEvent(addBoardEvent)
+
     }
 
     void: drawDashboard(our dashDrawing: dr, our POV: board, me GUI_Scalar:posX, me GUI_Scalar:posY, me GUI_Scalar: width, me GUI_Scalar:height) <- {
@@ -424,10 +506,10 @@ struct Presenter{
         our POV: dataInf       <- fetchField(board, "data")
         me string: title       <- fetchStringField(titleInf)
         me string: background  <- fetchStringField(backgroundInf)
-        me string: modalPopupID<- itemID+"modalPoped"
-        me string: boardPopupID<- itemID+"boardListPopped"
-        me string: eCardPopupID<- itemID+"/editCardPopped"  log("drawDashboard:'"+eCardPopupID+"'")
-        me bool: modalPoped <- modelMgr.getBool(modalPopupID, false)
+        me string: modalPopupID<- itemID+"/modalPoped"
+        me string: boardPopupID<- itemID+"/boardListPopped"
+        me string: eCardPopupID<- itemID+"/editCardPopped"
+        me bool: modalPoped      <- modelMgr.getBool(modalPopupID, false)
         me bool: boardListPopped <- modelMgr.getBool(boardPopupID, false)
         me bool: editCardPopped  <- modelMgr.getBool(eCardPopupID, false)
 
@@ -454,12 +536,12 @@ struct Presenter{
         me GuiCoords:RA3{width-50, 7, 36, 36}
         drawCircleButton(dr, RA3.X, RA3.Y, RA3.W/2, 5, "+", board.mySymbol()+":AddItem")
         our ProactEvent:: addListEvent3;
-        addListEvent3.setTrigger(tPrimaryClick, RA3); addListEvent3.setInfonEvent(eAddInfon, dataInf, NULL)
+        addListEvent3.setTrigger(tPrimaryClick, RA3); addListEvent3.setInfonEvent(eAddInfon, dataInf, NULL) // ADD New Dash to Crnt Board
         registerEvent(addListEvent3)
 
         our POV: pov <- dataInf.pItem.value.items.front()
         while(pov){
-            our ParamRec:: iPR; iPR.init(pov, 15, 75, 0, 0)
+            our ParamRec:: iPR; iPR.init(pov, 15, 75, 0, 0); iPR.isADash <- true;
             chooseviewStyleTag(iPR)
             drawItem(dr, iPR)
             pov <- pov.next
@@ -495,7 +577,12 @@ struct Presenter{
 
 struct SlipView: inherits=ProactiveGUIWidget{
     our infon: myInfon
-    me int: crntBoardIdx
+    me int64: crntBoardIdx
+    our POV: userInfon
+    our POV: projectsInf
+    our POV: propertiesInf
+    our POV: titleInf
+    our POV: dataInf
 
     me List<our POV>: boardInfons
     our dashDrawing: popup_dr
@@ -503,7 +590,7 @@ struct SlipView: inherits=ProactiveGUIWidget{
     void: draw(their GUI_ctxt: cr) <- {
         popup_dr<-NULL
         proactiveGUI.presenter.reset()
-        setCrntBoard(proactiveGUI.presenter.modelMgr.getInt64(myInfon.mySymbol()+"/crntBorad", 1))
+        crntBoardIdx <- proactiveGUI.presenter.modelMgr.getInt64(myInfon.mySymbol()+"/crntBoard", 0)
         setwindowMetrics()
         if(crntBoardIdx >= boardInfons.size()){logFatalError("Non-existant board requested.")}
         our dashDrawing:: dr
@@ -520,17 +607,12 @@ struct SlipView: inherits=ProactiveGUIWidget{
         popup_dr <- popup
     }
 
-    void: setCrntBoard(me int: boardIdx) <-{
+    void: setCrntBoard(me int64: boardIdx) <-{
         crntBoardIdx <- boardIdx
+        proactiveGUI.presenter.modelMgr.setInt64(myInfon.mySymbol()+"/crntBoard", crntBoardIdx)
     }
-    bool: loadData(our infon: theInfon) <- {
-        our POV: userInfon     <- theInfon.fetchField("brucelong");             if(userInfon==NULL){log("extract userInfon = NULL"); return(true)}
-        our POV: projectsInf   <- fetchField(userInfon, "projects")
-        our POV: propertiesInf <- fetchField(projectsInf, "properties")
-        our POV: titleInf      <- fetchField(propertiesInf, "title")
-            title      <- fetchStringField(titleInf)
-        our POV: dataInf       <- fetchField(projectsInf, "data")
-
+    void: scanBoards() <- {
+        boardInfons.clear()
         our POV: pov <- dataInf.pItem.value.items.front()
         while(pov){
             our infon: infn <- pov.pItem
@@ -539,7 +621,18 @@ struct SlipView: inherits=ProactiveGUIWidget{
             }
             pov <- pov.next
         }
-        setCrntBoard(proactiveGUI.presenter.modelMgr.getInt64(theInfon.mySymbol()+"/crntBorad", 1)) // Default to last board for now
+    }
+    bool: loadData(our infon: theInfon) <- {
+        myInfon <- theInfon
+        userInfon     <- theInfon.fetchField("brucelong");             if(userInfon==NULL){log("extract userInfon = NULL"); return(true)}
+        projectsInf   <- fetchField(userInfon, "projects")
+        propertiesInf <- fetchField(projectsInf, "properties")
+        titleInf      <- fetchField(propertiesInf, "title")
+            title      <- fetchStringField(titleInf)
+        dataInf       <- fetchField(projectsInf, "data")
+
+        scanBoards()
+        setCrntBoard(boardInfons.size()-1) // Default to last board for now
         return(false) // No errors
     }
 }
@@ -554,8 +647,8 @@ struct APP{
     me bool: loadAndParseSettingsAndData(me string: topFileName) <- {
         CORE.init(topFileName)
         CORE.start()
-        CORE.connectionMgr.user.iStream.parseAndExtractor.waitForThreadsToExit()
-    sleep(10000)
+        CORE.connectionMgr.user.iStream.waitForCompletion()
+   sleep(7000)
         widgetMngr.init()
         widgetMngr.init2()
         CORE.shutdown()
