@@ -34,13 +34,20 @@ struct Repository{ // Load, track, save, pull, push, pullReq, etc.
     our infon: repoInfon
     our InfonStream: iStream
     our infon: initAndLoad(their ConnectionManager: connectionMgr, me string: name, me string:locator) <- {
-        log("Starting repository:"+name+" at "+repoLocator)
+        log("Starting repository:"+name+" at "+locator)
         Allocate(repoInfon)
         repoName    <- name
         repoLocator <- locator
         iStream <- connectionMgr.startNewConnection(repoInfon, repoLocator)
         log("Started repository:"+name+" at "+repoLocator)
         return(repoInfon)
+    }
+    our InfonStream: appendAnInfonAndLoad(their ConnectionManager: connectionMgr, me string:locator) <- {
+  ///      if(repoInfon.value.tailUnfinished == false){logFatalError("Repo infon must be unfinished with '...'.\n")}
+        our infon:: newInf
+        // Ensure the new infon won't get processed by other threads then append it to repoInfon
+        our InfonStream: newiStream <- connectionMgr.startNewConnection(newInf, locator)
+        return(newiStream)
     }
 }
 
@@ -57,7 +64,7 @@ model InfonConnector{
     void: init(our SStreamSpec: SP) <- {}
     void: pumpInputBuff()        <- {}
     me string: readInputStream() <- {return("")}
-    bool: pumpOutputBuf(me string: mesg)        <- {print(mesg); return(false)}  // send to outputstream
+    bool: pumpOutputBuf(me string: mesg)  // send to outputstream: outputBuf.putStr(mesg);
     void: submitProteusResult(me string: mesg)  <- {pumpOutputBuf(mesg+"\n")}
     void: handleSystemError  (me string: mesg)  <- {pumpOutputBuf(mesg+"\n")}
     void: handleSyntaxError  (me string: mesg)  <- {pumpOutputBuf(mesg+"\n")}
@@ -87,7 +94,7 @@ struct FileConnector: inherits=InfonConnector {
         } else{inputEOF<-true; log("INPUT_EOF:"+streamSpec.spec)}
         return(data)
     }
-    bool: pumpOutputBuf() <- {return(false)}
+    bool: pumpOutputBuf(me string: mesg) <- {print(mesg); return(false)}
 }
 struct ClipConnector: inherits=InfonConnector {
     void: init(our SStreamSpec: SP) <- {
@@ -105,14 +112,21 @@ struct ClipConnector: inherits=InfonConnector {
         if(data=="quit"){inputEOF<-true; return("")}
         return(data+"\n")
     }
-    bool: pumpOutputBuf() <- {return(false)}
+    bool: pumpOutputBuf(me string: mesg) <- {print(mesg); return(false)}
 }
-struct UserConnector: inherits=InfonConnector {}
-struct IPFSConnector: inherits=InfonConnector {}
-struct IPNSConnector: inherits=InfonConnector {}
-struct RepoConnector: inherits=InfonConnector {}     // Connector to a Repository instance.
-struct GUI_Connector: inherits=InfonConnector {}     // Kbd, mouse/touchScn, screen, clipboard, etc.
-struct MediaConnector:inherits=InfonConnector {}     // Microphones, audioOut, videoSource
+struct DrctConnector: inherits=InfonConnector {     // Direct / Local connection
+    our TerminalApp: termToConnect  //TODO: This lib shouldn't depend on TerminalApp; use a proxie class
+    void: init(our SStreamSpec: SP) <- {
+        streamSpec <- SP
+    }
+    bool: pumpOutputBuf(me string: mesg) <- {termToConnect.processResult(mesg); slipView.requestRedraw(); return(false)}
+}
+//~ struct UserConnector: inherits=InfonConnector {}
+//~ struct IPFSConnector: inherits=InfonConnector {}
+//~ struct IPNSConnector: inherits=InfonConnector {}
+//~ struct RepoConnector: inherits=InfonConnector {}     // Connector to a Repository instance.
+//~ struct GUI_Connector: inherits=InfonConnector {}     // Kbd, mouse/touchScn, screen, clipboard, etc.
+//~ struct MediaConnector:inherits=InfonConnector {}     // Microphones, audioOut, videoSource
 struct AgentConnector:inherits=InfonConnector {      // Connect to other agents
     void: init(our SStreamSpec: SP) <- {
         streamSpec <- SP
@@ -125,11 +139,12 @@ struct AgentConnector:inherits=InfonConnector {      // Connect to other agents
         qConn.enQSession(fetchFile)
         CORE.quicClient.start()
     }
+    bool: pumpOutputBuf(me string: mesg) <- {print(mesg); return(false)}
 }
-struct SensorConnector  : inherits=InfonConnector {}
-struct RobotConnector   : inherits=InfonConnector {}
-struct InternetConnector: inherits=InfonConnector {}
-struct PhoneConnector   : inherits=InfonConnector {} // Services offered by phones
+//~ struct SensorConnector  : inherits=InfonConnector {}
+//~ struct RobotConnector   : inherits=InfonConnector {}
+//~ struct InternetConnector: inherits=InfonConnector {}
+//~ struct PhoneConnector   : inherits=InfonConnector {} // Services offered by phones
 
 
 //////////////////////////////////////////////////////////////////////
@@ -154,6 +169,13 @@ struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
 
     bool: pumpParserInputBuf() <- {
         me string: data <- source.readInputStream()
+        if(!source.inputEOF and data.size()>0){
+            parser.addSlotsToSSets(data.size())
+            source.inputBuf.putStr(data)
+        }
+        return(!source.inputEOF)
+    }
+    bool: pushParserInputBuf(me string: data) <- {
         if(!source.inputEOF and data.size()>0){
             parser.addSlotsToSSets(data.size())
             source.inputBuf.putStr(data)
@@ -193,6 +215,7 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
     me Repository: user
     me Repository: world
     me int: numFilesLoaded <- 0
+    me Mutex: mtx
 
     me uint64: lastOriginID
     me Map<uint64, our InfonStream>: infonSourceRecords // Maps infon::originID to the stream it came from.
@@ -212,15 +235,17 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
             }
         }
         log("Starting Connection:"+specString)
-        lastOriginID <+- 1
-        //TODO: Should need the next line as a proxy. Fix bug by checking modelArgs in codeNewVarStr() for {} constructor calls.
-        their SlipstreamCore: tmpCore <- CORE
-        our ProteusParser:: parser{CORE.infonGrammar, tmpCore, true, lastOriginID}
-        our InfonConnector: connector <- makeInfonConnector(specString, parentPath)
         our InfonStream:: iStream
-        iStream.init(connector, agent, parser, toFill, lastOriginID)
-        infonSourceRecords[lastOriginID] <- iStream
-        iStream.start("IS"+toString(numFilesLoaded))
+        protect(mtx){
+            lastOriginID <+- 1
+            //TODO: Shouldn't need the next line as a proxy. Fix bug by checking modelArgs in codeNewVarStr() for {} constructor calls.
+            their SlipstreamCore: tmpCore <- CORE
+            our ProteusParser:: parser{CORE.infonGrammar, tmpCore, true, lastOriginID}
+            our InfonConnector: connector <- makeInfonConnector(specString, parentPath)
+            iStream.init(connector, agent, parser, toFill, lastOriginID)
+            infonSourceRecords[lastOriginID] <- iStream
+            iStream.start("IS"+toString(numFilesLoaded))
+        }
         return(iStream)
     }
 
@@ -237,12 +262,13 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
         switch(protocolTag){
             case "file":{our FileConnector:: retval;  retval.init(SP); return(retval)}
             case "clip":{our ClipConnector:: retval;  retval.init(SP); return(retval)}
-            case "repo":{our RepoConnector:: retval;  retval.init(SP); return(retval)}
-            case "user":{our UserConnector:: retval;  retval.init(SP); return(retval)}
-            case "ipfs":{our IPFSConnector:: retval;  retval.init(SP); return(retval)}
-            case "ipns":{our IPNSConnector:: retval;  retval.init(SP); return(retval)}
+            //~ case "repo":{our RepoConnector:: retval;  retval.init(SP); return(retval)}
+            //~ case "user":{our UserConnector:: retval;  retval.init(SP); return(retval)}
+            case "drct":{our DrctConnector:: retval;  retval.init(SP); return(retval)}
+            //~ case "ipfs":{our IPFSConnector:: retval;  retval.init(SP); return(retval)}
+            //~ case "ipns":{our IPNSConnector:: retval;  retval.init(SP); return(retval)}
+            //~ case "quic":{our AgentConnector:: retval; retval.init(SP); return(retval)}
             case "agnt":{our AgentConnector:: retval; retval.init(SP); return(retval)}
-            case "quic":{our AgentConnector:: retval; retval.init(SP); return(retval)}
         }
         log("WARNING, No connection was made for: "+specString)
         return(NULL)
@@ -264,6 +290,11 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
         return(connectionMgr.infonSourceRecords[originID].source.streamSpec.spec)
     }
     me QuicClient_Engine: quicClient
+
+    void: submitProteusResult(me uint64: originID, me string: mesg)  <- {connectionMgr.infonSourceRecords[originID].source.submitProteusResult(mesg)}
+    void: handleSystemError  (me uint64: originID, me string: mesg)  <- {connectionMgr.infonSourceRecords[originID].source.handleSystemError(mesg)}
+    void: handleSyntaxError  (me uint64: originID, me string: mesg)  <- {connectionMgr.infonSourceRecords[originID].source.handleSyntaxError(mesg)}
+    void: handleProteusError (me uint64: originID, me string: mesg)  <- {connectionMgr.infonSourceRecords[originID].source.handleProteusError(mesg)}
 
     void: initCoreServices()<-{
         // Init P2P connections and DHTs
@@ -287,7 +318,7 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
         //agent.device <- connectionMgr.device.initAndLoad(connectionMgr, "device", masterFile)
         agent.user   <- connectionMgr.user.initAndLoad(connectionMgr,  "user", "file:///user.pr")
         //agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","quic://[::1]:2006/WORLD/World.pr")
-        agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","file:///WORLD/World.pr")
+     //   agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","file:///WORLD/World.pr")
         //agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","clip://localhost/bruce")
 
 //log("WORLD:"+toString(agent.world))

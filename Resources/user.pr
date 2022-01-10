@@ -108,6 +108,16 @@ bruceLong:{
                         ...
                     }
                 }
+
+                terminal: {
+                    properties:{title:"Term1" screenPos:{xPos:40 yPos:90}}
+                    data:{term-entry:{properties:{sourceID:$ width:_} data:""}|
+                        term-entry:{properties:{sourceID:"user"  width:_} data:"{1 2 3"} //}
+                        term-entry:{properties:{sourceID:"agent"  width:_} data:"  _=4'"}
+                        term-entry:{properties:{sourceID:"agent" width:_} data:"   4'"}
+                    ...
+                    }
+                }
                 ...
             }
         }

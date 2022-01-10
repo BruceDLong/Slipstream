@@ -50,6 +50,7 @@ struct ProactEvent{
     me GUI_Scalar: Y
     me GUI_Scalar: W
     me GUI_Scalar: H
+    our POV: topPov
 
     me EventType: eventType
     me string: dataIdTag
@@ -68,8 +69,8 @@ struct ProactEvent{
     me GUI_Scalar: evX
     me GUI_Scalar: evY
 
-    void: setTrigger(me EventTrigger: trigger, their GuiCoords:RA) <- {
-        Trigger<-trigger; X<-RA.X; Y<-RA.Y; W<-RA.W; H<-RA.H;
+    void: setTrigger(me EventTrigger: trigger, their GuiCoords:RA, our POV: TopPov<-NULL) <- {
+        Trigger<-trigger; X<-RA.X; Y<-RA.Y; W<-RA.W; H<-RA.H;  topPov<-TopPov;
     }
     void: setInfonEvent(me EventType: evntType, our POV:infon1, our POV:infon2) <- {eventType<-evntType; infonX<-infon1; infonY<-infon2;}
     void: setNormalizeEvent(me EventType: evntType, me string: query) <- {eventType<-evntType; text<-query;}
@@ -103,11 +104,15 @@ struct ParamRec{
     me GUI_Scalar: posW
     me GUI_Scalar: posH
     me string: text
+    flag: startActive
 
     me string: viewStyleTag         // How will this be drawn
     me string: viewStyleTagArg      // arguments to modify it
     our ReactiveControl: viewStyleCtrl
+    our GuiDataRec: parentCtrlsData
     their fontSpec: font
+
+    our POV: topPov // The top level Dash for this, if there is one.
 
     // Drag args
     flag: isADash  // Draggable, Z-Stackable, Can have multiple views of same data, has a config-dialog, can be on Dashboard
@@ -145,6 +150,7 @@ struct ReactiveControl{
     void: setMetrics(our ParamRec: PR) <- {}
     void: draw(our dashDrawing: dr, our ParamRec: iPR) <- {}
     void: saveBack() <- {}
+    void: processMesg(me string: buffer) <- {}
 
     me bool: mouseMoved(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {return(false)}
     me bool: primaryClick(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {return(false)}
@@ -194,6 +200,8 @@ struct NumberView: inherits=ReactiveControl{
 }
 
 struct WidgetMngr{
+    me Map<string, our ReactiveControl>: viewStyleTags
+
     our ReactiveControl: getviewStyleTagCtrl(me string: key) <- {
         if(viewStyleTags.containsKey(key)){
             return(viewStyleTags[key])
@@ -203,10 +211,7 @@ struct WidgetMngr{
     void: setviewStyleTagCtrl(me string: key, our ReactiveControl: ctrl) <- {
         key <- unicodeMgr.normalizeStr(key)
         viewStyleTags[key] <- ctrl
-        print("SET:"+key+"\n")
     }
-    me Map<string, our ReactiveControl>: viewStyleTags
-
     our StringView:  staticStringView
     our NumberView:  staticNumberView
     void: init() <- {
@@ -233,14 +238,14 @@ struct Presenter{
         if(crntFocusIDStr!=""){
             our GuiDataRec: old_GDR <- modelMgr.fetchGuiData(crntFocusIDStr) // Get currently focused item
             old_GDR.isActive<-0
-            log("DEACTIVATING:"+crntFocusIDStr)
+            //log("DEACTIVATING:"+crntFocusIDStr)
         }
         our GuiDataRec: new_GDR <- modelMgr.fetchGuiData(widgetID)
         if(new_GDR!=NULL){
             new_GDR.isActive <+- 1
             crntFocusIDStr <- widgetID
             crntGDR <- new_GDR
-            log("ACTIVATING:"+widgetID)
+            //log("ACTIVATING:"+widgetID)
         }
     }
     void: clearFocus() <- {
@@ -299,7 +304,7 @@ struct Presenter{
     if(retval=="note" or retval=="role" or retval=="title"){retval<-"genericString"}
     else if(retval=="subtasks" or retval=="members"){retval<-"genericList"}
 
-    if(PR.viewStyleTagArg=="_edit"){retval<+-"_edit"}
+        if(PR.viewStyleTagArg=="_edit"){retval<+-"_edit"}
         retval <- unicodeMgr.normalizeStr(retval)
         PR.viewStyleTag <- retval
         PR.viewStyleCtrl<- widgetMngr.getviewStyleTagCtrl(retval)
@@ -323,27 +328,22 @@ struct Presenter{
             dr.addXY(cmdLineTo, posX + radius, posY + 7*radius/4)
             dr.addXY(cmdMoveTo, posX + radius/4, posY + radius)
             dr.addXY(cmdLineTo, posX + 7*radius/4, posY + radius)
-        }
-        else if (symbol=="-") {
+        } else if (symbol=="-") {
             dr.addXY(cmdMoveTo, posX + radius/4, posY + radius)
             dr.addXY(cmdLineTo, posX + 7*radius/4, posY + radius)
-        }
-        else if (symbol=="<") {
+        } else if (symbol=="<") {
             dr.addXY(cmdMoveTo, posX + radius, posY + radius - stickLen * sqrt(2.0))
             dr.addXY(cmdLineTo, posX + radius - stickLen * sqrt(2), posY + radius)
             dr.addXY(cmdMoveTo, posX + radius, posY + radius + stickLen * sqrt(2.0))
-        }
-        else if (symbol==">") {
+        } else if (symbol==">") {
             dr.addXY(cmdMoveTo, posX + radius, posY + radius - stickLen * sqrt(2.0))
             dr.addXY(cmdLineTo, posX + radius + stickLen * sqrt(2), posY + radius)
             dr.addXY(cmdLineTo, posX + radius, posY + radius + stickLen * sqrt(2.0))
-        }
-        else if (symbol=="v") {
+        } else if (symbol=="v") {
             dr.addXY(cmdMoveTo, posX  - stickLen * sqrt(2.0), posY )
             dr.addXY(cmdLineTo, posX, posY + radius)
             dr.addXY(cmdLineTo, posX  + stickLen * sqrt(2.0), posY)
-        }
-        else if (symbol=="menu") {
+        } else if (symbol=="menu") {
             dr.addXY(cmdMoveTo, posX + radius/4, posY + radius)
             dr.addXY(cmdLineTo, posX + 7*radius/4, posY + radius)
 
@@ -371,7 +371,7 @@ me int: GV_topBottom_Pad <- 5
             if(count>0){xCur <+- GV_innerHorz_Pad}
             dr.addC(cmdSetColor, surfaceBkgnd)
             our dashDrawing:: dr2
-            our ParamRec:: iPR; iPR.init(pov, xCur, PR.posY, 0, 0)
+            our ParamRec:: iPR; iPR.init(pov, xCur, PR.posY, 0, 0); iPR.topPov <- PR.topPov
             chooseviewStyleTag(iPR)
             iPR.viewStyleTagArg <- PR.viewStyleTagArg
             drawItem(dr2, iPR)
@@ -395,6 +395,7 @@ me int: GV_topBottom_Pad <- 5
         while(pov){
             if(count>0){yCur <+- GV_innerVert_Pad}
             our ParamRec:: innerPR; innerPR.init(pov, PR.posX+GV_LeftRight_Pad, yCur, PR.posW-(GV_LeftRight_Pad*2), 0)
+            innerPR.topPov <- PR.topPov
             if(PR.viewStyleTagArg=="_edit"){innerPR.viewStyleTagArg <- PR.viewStyleTagArg}
             innerPR.font <- styler.defaultFont
             chooseviewStyleTag(innerPR)
@@ -410,13 +411,14 @@ me int: GV_topBottom_Pad <- 5
             pov <- pov.next
         }
 
+        yCur <+- GV_topBottom_Pad
+        PR.posH <- yCur-PR.posY   // return the height
+
         withEach iPR in itemParams{
             dr.addC(cmdSetColor, surfaceBkgnd)
             iPR.viewStyleTagArg <- PR.viewStyleTagArg
             drawItem(dr, iPR)
         }
-        yCur <+- GV_topBottom_Pad
-        PR.posH <- yCur-PR.posY   // return the height
     }
 }
 
