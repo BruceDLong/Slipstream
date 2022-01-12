@@ -150,7 +150,7 @@ struct ReactiveControl{
     void: setMetrics(our ParamRec: PR) <- {}
     void: draw(our dashDrawing: dr, our ParamRec: iPR) <- {}
     void: saveBack() <- {}
-    void: processMesg(me string: buffer) <- {}
+    void: processEntry(me string: buffer) <- {}
 
     me bool: mouseMoved(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {return(false)}
     me bool: primaryClick(me GUI_Scalar:posX, me GUI_Scalar:posY) <- {return(false)}

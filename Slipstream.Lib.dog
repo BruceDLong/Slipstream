@@ -65,10 +65,10 @@ model InfonConnector{
     void: pumpInputBuff()        <- {}
     me string: readInputStream() <- {return("")}
     bool: pumpOutputBuf(me string: mesg)  // send to outputstream: outputBuf.putStr(mesg);
-    void: submitProteusResult(me string: mesg)  <- {pumpOutputBuf(mesg+"\n")}
-    void: handleSystemError  (me string: mesg)  <- {pumpOutputBuf(mesg+"\n")}
-    void: handleSyntaxError  (me string: mesg)  <- {pumpOutputBuf(mesg+"\n")}
-    void: handleProteusError (me string: mesg)  <- {pumpOutputBuf(mesg+"\n")}
+    void: submitProteusResult(me int64: pos, me string: mesg)  <- {pumpOutputBuf("RESULT:"+toString(pos)+":"+mesg+"\n")}
+    void: handleSystemError  (me string: mesg)  <- {pumpOutputBuf("SYSERR:"+mesg+"\n")}
+    void: handleSyntaxError  (me string: mesg)  <- {pumpOutputBuf("SYNERR:"+mesg+"\n")}
+    void: handleProteusError (me string: mesg)  <- {pumpOutputBuf("NRMERR:"+mesg+"\n")}
 }
 struct InfonConnector{}
 
@@ -119,7 +119,11 @@ struct DrctConnector: inherits=InfonConnector {     // Direct / Local connection
     void: init(our SStreamSpec: SP) <- {
         streamSpec <- SP
     }
-    bool: pumpOutputBuf(me string: mesg) <- {termToConnect.processResult(mesg); slipView.requestRedraw(); return(false)}
+    bool: pumpOutputBuf(me string: mesg) <- {
+        termToConnect.processResult(mesg)
+        slipView.requestRedraw();
+        return(false)
+    }
 }
 //~ struct UserConnector: inherits=InfonConnector {}
 //~ struct IPFSConnector: inherits=InfonConnector {}
@@ -291,7 +295,7 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
     }
     me QuicClient_Engine: quicClient
 
-    void: submitProteusResult(me uint64: originID, me string: mesg)  <- {connectionMgr.infonSourceRecords[originID].source.submitProteusResult(mesg)}
+    void: submitProteusResult(me uint64: originID, me uint64: pos, me string: mesg)  <- {connectionMgr.infonSourceRecords[originID].source.submitProteusResult(pos, mesg)}
     void: handleSystemError  (me uint64: originID, me string: mesg)  <- {connectionMgr.infonSourceRecords[originID].source.handleSystemError(mesg)}
     void: handleSyntaxError  (me uint64: originID, me string: mesg)  <- {connectionMgr.infonSourceRecords[originID].source.handleSyntaxError(mesg)}
     void: handleProteusError (me uint64: originID, me string: mesg)  <- {connectionMgr.infonSourceRecords[originID].source.handleProteusError(mesg)}

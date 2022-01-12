@@ -198,7 +198,7 @@ struct TextEditBox: inherits=ReactiveControl{
         isActive<-false
         // If parent exists, sent buffer to it.
         if(thisPR.parentCtrlsData!=NULL){
-            thisPR.parentCtrlsData.ctrl.processMesg(crntLine)
+            thisPR.parentCtrlsData.ctrl.processEntry(crntLine)
         }
     }
     me bool: expandsX()<-{return(true)}
@@ -350,7 +350,10 @@ struct TerminalApp: inherits=ReactiveControl{
             me int64: entryWidth  <- fetchIntField(fetchField(propertiesInf, "width"))
             me int64: numLines    <- entryWidth/editWidth+1
             me string: entryText  <- fetchStringField(dataInf)
-            if(sourceID=="agent"){dr.addC(cmdSetColor, styler.Red)}
+            if(sourceID=="agent:RESULT"){dr.addC(cmdSetColor, styler.Yellow)}
+            else if(sourceID=="agent:SYSERR"){dr.addC(cmdSetColor, styler.Red)}
+            else if(sourceID=="agent:SYNERR"){dr.addC(cmdSetColor, styler.Pink)}
+            else if(sourceID=="agent:NRMERR"){dr.addC(cmdSetColor, styler.Green)}
             else {dr.addC(cmdSetColor, titleTextColr)}
             dr.addTF(cmdRenderText, xCur, yCur+(lineHeight/2)+(styler.smallFont.height/2-3), entryText, styler.smallFont)
             yCur <+- lineHeight
@@ -371,9 +374,24 @@ struct TerminalApp: inherits=ReactiveControl{
         proactiveGUI.presenter.drawItem(dr, innerPR)
     }
 
-    void: processResult(me string: buffer) <- {
+    void: processResult(me string: buffer) <- { // Process result messages from parse / extract / normalize
         log("PROCESS_RESULT:" + buffer + "\n")
-        our POV: newPov <- thisPR.dataPov.tryAddingTentativeChild()
+        // Extract result-type, charPos, mesg
+        me string: resultType <- buffer.subStr(0,6)
+        buffer <- buffer.subStr(7)
+        me int: colonPos <- buffer.find(":")
+        me uint64: charPos <- stol(buffer.subStr(0,colonPos))
+        buffer <- buffer.subStr(colonPos+1)
+
+        our infon: newInfon <- thisPR.dataPov.makePotentialMemberInfon()
+        newInfon.infCharPos <- charPos   // Remember our position in the stream
+
+        // Now search backwards to find the correct slot to insert this.
+        our POV: prevPov <- thisPR.dataPov.pItem.value.items.back()
+        while(prevPov!=NULL and prevPov.pItem.infCharPos > charPos){
+            prevPov <- prevPov.prev
+        }
+        our POV: newPov <- thisPR.dataPov.pItem.value.items.insertAfter(prevPov, newInfon)
         if(newPov!=NULL){
             our POV: newProps <- fetchField(newPov, "properties")
             our POV: dataInf  <- fetchField(newPov, "data")
@@ -381,16 +399,18 @@ struct TerminalApp: inherits=ReactiveControl{
             dataInf.pItem.value.format  <- fLiteral
             dataInf.pItem.value.str     <- buffer
             newSrcID.pItem.value.format <- fLiteral
-            newSrcID.pItem.value.str    <- "agent"
+            newSrcID.pItem.value.str    <- "agent:"+resultType
         }
     }
 
-    void: processMesg(me string: buffer) <- {
+    void: processEntry(me string: buffer) <- {
+        // This runs when user hits Enter  / submits text on terminal.
         if(iStream!=NULL){
             iStream.pushParserInputBuf(buffer+"\n")
         }
         our POV: newPov <- thisPR.dataPov.tryAddingTentativeChild()
         if(newPov!=NULL){
+            newPov.pItem.infCharPos <- iStream.source.inputBuf.crntStreamSize
             our POV: newProps <- fetchField(newPov, "properties")
             our POV: newSrcID <- fetchField(newProps, "sourceid")
             if(newSrcID==NULL){} //DO_NOW: MAKE AND PLACE SourceID

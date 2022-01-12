@@ -96,11 +96,9 @@ struct GLOBAL{
 
 struct GuiModelManager{
 
-    void: moveInfItemToEndToList(our POV: povToMove) <- {
-        log("BRING__TO_TOP:"+povToMove.stringify())
-        their PovList: povList <- slipView.boardInfons[slipView.crntBoardIdx].pItem.value.items.tail.pItem.value.items
-
-///=    TODO://// ABOVE LINE IS WRONG. It should find the 'data' field. Or perhaps that should have been passed in?
+    void: moveInfItemToEndToList(our POV: povToMove) <- { // Bring a window to the top of the screen Z-stack
+        our POV: dataInf       <- fetchField(slipView.boardInfons[slipView.crntBoardIdx], "data")
+        their PovList: povList <- dataInf.pItem.value.items
         if(povToMove===povList.tail){return()}
         povList.erase(povToMove)
         povList.appendPov(povToMove)
