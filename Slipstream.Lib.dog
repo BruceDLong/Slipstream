@@ -199,7 +199,7 @@ struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
         parseAndExtractor.sourceConnector <- source
     }
     void: start(me string:name) <- {
-        toFill.parseFinished <- false
+        toFill.stillParsing <- true
         threadedNormalizer.init(parentAgent, toFill)
         threadedNormalizer.start(name+"_NRM")
         parseAndExtractor.start(parser, source.inputBuf, toFill, name+"_PnE")
@@ -219,7 +219,7 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
     me Repository: user
     me Repository: world
     me int: numFilesLoaded <- 0
-    me Mutex: mtx
+    me Mutex: connMgrMtx
 
     me uint64: lastOriginID
     me Map<uint64, our InfonStream>: infonSourceRecords // Maps infon::originID to the stream it came from.
@@ -240,7 +240,7 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
         }
         log("Starting Connection:"+specString)
         our InfonStream:: iStream
-        protect(mtx){
+        protect(connMgrMtx){
             lastOriginID <+- 1
             //TODO: Shouldn't need the next line as a proxy. Fix bug by checking modelArgs in codeNewVarStr() for {} constructor calls.
             their SlipstreamCore: tmpCore <- CORE

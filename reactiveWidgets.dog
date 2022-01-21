@@ -320,11 +320,9 @@ struct TerminalApp: inherits=ReactiveControl{
         me int64: lineHeight  <- 16
         me int64: heightACC <- lineHeight
         their PovList: dataItems <- PR.dataPov.pItem.value.items
-        if(dataItems.isEmpty()){PR.dataPov.tryAddingTentativeChild()}
-        else { // Handle case where last item is from Agent
-            our POV: propertiesInf <- fetchField(dataItems.back(), "properties")
-            me string: sourceID   <- fetchStringField(fetchField(propertiesInf, "sourceid"))
-            if(sourceID=="agent"){PR.dataPov.tryAddingTentativeChild()}
+        if(dataItems.isEmpty()){
+            our POV: newPov <- PR.dataPov.tryAddingTentativeChild()
+            newPov.pItem.infCharPos <- 0
         }
         our POV: pov <- dataItems.back()
         while(pov){
