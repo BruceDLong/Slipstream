@@ -118,7 +118,6 @@ struct FetchFile: inherits=QProtocol {
         qStream.readBuffer <- data
         bytesUsed <- data.size()
         print("\n                  FetchFile CLIENT READ ",bytesUsed," CHARS FROM STREAM_ID:",streamID,"\n")
-        source.iStreamParent.parser.addSlotsToSSets(bytesUsed)
         source.inputBuf.putStr(data)
         if(finished){
              print("\n                  FetchFile CLIENT CLOSE_FILE FROM STREAM_ID:",streamID,"\n")
@@ -177,7 +176,6 @@ struct STDIO: inherits=QProtocol {
         print("\n                  FetchFile CLIENT READ STEP:",step,"  STREAM_ID:",streamID,"\n")
         qStream.readBuffer <- data
         bytesUsed <- data.size()
-        source.iStreamParent.parser.addSlotsToSSets(data.size())
         source.inputBuf.putStr(data)
         if(finished and bytesUsed == data.size()){
             source.inputBuf.close()

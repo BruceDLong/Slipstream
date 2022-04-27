@@ -11,7 +11,7 @@ Authors = "Bruce Long"
 Description = "The Slipstream Engine"
 ProgramOrLibrary = "program"
 
-featuresNeeded = [Proteus, Logger, Unicode, BigNumbers, Threads, IOBuffer, EarleyParser, Quic] // Crypto, P2P_Manager]
+featuresNeeded = [Proteus, Logger, Unicode, BigNumbers, Threads, IOBuffer, Quic] // P2P_Manager]
 
 LicenseText = `This file is part of the "Slipstream Development Suite" All Rights Reserved.`
 
@@ -152,8 +152,45 @@ struct AgentConnector:inherits=InfonConnector {      // Connect to other agents
 
 
 //////////////////////////////////////////////////////////////////////
-struct InfonThreadedParserExtractor: inherits=Threaded_infonParseAndExtractor{
+
+struct ThreadedInfonParser: inherits=Threads{
+    me string: name
+    our ProteusParser: parser
+    our infon: result
     our InfonConnector: sourceConnector
+    me bool: parseCompleted
+    me Mutex: chkParseDone
+    me SyncLock: parseDoneLock
+
+    void: waitForParseCompletion()<-{
+        me MutexMngr: MtxMgr{chkParseDone}
+        while(!parseCompleted){
+            parseDoneLock.wait(MtxMgr)
+        }
+    }
+
+    void: initAndStart(our ProteusParser: pParser, their strBuf: streamToParse, our infon: topItem, me string:Name) <- {
+        parser <- pParser
+        result <- topItem
+        name <- Name+"_P"
+        parseCompleted <- false
+        parser.initParseFromStream(streamToParse)
+        start(name)
+    }
+
+    void: run() <- {
+        log("OPENING PARSE_THREAD:" + streamName())
+        parser.doParse(result)
+        if(parser.doesParseHaveError()){
+            handleSyntaxError(parser.errorMesg)
+        }
+        log("CLOSING PARSE_THREAD:" + streamName())
+
+        protect(chkParseDone){
+            parseCompleted <- true;
+            parseDoneLock.notifyOne();
+        }
+    }
     me string: streamName() <- {return(sourceConnector.streamSpec.spec)}
     void: handleSyntaxError(me string: mesg) <- {
         log("Syntax Error:"+mesg)
@@ -167,48 +204,46 @@ struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
     their Agent: parentAgent
     our ProteusParser: parser
     our infon: toFill
-    me InfonThreadedParserExtractor: parseAndExtractor
-    me ThreadedNormalizer: threadedNormalizer
+    me ThreadedInfonParser: parserThread
+    me ThreadedNormalizer: normerThread
     bool: isActive  // True is a thread is still operating.
 
     bool: pumpParserInputBuf() <- {
         me string: data <- source.readInputStream()
         if(!source.inputEOF and data.size()>0){
-            parser.addSlotsToSSets(data.size())
             source.inputBuf.putStr(data)
         }
         return(!source.inputEOF)
     }
     bool: pushParserInputBuf(me string: data) <- {
         if(!source.inputEOF and data.size()>0){
-            parser.addSlotsToSSets(data.size())
             source.inputBuf.putStr(data)
         }
         return(!source.inputEOF)
     }
 
-    void: init(our InfonConnector: connector, their Agent: agent, our ProteusParser: eParser, our infon: infToFill, me uint64: OriginID) <- {
+    void: init(our InfonConnector: connector, their Agent: agent, our ProteusParser: pParser, our infon: infToFill, me uint64: OriginID) <- {
         source   <- connector
         originID <- OriginID
         parentAgent <- agent
-        parser <- eParser
+        parser <- pParser
         toFill <- infToFill
         source.iStreamParent <- self
         if(toFill==NULL){Allocate(toFill)}
         toFill.originID <- originID
-        parseAndExtractor.sourceConnector <- source
+        parserThread.sourceConnector <- source
     }
     void: start(me string:name) <- {
         toFill.stillParsing <- true
-        threadedNormalizer.init(parentAgent, toFill)
-        threadedNormalizer.start(name+"_NRM")
-        parseAndExtractor.start(parser, source.inputBuf, toFill, name+"_PnE")
+        normerThread.init(parentAgent, toFill)
+        normerThread.start(name+"_NRM")
+        parserThread.initAndStart(parser, source.inputBuf, toFill, name+"_PnE")
         source.pumpInputBuff()
-        //log("Result:"+toString(toFill))
+        //waitForCompletion(); log("Result:"+toString(toFill))
     }
     void: waitForCompletion() <-{
-        parseAndExtractor.waitForThreadsToExit()
-        threadedNormalizer.waitForExit()
+        parserThread.waitForExit()
+        normerThread.waitForExit()
     }
     void: requestFinish() <- {} // For long-running streams, request to end the stream.
 }
@@ -244,7 +279,7 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
             lastOriginID <+- 1
             //TODO: Shouldn't need the next line as a proxy. Fix bug by checking modelArgs in codeNewVarStr() for {} constructor calls.
             their SlipstreamCore: tmpCore <- CORE
-            our ProteusParser:: parser{CORE.infonGrammar, tmpCore, true, lastOriginID}
+            our ProteusParser:: parser{tmpCore, true, lastOriginID}
             our InfonConnector: connector <- makeInfonConnector(specString, parentPath)
             iStream.init(connector, agent, parser, toFill, lastOriginID)
             infonSourceRecords[lastOriginID] <- iStream
@@ -310,7 +345,6 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
     void: init(me string: topFile) <- {
         streamingNormMode <- true
         initHardFuncNames()
-        Allocate(infonGrammar)
         statusMsg <- ""  // Empty == OK
         masterFile <- "file://"+topFile
         initCoreServices()
