@@ -5,26 +5,24 @@ struct GLOBAL{
     me fontSpec: editFont
     me Map<int32, int>: charWidths
 
-    me GUI_Scalar: drawWrappedText(our dashDrawing: dr, me int: posX, me int: posY, me int: width, me string: text) <- {
-        me deltaSize: DSize <- getTextSize(text, styler.smallFont)
-        me int: curY <- posY + DSize.height/2
+    me GUI_Scalar: drawWrappedText(our dashDrawing: dr, me int: posX, me int: posY, me int: width, me string: text, their fontSpec: font) <- {
+        me int: curY <- posY + font.headerY
         while(text!=""){
-            me int: chOnLine <- styler.smallFont.getCharPosFromWidth(text, width)
+            me int: chOnLine <- font.getCharPosFromWidth(text, width)
             if(text.size()<chOnLine){chOnLine<-text.size()}
-            dr.addTF(cmdRenderText, posX, curY, text.subStr(0, chOnLine), styler.smallFont)
+            dr.addTF(cmdRenderText, posX, curY, text.subStr(0, chOnLine), font)
             text <- text.subStr(chOnLine)
-            curY <- curY + DSize.height
+            curY <- curY + font.height
         }
         return(posY-curY)
     }
-    me GUI_Scalar: WrappedTextHeight(me int: width, me string: text) <- {
-        me deltaSize: DSize <- getTextSize(text, styler.smallFont)
+    me GUI_Scalar: WrappedTextHeight(me int: width, me string: text, their fontSpec: font) <- {
         me int: curY <- 0
         while(text!=""){
-            me int: chOnLine <- styler.smallFont.getCharPosFromWidth(text, width)
+            me int: chOnLine <- font.getCharPosFromWidth(text, width)
             if(text.size()<chOnLine){chOnLine<-text.size()}
             text <- text.subStr(chOnLine)
-            curY <- curY + DSize.height
+            curY <- curY + font.height
         }
         return(curY)
     }
@@ -364,7 +362,7 @@ struct TerminalApp: inherits=ReactiveControl{
             else if(sourceID=="agent:SYNERR"){dr.addC(cmdSetColor, styler.Pink)}
             else if(sourceID=="agent:NRMERR"){dr.addC(cmdSetColor, styler.Green)}
             else {dr.addC(cmdSetColor, titleTextColr)}
-            dr.addTF(cmdRenderText, xCur, yCur+(lineHeight/2)+(styler.smallFont.height/2-3), entryText, styler.smallFont)
+            drawWrappedText(dr, xCur, yCur, PR.posW-10, shortedStr(entryText,295), styler.smallFont)
             yCur <+- lineHeight
             crntLineNum <+- numLines
             pov <- pov.next

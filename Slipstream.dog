@@ -221,7 +221,7 @@ struct InfonicWidgetView: inherits=ReactiveControl{
 struct TaskCardView: inherits=ReactiveControl{
     void: setMetrics(our ParamRec: PR) <- {
         PR.posW <- vertListWidth-5*2
-        PR.posH <- WrappedTextHeight(PR.posW-10,PR.title)
+        PR.posH <- WrappedTextHeight(PR.posW-10,PR.title, styler.smallFont)
     }
     void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
         me string: text<-PR.title
@@ -232,7 +232,7 @@ struct TaskCardView: inherits=ReactiveControl{
         dr.addRAA(cmdRoundRect, RA, 13)
         dr.add1(cmdFill)
         dr.addC(cmdSetColor, cardTextColr)
-        drawWrappedText(dr, PR.posX+5, PR.posY+5, boxWidth-10, text)
+        drawWrappedText(dr, PR.posX+5,  PR.posY+2, boxWidth-10, text, styler.smallFont)
 
         our ProactEvent:: popUptoEditCard;
         popUptoEditCard.setTrigger(tPrimaryClick, RA, PR.topPov); popUptoEditCard.setGUI_popupEvent(slipView.boardInfons[slipView.crntBoardIdx].mySymbol()+"/editCardPopped", PR.sourcePov)
