@@ -4,16 +4,29 @@ struct GLOBAL{
 
     me fontSpec: editFont
     me Map<int32, int>: charWidths
-    me int: getCharWidthX1024(me int32: chr, me fontSpec: font) <- {
-        itr Map<int32, int>: chrWidthItr <- charWidths.find(chr)
-        if(chrWidthItr!=charWidths.end()){
-            return(chrWidthItr.val)
+
+    me GUI_Scalar: drawWrappedText(our dashDrawing: dr, me int: posX, me int: posY, me int: width, me string: text) <- {
+        me deltaSize: DSize <- getTextSize(text, styler.smallFont)
+        me int: curY <- posY + DSize.height/2
+        while(text!=""){
+            me int: chOnLine <- styler.smallFont.getCharPosFromWidth(text, width)
+            if(text.size()<chOnLine){chOnLine<-text.size()}
+            dr.addTF(cmdRenderText, posX, curY, text.subStr(0, chOnLine), styler.smallFont)
+            text <- text.subStr(chOnLine)
+            curY <- curY + DSize.height
         }
-        me string: text; text <+- chr
-        me deltaSize: ds <- getTextSizeX1024(text, font)
-        me int: width <- ds.width
-        charWidths[chr] <- width
-        return(width)
+        return(posY-curY)
+    }
+    me GUI_Scalar: WrappedTextHeight(me int: width, me string: text) <- {
+        me deltaSize: DSize <- getTextSize(text, styler.smallFont)
+        me int: curY <- 0
+        while(text!=""){
+            me int: chOnLine <- styler.smallFont.getCharPosFromWidth(text, width)
+            if(text.size()<chOnLine){chOnLine<-text.size()}
+            text <- text.subStr(chOnLine)
+            curY <- curY + DSize.height
+        }
+        return(curY)
     }
 }
 
@@ -35,12 +48,10 @@ struct TextEditBox: inherits=ReactiveControl{
         PR.posH <- DSize.height + 10*2 // 10 px on top and bottom
     }
 
-    me int: getCharWidth(me int32: chr) <- {return(getCharWidthX1024(chr, thisPR.font)/1024)}
-
     me int: calcWidthToCursor(me string: line, me int: charsToCur) <- {
         me int: wtc <- 0
         withEach p in RANGE(0..charsToCur){
-            wtc <+- getCharWidthX1024(line[p], thisPR.font)
+            wtc <+- thisPR.font.getCharWidthX1024(line[p])
         }
         return(wtc/1024)
     }
@@ -50,7 +61,7 @@ struct TextEditBox: inherits=ReactiveControl{
         me int: p <- 0
         if(line.size()==0){charsToCur<-0; widthToCur<-0; return();}
         withEach count in RANGE(0..line.size()){
-            me int: chrWidth <- getCharWidth(line[p])
+            me int: chrWidth <- thisPR.font.getCharWidth(line[p])
             if(wtc+(chrWidth/2) >= maxWidthToCur){break()}
             wtc <+- chrWidth
             p <+- 1
@@ -64,7 +75,7 @@ struct TextEditBox: inherits=ReactiveControl{
             me string: S; S <+- chr
             crntLine.insert(charsToCur, S)
             charsToCur <+- 1
-            widthToCur <+- getCharWidth(chr)
+            widthToCur <+- thisPR.font.getCharWidth(chr)
         } else {} // TODO: Overwrite mode
         curMax<-widthToCur
     }
@@ -72,7 +83,7 @@ struct TextEditBox: inherits=ReactiveControl{
     void: moveLeft() <- {
         if(charsToCur>0){
             charsToCur <-- 1
-            widthToCur <-- getCharWidth(crntLine[charsToCur])
+            widthToCur <-- thisPR.font.getCharWidth(crntLine[charsToCur])
             curMax <- widthToCur
         } /*else if(!isFirstInSet(currentLine)){
             moveUp();
@@ -82,7 +93,7 @@ struct TextEditBox: inherits=ReactiveControl{
 
     void: moveRight() <- {
         if(charsToCur < crntLine.size()){
-            widthToCur <+- getCharWidth(crntLine[charsToCur])
+            widthToCur <+- thisPR.font.getCharWidth(crntLine[charsToCur])
             charsToCur <+- 1
             curMax<-widthToCur
         } /*else if(!isLastInSet(currentLine)){

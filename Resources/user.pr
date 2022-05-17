@@ -86,7 +86,7 @@ bruceLong:{
                             data:{
                                 task:{properties:{title:"comment System" member:"Bruce"} data:{}}
                                 task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{}}
-                                task:{properties:{title:"Library: Speech Production" member:"John"}
+                                task:{properties:{title:"Library: Speech Production and production" member:"John"}
                                     data:{
                                         subTasks:{1 2 3}
                                         note:"This string is a note"
@@ -100,7 +100,7 @@ bruceLong:{
                             properties:{title:"Complete"}
                             data:{task:{properties:{title:$ member:""} data:{}}|
                                 task:{properties:{title:"comment System" member:"Bruce"} data:{}}
-                                task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{}}
+                                task:{properties:{title:"CodeDog.swift.Lib.dog & CodeDog.java.Lib.dog & CodeDog.CPP.Lib.dog " member:"Tiffany"} data:{}}
                                 task:{properties:{title:"Library: Speech recognition" member:"Sue"} data:{}}
                                 ...
                             }
