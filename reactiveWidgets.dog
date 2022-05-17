@@ -14,7 +14,7 @@ struct GLOBAL{
             text <- text.subStr(chOnLine)
             curY <- curY + font.height
         }
-        return(posY-curY)
+        return(curY-posY-font.headerY)
     }
     me GUI_Scalar: WrappedTextHeight(me int: width, me string: text, their fontSpec: font) <- {
         me int: curY <- 0
@@ -325,9 +325,9 @@ struct TerminalApp: inherits=ReactiveControl{
         } else {TermApp <- asClass(TerminalApp, termBoxGDR.ctrl)}
 
         // Calc which entries appear in window
-        me int64: editWidth   <- width
-        me int64: lineHeight  <- 16
-        me int64: heightACC <- lineHeight
+        me int64: editWidth  <- width
+        me int64: lineHeight <- styler.smallFont.height
+        me int64: heightACC  <- headerHeight
         their PovList: dataItems <- PR.dataPov.pItem.value.items
         if(dataItems.isEmpty()){
             our POV: newPov <- PR.dataPov.tryAddingTentativeChild()
@@ -335,14 +335,11 @@ struct TerminalApp: inherits=ReactiveControl{
         }
         our POV: pov <- dataItems.back()
         while(pov){
-            our POV: propertiesInf <- fetchField(pov, "properties")
-            //our POV: dataInf       <- fetchField(pov, "data")
-            me string: sourceID   <- fetchStringField(fetchField(propertiesInf, "sourceid"))
-            me int64: entryWidth  <- fetchIntField(fetchField(propertiesInf, "width"))
-            me int64: numLines    <- entryWidth/editWidth+1
-            heightACC   <+- lineHeight * numLines
-            //me string: entryText  <- fetchStringField(dataInf)
-            if(heightACC>=height){break()}
+            our POV: dataInf          <- fetchField(pov, "data")
+            me string: entryText      <- fetchStringField(dataInf)
+            me GUI_Scalar: textHeight <- WrappedTextHeight(PR.posW-10,shortedStr(entryText,295), styler.smallFont)
+            heightACC   <+- textHeight
+            if(heightACC>=height-headerHeight){break()}
             pov <- pov.prev
         }
         if(pov==NULL){pov <- dataItems.front()}
@@ -362,8 +359,8 @@ struct TerminalApp: inherits=ReactiveControl{
             else if(sourceID=="agent:SYNERR"){dr.addC(cmdSetColor, styler.Pink)}
             else if(sourceID=="agent:NRMERR"){dr.addC(cmdSetColor, styler.Green)}
             else {dr.addC(cmdSetColor, titleTextColr)}
-            drawWrappedText(dr, xCur, yCur, PR.posW-10, shortedStr(entryText,295), styler.smallFont)
-            yCur <+- lineHeight
+            me GUI_Scalar: textHeight <- drawWrappedText(dr, xCur, yCur, PR.posW-10, shortedStr(entryText,295), styler.smallFont)
+            yCur <+- textHeight
             crntLineNum <+- numLines
             pov <- pov.next
         }
