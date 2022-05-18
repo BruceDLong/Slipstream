@@ -193,7 +193,7 @@ struct InfonicWidgetView: inherits=ReactiveControl{
         proactiveGUI.presenter.registerEvent(blockEvents)
 
         // Draw the title editor
-            our ParamRec:: innerPR; innerPR.init(titleInf, RA.X+border, RA.Y+yCur, RA.W-(border*2), 0)
+            our ParamRec:: innerPR; innerPR.init(titleInf, RA.X+border, RA.Y+yCur, RA.W-(border*2), 0) // TitleInf.dataPov not initializing.  Solution might be to pass propertiesInf instead
             innerPR.viewStyleTagArg <- "_edit"
             innerPR.font <- styler.defaultFont
             proactiveGUI.presenter.chooseviewStyleTag(innerPR)

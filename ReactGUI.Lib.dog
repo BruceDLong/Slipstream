@@ -129,6 +129,7 @@ struct ParamRec{
         titlePov      <- fetchField(propertiesPov, "title")
         title         <- fetchStringField(titlePov)
         dataPov       <- fetchField(source, "data")
+        if(dataPov==NULL){print("\nWARNING:dataPov NULL in ParamRec.init.\n")}
         screenPos     <- NULL
         xPov          <- NULL
         yPov          <- NULL
