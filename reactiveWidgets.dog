@@ -231,7 +231,16 @@ struct TextEditBox: inherits=ReactiveControl{
                     switch(cmd){
                         case KEY_a: {}                            // CTRL-A - Select all
                         case 3: {}                                // CTRL-C - Copy
-                        case 22: {}                               // CTRL-V - Paste
+                        case 118: {                               // CTRL-V - Paste
+                            our string: pText <- getClipboardAsText()
+                            if(pText!=NULL){
+                                me int: txtSz <- pText.size()
+                                withEach pos in RANGE(0..txtSz){
+                                    me int32: chAtPos <- pText[pos]
+                                    insertChar(chAtPos)
+                                }
+                            }
+                        }
                         case KEY_s: {thisPR.sourcePov.pItem.value.str <- crntLine} // CTRL-S - Save back
                         case 23: {}                               // CTRL-W - Toggle word-wrap Mode
                         case 24: {}                               // CTRL-X - Cut
