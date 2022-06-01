@@ -35,6 +35,7 @@ struct TextEditBox: inherits=ReactiveControl{
     me int: widthToCur
     me int: charsToCur
     me int: curMax           // Most recent width to cursor
+    their strBuf: inputBuf     // The buffer for this
     me bool: overwriteMode   // False = InsertMode
 
     const int: leftXPad <- 10
@@ -74,6 +75,11 @@ struct TextEditBox: inherits=ReactiveControl{
             crntLine.insert(charsToCur, S)
             charsToCur <+- 1
             widthToCur <+- thisPR.font.getCharWidth(chr)
+            if(inputBuf.interactiveMode){
+                //if(thisPR.parentCtrlsData!=NULL){
+                    inputBuf.putTentativeStr(S)
+                //}
+            }
         } else {} // TODO: Overwrite mode
         curMax<-widthToCur
     }
@@ -179,6 +185,9 @@ struct TextEditBox: inherits=ReactiveControl{
                 Allocate(TEBox)
                 textBoxGDR.ctrl <- TEBox
                 TEBox.thisPR <- PR
+                TEBox.inputBuf<- asClass(TerminalApp, PR.parentCtrlsData.ctrl).iStream.source.inputBuf
+                TEBox.inputBuf.interactiveMode <- true
+                TEBox.inputBuf.pre_parse_only  <- true
                 TEBox.crntLine <- text
                 TEBox.moveEnd()
             } else {TEBox <- asClass(TextEditBox, textBoxGDR.ctrl)}
@@ -190,7 +199,7 @@ struct TextEditBox: inherits=ReactiveControl{
             me GUI_Scalar: xPos <- PR.posX+labelX_offset
             me GUI_Scalar: yPos <- PR.posY+PR.posH/2+(PR.font.height/2)-4
 
-            dr.addC(cmdSetColor, styler.Black)
+            dr.addC(cmdSetColor, PR.foreGnd)
             dr.addTF(cmdRenderText, xPos, yPos, TEBox.crntLine, PR.font)
             dr.add1(cmdFill)
 
@@ -205,7 +214,9 @@ struct TextEditBox: inherits=ReactiveControl{
     void: saveBack() <- {
         thisPR.dataPov.pItem.value.str <- crntLine
         isActive<-false
-        // If parent exists, sent buffer to it.
+        inputBuf.pre_parse_only <- false
+    if(inputBuf.interactiveMode){inputBuf.notifyWaitingThread()} //; return()}
+        // If parent exists, send buffer to it.
         if(thisPR.parentCtrlsData!=NULL){
             thisPR.parentCtrlsData.ctrl.processEntry(crntLine)
         }
@@ -229,9 +240,9 @@ struct TextEditBox: inherits=ReactiveControl{
              if(!cmdHandled){
                 if(event.state & CONTROL_MASK) {
                     switch(cmd){
-                        case KEY_a: {}                            // CTRL-A - Select all
-                        case 3: {}                                // CTRL-C - Copy
-                        case 118: {                               // CTRL-V - Paste
+                        case KEY_a: {}                               // CTRL-A - Select all
+                        case KEY_c: {}                               // CTRL-C - Copy
+                        case KEY_v: {                                // CTRL-V - Paste
                             our string: pText <- getClipboardAsText()
                             if(pText!=NULL){
                                 me int: txtSz <- pText.size()
@@ -241,6 +252,7 @@ struct TextEditBox: inherits=ReactiveControl{
                                 }
                             }
                         }
+                        case KEY_m: {inputBuf.pre_parse_only <- false; inputBuf.notifyWaitingThread()}                            // CTRL-M submit
                         case KEY_s: {thisPR.sourcePov.pItem.value.str <- crntLine} // CTRL-S - Save back
                         case 23: {}                               // CTRL-W - Toggle word-wrap Mode
                         case 24: {}                               // CTRL-X - Cut
@@ -286,6 +298,14 @@ struct TerminalApp: inherits=ReactiveControl{
     our GuiDataRec: GDR
     our InfonStream: iStream
     our ParamRec: thisPR
+
+// checkParseStatus:  // THESE ARE DUPLICATES FROM PARSER AND MUST MATCH!
+    const int: valid_EOB       <- -1
+    const int: valid_notDone   <- 1
+    const int: valid_maybeDone <- 2
+    const int: valid_done      <- 3
+    const int: syntax_error    <- 4
+    const int: other_error     <- 5
 
     void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
         me int: height <- 400
@@ -383,6 +403,17 @@ struct TerminalApp: inherits=ReactiveControl{
         innerPR.viewStyleTagArg <- "_edit"
         innerPR.viewStyleTag    <- "genericstring_edit"
         innerPR.viewStyleCtrl   <- widgetMngr.getviewStyleTagCtrl("genericstring_edit")
+        me int64: parseStatus <- 0
+        if(TermApp.iStream!=NULL){parseStatus <- TermApp.iStream.source.inputBuf.consumerStatus}
+        print("PARSE_STATUS:",parseStatus,"\n")
+        switch(parseStatus){
+            case valid_notDone:  {innerPR.foreGnd <- styler.Magenta}
+            case valid_maybeDone:{innerPR.foreGnd <- styler.Blue}
+            case valid_done:     {innerPR.foreGnd <- styler.DarkGreen}
+            case syntax_error:   {innerPR.foreGnd <- styler.Red}
+            case other_error:    {innerPR.foreGnd <- styler.Red}
+            default:             {innerPR.foreGnd <- styler.Black}
+        }
         if(proactiveGUI.presenter.modelMgr.isPovTopWindow(PR.topPov)){innerPR.startActive <- true}
         proactiveGUI.presenter.drawItem(dr, innerPR)
     }
@@ -417,8 +448,8 @@ struct TerminalApp: inherits=ReactiveControl{
     }
 
     void: processEntry(me string: buffer) <- {
-        // This runs when user hits Enter  / submits text on terminal.
-        if(iStream!=NULL){
+        // This runs when user hits Enter: submits text on terminal.
+        if(iStream!=NULL and !iStream.source.inputBuf.interactiveMode){
             iStream.pushParserInputBuf(buffer+"\n")
         }
         our POV: newPov <- thisPR.dataPov.tryAddingTentativeChild()

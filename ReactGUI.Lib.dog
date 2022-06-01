@@ -111,6 +111,7 @@ struct ParamRec{
     our ReactiveControl: viewStyleCtrl
     our GuiDataRec: parentCtrlsData
     their fontSpec: font
+    me cdColor: foreGnd
 
     our POV: topPov // The top level Dash for this, if there is one.
 
@@ -129,7 +130,7 @@ struct ParamRec{
         titlePov      <- fetchField(propertiesPov, "title")
         title         <- fetchStringField(titlePov)
         dataPov       <- fetchField(source, "data")
-        if(dataPov==NULL){print("\nWARNING:dataPov NULL in ParamRec.init.\n")}
+    // FIX!!    if(dataPov==NULL){print("\nWARNING:dataPov NULL in ParamRec.init.\n")}
         screenPos     <- NULL
         xPov          <- NULL
         yPov          <- NULL
