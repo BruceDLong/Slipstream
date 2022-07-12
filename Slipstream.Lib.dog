@@ -277,7 +277,7 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
         our InfonStream:: iStream
         protect(connMgrMtx){
             lastOriginID <+- 1
-            //TODO: Shouldn't need the next line as a proxy. Fix bug by checking modelArgs in codeNewVarStr() for {} constructor calls.
+            //TODO: Shouldn't need the next line as a proxy. Fix CodeDog bug by checking modelArgs in codeNewVarStr() for {} constructor calls.
             their SlipstreamCore: tmpCore <- CORE
             our ProteusParser:: parser{tmpCore, true, lastOriginID}
             our InfonConnector: connector <- makeInfonConnector(specString, parentPath)
@@ -355,9 +355,9 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
     void: start() <- {
         //agent.device <- connectionMgr.device.initAndLoad(connectionMgr, "device", masterFile)
         agent.user   <- connectionMgr.user.initAndLoad(connectionMgr,  "user", "file:///user.pr")
-        //agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","quic://[::1]:2006/WORLD/World.pr")
-     //   agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","file:///WORLD/World.pr")
-        //agent.world  <- connectionMgr.user.initAndLoad(connectionMgr,  "world","clip://localhost/bruce")
+        //agent.world  <- connectionMgr.world.initAndLoad(connectionMgr,  "world","quic://[::1]:2006/WORLD/World.pr")
+        agent.world  <- connectionMgr.world.initAndLoad(connectionMgr,  "world","file:///WORLD/World.pr")
+        //agent.world  <- connectionMgr.world.initAndLoad(connectionMgr,  "world","clip://localhost/bruce")
 
 //log("WORLD:"+toString(agent.world))
     }
@@ -366,13 +366,13 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
         idling <- true
         while(idling){
             // process events if needed
-           // print(".")
+            print(".")
             sleep(10)
-            //~ count <+- 1
-            //~ if(count>250){
-                //~ print("\nnumFilesLoaded:", connectionMgr.numFilesLoaded,"\n")
-                //~ exit(17-connectionMgr.numFilesLoaded)
-            //~ }
+count <+- 1
+if(count>250){
+    print("\nnumFilesLoaded:", connectionMgr.numFilesLoaded,"\n")
+    stopIdling()
+}
         }
     }
     void: stopIdling()<-{idling <- false}

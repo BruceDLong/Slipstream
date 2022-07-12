@@ -9,15 +9,15 @@
     }
     @mind_ss1 <en> = {
         // A system that can collect, process and store knowledge and information, and which can use a body to perform actions if given a goal or motivations.
-        knowledge-base,
-        processor,
-        interface-to-body,
-        interface-from-motivator
+        knowledge_base
+        processor
+        interface_to_body
+        interface_from_motivator
         ...
     }
     @person_ss1 <en> = {
         // A system that stores knowledge in order to make distinctions and act via a body in accordance with motives
-        body, mind, motives
+        body mind motives
     }
 
     ...
