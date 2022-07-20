@@ -215,11 +215,18 @@ struct TextEditBox: inherits=ReactiveControl{
         thisPR.dataPov.pItem.value.str <- crntLine
         isActive<-false
         inputBuf.pre_parse_only <- false
-    if(inputBuf.interactiveMode){inputBuf.notifyWaitingThread()} //; return()}
+        if(inputBuf.interactiveMode){inputBuf.notifyWaitingThread()}
         // If parent exists, send buffer to it.
         if(thisPR.parentCtrlsData!=NULL){
             thisPR.parentCtrlsData.ctrl.processEntry(crntLine)
         }
+    }
+    me int32: newLine <- 10
+    void: handleEnter() <- {
+        if(inputBuf.interactiveMode){
+            insertChar(newLine)
+        }
+        saveBack()
     }
     me bool: expandsX()<-{return(true)}
     me bool: expandsY()<-{return(false)}
@@ -266,13 +273,13 @@ struct TextEditBox: inherits=ReactiveControl{
                         case KEY_HOME:      {moveHome()}
                         case KEY_END:       {moveEnd()}
                         case KEY_DELETE:    {doDelete()}
-                        case KEY_RETURN:    {saveBack()}
+                        case KEY_RETURN:    {handleEnter()}
                         case KP_LEFT:       {moveLeft()}
                         case KP_RIGHT:      {moveRight()}
                         case KP_HOME:       {moveHome()}
                         case KP_END:        {moveEnd()}
                         case KP_DELETE:     {doDelete()}
-                        case KP_ENTER:      {saveBack()}
+                        case KP_ENTER:      {handleEnter()}
                         case KEY_BACKSPACE: {backspc()}
                         case KEY_ESCAPE:    {revert()}
                     }
@@ -405,7 +412,7 @@ struct TerminalApp: inherits=ReactiveControl{
         innerPR.viewStyleCtrl   <- widgetMngr.getviewStyleTagCtrl("genericstring_edit")
         me int64: parseStatus <- 0
         if(TermApp.iStream!=NULL){parseStatus <- TermApp.iStream.source.inputBuf.consumerStatus}
-        print("PARSE_STATUS:",parseStatus,"\n")
+        //print("PARSE_STATUS:",parseStatus,"\n")
         switch(parseStatus){
             case valid_notDone:  {innerPR.foreGnd <- styler.Magenta}
             case valid_maybeDone:{innerPR.foreGnd <- styler.Blue}
