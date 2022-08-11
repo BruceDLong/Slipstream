@@ -3,4 +3,5 @@
 // Language: en
 
 {
+    @bike <en> = {T &object frame seat steering pedals chain front_wheel rear_wheel}
 }

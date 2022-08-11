@@ -3,6 +3,8 @@
 // Language: en
 
 {
+@object = {T location orientation color}
+
 %INSERT /Physics/Physics.pr
 %INSERT /Chemistry/Chemistry.pr
 %INSERT /Biology/Biology.pr

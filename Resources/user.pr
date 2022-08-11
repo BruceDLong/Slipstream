@@ -115,6 +115,13 @@ bruceLong:{
                     ...
                     }
                 }
+
+                myStuff: {
+                    properties:{title:"Bruce's Stuff" screenPos:{xPos:80 yPos:400}}
+                    data:{object|
+                    ...
+                    }
+                }
                 ...
             }
         }
@@ -122,6 +129,10 @@ bruceLong:{
     }
   }
 ...
+}
+
+myStuff:{T
+    bike
 }
 ...
 }

@@ -486,7 +486,7 @@ struct ProactiveGUI{
 struct DrawCmd:inherits=<mode[cmdMoveTo, cmdLineTo, cmdDrawRect, cmdRoundRect, cmdRoundTopRect, cmdRoundBotRect,
                                  cmdRenderText, cmdRenderTextCentered, cmdDrawImage, cmdDrawBkgndImage,
                                  cmdDrawCircle, cmdSetColor, cmdSetLineWidth, cmdRoundLineCap, cmdEdgedLineCap,
-                                 cmdFill, cmdStroke, cmdSubDrawing
+                                 cmdFill, cmdStroke, cmdSubDrawing, cmdRenderThing3D
                              ]> {}
 
 struct Drawel{
@@ -500,6 +500,7 @@ struct Drawel{
     me string: text
     their fontSpec: font
     our dashDrawing: drawing
+    our Thing3D: thing3D
 
     void: render(their GUI_ctxt: cr)<-{
         //log("CMD:"+DrawCmdStrings[cmd]+" x:"+toString(x)+" y:"+toString(y)+" w:"+toString(w)+" h:"+toString(h)+" :"+text)
@@ -522,6 +523,8 @@ struct Drawel{
         case cmdRoundLineCap:   {cr.setRoundLineCap()}
         case cmdEdgedLineCap:   {cr.setEdgedLineCap()}
         case cmdSubDrawing:     {drawing.render(cr)}
+
+        case cmdRenderThing3D:  {thing3D.draw(cr, mat4ID, 0)}
         }
     }
 }
@@ -538,6 +541,7 @@ struct dashDrawing{
     our Drawel: addRAA(me DrawCmd: dCmd, their GuiCoords:RA, me GUI_Scalar: ARG) <-{our Drawel:: drl{RA.X,RA.Y,RA.W,RA.H,ARG}; drl.cmd<-dCmd; cmds.pushLast(drl); return(drl)}
     our Drawel: addTF(me DrawCmd: dCmd, me GUI_Scalar: X, me GUI_Scalar: Y, me string: T, their fontSpec: F) <-{our Drawel:: drl; drl.cmd<-dCmd; drl.x<-X drl.y<-Y; drl.text<-T; drl.font<-F; cmds.pushLast(drl); return(drl)}
     our Drawel: addSubDrawing(our dashDrawing: D)<-{our Drawel:: drl; drl.cmd<-cmdSubDrawing; drl.drawing<-D; cmds.pushLast(drl); return(drl)}
+    our Drawel: add3D(our Thing3D: thing)<-{our Drawel:: drl; drl.cmd<-cmdRenderThing3D; drl.thing3D<-thing; cmds.pushLast(drl); return(drl)}
 
     me void: render(their GUI_ctxt: cr) <- {
         withEach cmd in cmds{

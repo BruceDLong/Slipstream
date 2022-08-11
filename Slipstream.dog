@@ -13,7 +13,7 @@ Authors = "Bruce Long"
 Description = "The Slipstream Browser"
 ProgramOrLibrary = "program"
 
-featuresNeeded = [GUI_ToolKit, Dashboard, ReactGUI, Slipstream, Proteus]
+featuresNeeded = [GUI_ToolKit, Dashboard, ReactGUI, Render3D, Slipstream, Proteus]
 
 LicenseText = `All rights reserved.`
 
@@ -361,6 +361,7 @@ struct Presenter{
         else if(viewStyleTag=="genericlist"){draw_Y_stack_XYWh(dr, PR)}
         else if(viewStyleTag=="genericstring" or viewStyleTag=="genericstring_edit"){PR.viewStyleCtrl.draw(dr, PR)}
         else if(viewStyleTag=="genericnumber"){PR.viewStyleCtrl.draw(dr, PR)}
+        else if(viewStyleTag=="mystuff"){me Scene3D: scene; scene.draw(dr, PR)}
     }
 
     void: addLabeledButton(our dashDrawing: dr, me GuiCoords:myCoords, me string: btnLabel) <- {
@@ -628,22 +629,40 @@ struct SlipView: inherits=ProactiveGUIWidget{
         scanBoards()
         if(boardInfons.size()==0){logFatalError("No boards are loaded")}
         setCrntBoard(boardInfons.size()-1) // Default to last board for now
+
+
+// load myStuff
+myStuff <- theInfon.fetchField("mystuff")
+
         return(false) // No errors
     }
 }
 
 struct GLOBAL{
+our POV: myStuff // Do better design for this
     me ProactiveGUI: proactiveGUI
     their GUI_canvas: drawing_area
     their SlipView: slipView
 }
 
 struct APP{
+    void: init3DRenderSystem() <- {
+        //setUpMatrixes(90.0, 80, 150, 700.0, 400.0)
+
+        // Setup lights
+        their LightSource: lightSrc;
+        Allocate(lightSrc)
+        lightSrc.init(lsAmbient, Styler.DarkGray, 0.0, 0.0, 0.0)
+        lightSources.append(lightSrc)
+        Allocate(lightSrc)
+        lightSrc.init(lsDirected, Styler.White, -35.0, -35.0, -45.0)
+        lightSources.append(lightSrc)
+    }
     me bool: loadAndParseSettingsAndData(me string: topFileName) <- {
+        init3DRenderSystem()
         CORE.init(topFileName)
         CORE.start()
         CORE.connectionMgr.user.iStream.waitForCompletion()
-  // sleep(7000)
         widgetMngr.init()
         widgetMngr.init2()
         CORE.shutdown()
