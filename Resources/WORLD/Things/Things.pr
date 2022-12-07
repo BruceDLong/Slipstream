@@ -3,6 +3,11 @@
 // Language: en
 
 {
+    @hue = reel
+    @saturation = reel
+    @brightness = reel
+    @color <en> = {hue, saturation, brightness}
+    @red <en> = color:{hue: 0}
     @xRot = reel
     @yRot = reel
     @zRot = reel
@@ -16,17 +21,17 @@
     @location <en> = {xPos, yPos, zPos}
     @thing <en> = {location, orientation}
     @tube <en> = {&thing, length, diameter, gauge, color}
-    @top_tube <en> = tube
-    @head_tube <en> = tube
-    @bike_fork <en> = tube
-    @down_tube <en> = tube
-    @seat_tube <en> = tube
-    @frame <en> = {top_tube, head_tube, bike_fork, down_tube, seat_tube}
+    @top-tube <en> = tube
+    @head-tube <en> = tube
+    @bike-fork <en> = tube
+    @down-tube <en> = tube
+    @seat-tube <en> = tube
+    @frame <en> = {top-tube, head-tube, bike-fork, down-tube, seat-tube}
     @seat <en> = {}
-    @steering_system <en> = {}
-    @pedal_assembly <en> = {}
+    @steering-system <en> = {}
+    @pedal-assembly <en> = {}
     @chain <en> = {}
-    @front_wheel <en> = {}
-    @rear_wheel <en> = {}
-    @bike  <en> = {T &thing, frame, seat, steering_system, pedal_assembly, chain, front_wheel, rear_wheel, color}
+    @front-wheel <en> = {}
+    @rearWheel <en> = {}
+    @bike <en> = {&thing, frame, seat, steering-system, pedal-assembly, chain, front-wheel, rearWheel, color}
 }
