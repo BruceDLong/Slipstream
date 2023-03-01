@@ -359,7 +359,7 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
         agent.world  <- connectionMgr.world.initAndLoad(connectionMgr,  "world","file:///public/PublicKB.pr")
       //agent.world  <- connectionMgr.world.initAndLoad(connectionMgr,  "world","clip://localhost/bruce")
 
-//log("PublicKB:"+toString(agent.world))
+print("PublicKB:"+toString(connectionMgr.user.repoInfon)+"\n")
     }
     void: idle()<-{
         me int: count<-0

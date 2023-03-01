@@ -35,8 +35,10 @@ struct Scene3D: inherits=ReactiveControl{
     }
 
     our Thing3D: attemptDraw(our POV:stuffPov) <- {
-        if(!itemIsThing(stuffPov.pItem)){return(NULL)}
         me string: objType <- stuffPov.pItem.type.asGiven
+                print("attemptDraw-A:",objType,"\n")
+        if(!itemIsThing(stuffPov.pItem)){return(NULL)}
+                print("attemptDraw-B\n")
 
         our Thing3D::thing
             thing.name <- objType //"topTube"
