@@ -18,7 +18,7 @@ featuresNeeded = [GUI_ToolKit, Dashboard, ReactGUI, Render3D, Slipstream, Proteu
 LicenseText = `All rights reserved.`
 
 runCode=`
-    CommandLineManager.defineOption("Slip", "topFile", "-f", "--file", "The top-level file to load.", "deviceData.pr")
+    CommandLineManager.defineOption("Slip", "topFile", "-f", "--file", "The top-level file to load.", "deviceKB.pr")
     me string: topFile <- CommandLineManager.getOption("Slip", "topFile")
     thisApp.loadAndParseSettingsAndData(topFile)
 `
@@ -647,7 +647,7 @@ our POV: myStuff // Do better design for this
 
 struct APP{
     void: init3DRenderSystem() <- {
-        //setUpMatrixes(90.0, 80, 150, 700.0, 400.0)
+        setUpMatrixes(90.0, 80, 150, 700.0, 400.0)
 
         // Setup lights
         their LightSource: lightSrc;

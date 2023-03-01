@@ -12,5 +12,7 @@
 %INSERT /Things/Things.pr
 %INSERT /ThisDevice/ThisDevice.pr
 
+%INSERT /World/universe.pr
+
 //%INSERT clip://localhost/bruce
 }

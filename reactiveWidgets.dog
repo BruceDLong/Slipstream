@@ -29,93 +29,91 @@ struct GLOBAL{
 }
 
 struct Scene3D: inherits=ReactiveControl{
-    void: attemptRender(our dashDrawing: dr, me GuiCoords:RA, our POV:stuffPov) <- {
-        if(stuffPov.pItem.type.asGiven=="bike"){
-            our Thing3D:: bike
-                our Thing3D:: topTube
-                our Thing3D:: seatTube
-                our Thing3D:: headTube
-                our Thing3D:: downTube
-                our Thing3D:: seatStay
-                our Thing3D:: chainStay
-                our Thing3D:: handleBars
-                our Thing3D:: frontWheel
-                our Thing3D:: backWheel
+    me bool: itemIsThing(our infon: item) <- {
+        return(!item.value.items.isEmpty() and item.value.items[0].pItem.type.asGiven=="thing")
+    }
 
+    our Thing3D: attemptRender(our dashDrawing: dr, me GuiCoords:RA, our POV:stuffPov) <- {
+        if(!itemIsThing(stuffPov.pItem)){return(NULL)}
+        me string: objType=stuffPov.pItem.type.asGiven
 
-            our Mesh:: cylinderMesh; meshGenerator.genCylinder(cylinderMesh, 1.56, 0.07, 0.07, 20, true, true)
-            topTube.meshes.append(cylinderMesh)
-            topTube.name <- "topTube"
-            topTube.color <- Styler.Yellow
-            topTube.setLocation(1.5, -0.9, 0.0)
-            topTube.setScale(1.0, 1.0, 1.0)
-            topTube.rotateZ(pi/2.05)
-            topTube.calcThingMatx(mat4ID)
-            bike.addPart(topTube)
-
-            meshGenerator.genCylinder(cylinderMesh, 5.1, 0.07, 0.07, 20, true, true)
-            seatTube.meshes.append(cylinderMesh)
-            seatTube.name <- "seatTube"
-            seatTube.color <- Styler.Green
-            seatTube.setLocation(-3, -1.65, 0.0)
-            seatTube.setScale(1.0, 1.0, 1.0)
-            seatTube.rotateZ(pi/-10.5)
-            seatTube.calcThingMatx(mat4ID)
-            bike.addPart(seatTube)
-
-            meshGenerator.genCylinder(cylinderMesh, 3.2, 0.07, 0.07, 20, true, true)
-            headTube.meshes.append(cylinderMesh)
-            headTube.name <- "headTube"
-            headTube.color <- Styler.Blue
-            headTube.setLocation(1.40, -1.5, 0.0)
-            headTube.setScale(1.0, 1.0, 1.0)
-            headTube.rotateZ(pi/-11.55)
-            headTube.calcThingMatx(mat4ID)
-            bike.addPart(headTube)
-
-            meshGenerator.genCylinder(cylinderMesh, 2.3, 0.07, 0.07, 20, true, true)
-            downTube.meshes.append(cylinderMesh)
-            downTube.name <- "downTube"
-            downTube.color <- Styler.Red
-            downTube.setLocation(1.7, -0.20, 0.0)
-            downTube.setScale(1.0, 1.0, 1.0)
-            downTube.rotateZ(pi/4.19)
-            downTube.calcThingMatx(mat4ID)
-            bike.addPart(downTube)
-
-            meshGenerator.genCylinder(cylinderMesh, 0.3, 0.07, 0.07, 20, true, true)
-            seatStay.meshes.append(cylinderMesh)
-            seatStay.name <- "seatStay"
-            seatStay.color <- Styler.White
-            seatStay.setLocation(-2.5, -0.5, 0.0)
-            seatStay.setScale(1.0, 1.0, 1.0)
-            seatStay.rotateZ(pi/6)
-            seatStay.calcThingMatx(mat4ID)
-            bike.addPart(seatStay)
-
-            meshGenerator.genCylinder(cylinderMesh, 0.2, 0.07, 0.07, 20, true, true)
-            chainStay.meshes.append(cylinderMesh)
-            chainStay.name <- "chainStay"
-            chainStay.color <- Styler.Orange
-            chainStay.setLocation(2.5, -0.5, 0.0)
-            chainStay.setScale(1.0, 1.0, 1.0)
-            chainStay.rotateZ(pi/1.5)
-            chainStay.calcThingMatx(mat4ID)
-            bike.addPart(chainStay)
-
-
-            bike.rotateY(pi/1)
-
-            // genTube for wheels
-
-            dr.add3D(bike)
+        our Thing3D::thing
+            thing.name <- objType //"topTube"
+            thing.color <- Styler.Yellow
+            thing.setLocation(1.5, -0.9, 0.0)
+            thing.setScale(1.0, 1.0, 1.0)
+            thing.rotateZ(pi/2.05)
+            thing.calcThingMatx(mat4ID)
+        switch(objType){
+            case "rectangle":{}
+            case "cube":{}
+            case "pipe":{}
+            case "cone":{}
+            case "cylinder":{
+                our Mesh:: cylinderMesh; meshGenerator.genCylinder(cylinderMesh, 1.56, 0.07, 0.07, 20, true, true)
+                thing.meshes.append(cylinderMesh)
+            }
+            case "pyramid":{}
+            default:{
+                our POV: p <- stuffPov.pItem..value.items.head
+                while(p != NULL){
+                    our Thing3D: object <- attemptRender(dr, NULL, p)
+                    if(object!=NULL){
+                        thing.addPart(object)
+                    }
+                    p <- p.next
+                }
+            }
+            return(thing)
         }
+    }
+}
+me float: xRot
+me bool: keyTyped(their GUI_KeyboardEvent: event) <- {
+print("KEYTPED:\n")
+         me int32: cmd <- event.keyval
+         if((event.state & CONTROL_MASK) or cmd == 127 or cmd > 255){
+             me bool: cmdHandled <- false;
+             if(!cmdHandled){
+                if(event.state & CONTROL_MASK) {
+                    switch(cmd){
+                        case KEY_a: {}                               // CTRL-A - Select all
+                        case KEY_c: {}                               // CTRL-C - Copy
+                        case KEY_v: {}
+                    }
+                } else {
+                    switch(cmd){
+                        case KEY_w:         { matProj.makeRotationX(xRot); xRot <+- 0.1}
+                        case KEY_s:         {}
+                        case KEY_a:         {}
+                        case KEY_d:         {}
+                        case KEY_LEFT:      {}
+                        case KEY_RIGHT:     {}
+                        case KEY_HOME:      {}
+                        case KEY_END:       {}
+                        case KEY_DELETE:    {}
+                        case KEY_RETURN:    {}
+                        case KP_LEFT:       {}
+                        case KP_RIGHT:      {}
+                        case KP_HOME:       {}
+                        case KP_END:        {}
+                        case KP_DELETE:     {}
+                        case KP_ENTER:      {}
+                        case KEY_BACKSPACE: {}
+                        case KEY_ESCAPE:    {}
+                    }
+                }
+             }
+         }
+         slipView.requestRedraw()
+         //print("KEY_PRESS:",event.keyval, " ==>", crntLine, "\n")
+         return(true)
     }
 
     void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
         me int: height <- 400
         me int: width  <- 700
-        setUpMatrixes(90.0, PR.posX, PR.posY, width, height)
+   //     setUpMatrixes(90.0, PR.posX, PR.posY, width, height)
         me GuiCoords:RA{PR.posX, PR.posY, width, height}
         dr.addC(cmdSetColor, surfaceBkgnd)
         dr.addRAA(cmdRoundRect, RA, 15)
@@ -143,7 +141,8 @@ struct Scene3D: inherits=ReactiveControl{
         // Iterate over myStuff
         our POV: stuffPov <- myStuff.pItem.value.items.front()
         while(stuffPov!=NULL){
-            attemptRender(dr, RA, stuffPov)
+            our Thing3D: object <- attemptRender(dr, RA, stuffPov)
+            if(object!=NULL){dr.add3D(object)}
             stuffPov <- stuffPov.next
         }
     }
@@ -360,7 +359,8 @@ struct TextEditBox: inherits=ReactiveControl{
          print("TEXTEDIT_BOX_CLICK!:",posX-(thisPR.posX+leftXPad), "\n")
          return(true)
      }
-     me bool: keyTyped(their GUI_KeyboardEvent: event) <- {
+    me float: xRot
+     me bool: keyTyped(their GUI_KeyboardEvent: event) <- { print("KEYTPED-XXX:",xRot,"\n"); matProj.makeRotationX(xRot); xRot <+- 0.1
          me int32: cmd <- event.keyval
          if((event.state & CONTROL_MASK) or cmd == 127 or cmd > 255){
              me bool: cmdHandled <- false;
