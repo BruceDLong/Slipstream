@@ -30,12 +30,13 @@ struct GLOBAL{
 
 struct Scene3D: inherits=ReactiveControl{
     me bool: itemIsThing(our infon: item) <- {
-        return(!item.value.items.isEmpty() and item.value.items[0].pItem.type.asGiven=="thing")
+
+        return(!item.value.items.isEmpty() and item.value.items.first().type.asGiven =="thing")
     }
 
-    our Thing3D: attemptRender(our dashDrawing: dr, me GuiCoords:RA, our POV:stuffPov) <- {
+    our Thing3D: attemptDraw(our POV:stuffPov) <- {
         if(!itemIsThing(stuffPov.pItem)){return(NULL)}
-        me string: objType=stuffPov.pItem.type.asGiven
+        me string: objType <- stuffPov.pItem.type.asGiven
 
         our Thing3D::thing
             thing.name <- objType //"topTube"
@@ -50,27 +51,28 @@ struct Scene3D: inherits=ReactiveControl{
             case "pipe":{}
             case "cone":{}
             case "cylinder":{
+                print("\nCYL@@@@@")
                 our Mesh:: cylinderMesh; meshGenerator.genCylinder(cylinderMesh, 1.56, 0.07, 0.07, 20, true, true)
                 thing.meshes.append(cylinderMesh)
             }
             case "pyramid":{}
             default:{
-                our POV: p <- stuffPov.pItem..value.items.head
+                our POV: p <- stuffPov.pItem.value.items.head
                 while(p != NULL){
-                    our Thing3D: object <- attemptRender(dr, NULL, p)
+                    our Thing3D: object <- attemptDraw(p)
                     if(object!=NULL){
                         thing.addPart(object)
                     }
                     p <- p.next
                 }
             }
-            return(thing)
         }
+        return(thing)
     }
-}
+
 me float: xRot
-me bool: keyTyped(their GUI_KeyboardEvent: event) <- {
-print("KEYTPED:\n")
+    me bool: keyTyped(their GUI_KeyboardEvent: event) <- {
+    print("KEYTPED:\n")
          me int32: cmd <- event.keyval
          if((event.state & CONTROL_MASK) or cmd == 127 or cmd > 255){
              me bool: cmdHandled <- false;
@@ -141,7 +143,7 @@ print("KEYTPED:\n")
         // Iterate over myStuff
         our POV: stuffPov <- myStuff.pItem.value.items.front()
         while(stuffPov!=NULL){
-            our Thing3D: object <- attemptRender(dr, RA, stuffPov)
+            our Thing3D: object <- attemptDraw(stuffPov)
             if(object!=NULL){dr.add3D(object)}
             stuffPov <- stuffPov.next
         }

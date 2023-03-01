@@ -20,7 +20,7 @@
     @Lumun-constant     <SI> = *_+683 // lumins/watt
 
 %INSERT /Foundation.pr
-%INSERT /MathLogic.pr
-%INSERT /Linguistics.pr
-%INSERT /Programming.pr
+//%INSERT /MathLogic.pr
+//%INSERT /Linguistics.pr
+//%INSERT /Programming.pr
 }

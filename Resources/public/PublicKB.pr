@@ -4,7 +4,7 @@
 
 {
 // Open these files to see what they contain.
-//%INSERT /Informatics/Informatics.pr
+%INSERT /Informatics/Informatics.pr
 %INSERT /Languages/Languages.pr
 %INSERT /Nature/Nature.pr
 %INSERT /People/People.pr
