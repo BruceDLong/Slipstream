@@ -83,6 +83,13 @@ struct GLOBAL{
         return(retVal)
     }
 
+    me double: fetchDblFloatField(our POV: info) <- {
+        if(info==NULL){return(0)}
+        if(info.pItem.value.format==fUnknown){return(0.0)}
+        me double: retVal <- info.pItem.fetchDouble()
+        return(retVal)
+    }
+
     void: drawACursor(our dashDrawing: dr, me GUI_Scalar: posX, me GUI_Scalar: posY, me GUI_Scalar: cursorHeight) <- {
         posY <+-3 // adjust for descenders
         dr.addC(cmdSetColor, styler.Black)
@@ -131,7 +138,7 @@ struct GuiModelManager{
         case eGUI_PopupModal:    {our GuiDataRec:: GDR; GDR.int1<-1; GDR.pov<-ev.infonX;  guiData[ev.dataIdTag] <- GDR;  log("CLICKED:'"+ev.dataIdTag+"'  "+GDR.pov.stringify())}
         case eGUI_setInt1:       {our GuiDataRec:: GDR; GDR.int1<- ev.int1; guiData[ev.dataIdTag] <- GDR; log("setInt1["+ev.dataIdTag+"]:"+toString(ev.int1))}
         case eClosePopup:        {proactiveGUI.presenter.clearFocus(); our GuiDataRec: GDR<-fetchGuiData(ev.dataIdTag); GDR.int1<-0}
-        case eGUI_setActiveFlag: {proactiveGUI.presenter.grabFocus(ev.dataIdTag)}
+        case eGUI_setActiveFlag: {print("SET_ACTIVE:",ev.dataIdTag,"\n") proactiveGUI.presenter.grabFocus(ev.dataIdTag)}
         case ePrimaryClick:      {our GuiDataRec: GDR<-guiData[ev.dataIdTag]; GDR.ctrl.primaryClick(ev.evX, ev.evY)}
         }
         if(ev.topPov!=NULL){moveInfItemToEndToList(ev.topPov)}

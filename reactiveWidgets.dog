@@ -30,30 +30,61 @@ struct GLOBAL{
 
 struct Scene3D: inherits=ReactiveControl{
     me bool: itemIsThing(our infon: item) <- {
-
         return(!item.value.items.isEmpty() and item.value.items.first().type.asGiven =="thing")
     }
 
     our Thing3D: attemptDraw(our POV:stuffPov) <- {
         me string: objType <- stuffPov.pItem.type.asGiven
-                print("attemptDraw-A:",objType,"\n")
         if(!itemIsThing(stuffPov.pItem)){return(NULL)}
-                print("attemptDraw-B\n")
+
+our POV: tmpPov
+our POV: thingPov       <- fetchField(stuffPov, "thing")
+
+// Get Location
+our POV: locationPov    <- fetchField(thingPov, "location")
+their PovList: locItems
+me double: xLoc; me double: yLoc; me double: zLoc;
+if(locationPov){
+    locItems <- locationPov.pItem.value.items
+    if(locItems.size()==3){
+        tmpPov <- locItems.at(0); if(tmpPov){xLoc <- fetchDblFloatField(tmpPov)}
+        tmpPov <- locItems.at(1); if(tmpPov){yLoc <- fetchDblFloatField(tmpPov)}
+        tmpPov <- locItems.at(2); if(tmpPov){zLoc <- fetchDblFloatField(tmpPov)}
+    }
+}
+
+// Get orientation
+their POV: orientationPov <- fetchField(thingPov, "orientation")
+me double: xOri; me double: yOri; me double: zOri;
+their PovList: oriItems
+if(orientationPov){
+    oriItems <- orientationPov.pItem.value.items
+    if(oriItems.size()==3){
+        tmpPov <- oriItems.at(0); if(tmpPov){xOri <- fetchDblFloatField(tmpPov)}
+        tmpPov <- oriItems.at(1); if(tmpPov){yOri <- fetchDblFloatField(tmpPov)}
+        tmpPov <- oriItems.at(2); if(tmpPov){zOri <- fetchDblFloatField(tmpPov)}
+        print("ORIENT: x:", xOri," y:",yOri," z:",zOri,"     POV:"+tmpPov.stringify()+"\n")
+    }
+}
 
         our Thing3D::thing
-            thing.name <- objType //"topTube"
+            thing.name <- objType // TODO: This could be a better name. It's for debugging.
             thing.color <- Styler.Yellow
-            thing.setLocation(1.5, -0.9, 0.0)
+            thing.setLocation(xLoc, yLoc, zLoc)
             thing.setScale(1.0, 1.0, 1.0)
-            thing.rotateZ(pi/2.05)
+            thing.rotateX(xOri+0.9)
+            thing.rotateY(yOri+0.5)
+            thing.rotateZ(zOri+0.2)
             thing.calcThingMatx(mat4ID)
         switch(objType){
             case "rectangle":{}
-            case "cube":{}
+            case "cube":{
+                our Mesh:: cubeMesh; meshGenerator.generateMesh(cubeMesh, "cube", 2, 0)
+                thing.meshes.append(cubeMesh)
+            }
             case "pipe":{}
             case "cone":{}
             case "cylinder":{
-                print("\nCYL@@@@@")
                 our Mesh:: cylinderMesh; meshGenerator.genCylinder(cylinderMesh, 1.56, 0.07, 0.07, 20, true, true)
                 thing.meshes.append(cylinderMesh)
             }

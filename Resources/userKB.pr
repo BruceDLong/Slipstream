@@ -132,7 +132,7 @@ bruceLong:{
 }
 
 myStuff:{
-    cylinder
+    cube:{ &thing:{orientation:{xRot:0.9, yRot:0.4, zRot:0.1}}}
 }
 ...
 }
