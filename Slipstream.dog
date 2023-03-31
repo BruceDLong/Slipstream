@@ -58,6 +58,7 @@ struct GLOBAL{
     me cdColor: surfaceBkgnd <- cdColor(20,20,20,200)
     me cdColor: popupBkgnd   <- cdColor(20,20,20,250)
     me cdColor: titleTextColr<- cdColor(200,200,200,225)
+    me cdColor: topTextColr  <- cdColor(0,200,200,225)
     me cdColor: taskCardColor<- cdColor(240,245,240,245)
     me cdColor: cardTextColr <- cdColor(20,30,20,200)
     me cdColor: footerBoxColr<- cdColor(80,80,80,200)
@@ -268,38 +269,6 @@ struct WidgetMngr{
 }
 
 struct Presenter{
-
-    void: drawKanban(our dashDrawing: dr, our ParamRec: PR) <- {
-        // Draw Columns
-        our ParamRec:: listPR; listPR.init(PR.dataPov, PR.posX, PR.posY+headerHeight, 0, 0)
-        listPR.topPov <- PR.sourcePov
-        listPR.viewStyleTagArg <- "headeredVList"
-        draw_X_stack_XYwh(dr, listPR)
-
-        // Kanban header
-        PR.posW <- listPR.posW
-        PR.posH <- listPR.posH+headerHeight;
-
-        dr.addC(cmdSetColor, surfaceBkgnd)
-        me GuiCoords:HedrRectXYWH{PR.posX, PR.posY, listPR.posW, headerHeight-2};
-        dr.addRAA(cmdRoundTopRect, HedrRectXYWH, 15)
-        dr.add1(cmdFill)
-        if(PR.screenPos!=NULL){
-            our ProactEvent:: dragEvent;
-            dragEvent.setTrigger(tDragStart, HedrRectXYWH); dragEvent.setInfonEvent(eGUI_SetXY, PR.xPov, PR.yPov)
-            registerEvent(dragEvent)
-        }
-
-        me GuiCoords:RA1{PR.posX+listPR.posW-25, PR.posY+3, 16, 16}
-        drawCircleButton(dr, RA1.X, RA1.Y, RA1.W/2, 3, "+", PR.sourcePov.mySymbol()+"AddItem")
-        our ProactEvent:: addListEvent;
-        addListEvent.setTrigger(tPrimaryClick, RA1, PR.topPov); addListEvent.setInfonEvent(eAddInfon, PR.dataPov, NULL) // ADD New Column
-        registerEvent(addListEvent)
-
-        dr.addC(cmdSetColor, titleTextColr)
-        dr.addTF(cmdRenderTextCentered, PR.posX+listPR.posW/2, PR.posY+(headerHeight/2)+(styler.smallFont.height/2-3), PR.title, styler.smallFont)
-    }
-
     void: drawListWidget(our dashDrawing: dr, our ParamRec: PR) <- {
         me GUI_Scalar:yCur <- PR.posY
         dr.addC(cmdSetColor, surfaceBkgnd)
@@ -360,15 +329,20 @@ struct Presenter{
     void: drawItem(our dashDrawing: dr, our ParamRec: PR) <- {
         me string: viewStyleTag <- PR.viewStyleTag
         //print("viewStyleTag:"+viewStyleTag+"\n")
-        if(viewStyleTag=="boardelement"){}
-        else if(viewStyleTag=="kanban"){drawKanban(dr, PR)}
+        if(PR.sourcePov.pItem.value.timelike){me TimeView: timeView; timeView.draw(dr, PR)}
+        else if(viewStyleTag=="boardelement"){}
+        else if(viewStyleTag=="kanban"){me KanbanView: kanbanView; kanbanView.draw(dr, PR)}
         else if(viewStyleTag=="tasklist"){drawListWidget(dr, PR)}
         else if(viewStyleTag=="terminal"){me TerminalApp: termApp; termApp.draw(dr, PR)}
         else if(viewStyleTag=="task"){PR.viewStyleCtrl.draw(dr, PR)}
         else if(viewStyleTag=="genericlist"){draw_Y_stack_XYWh(dr, PR)}
         else if(viewStyleTag=="genericstring" or viewStyleTag=="genericstring_edit"){PR.viewStyleCtrl.draw(dr, PR)}
         else if(viewStyleTag=="genericnumber"){PR.viewStyleCtrl.draw(dr, PR)}
-        else if(viewStyleTag=="mystuff"){me Scene3D: scene; scene.draw(dr, PR)}
+        else if(viewStyleTag=="3DThing"){me Scene3D: scene; scene.draw(dr, PR)}
+        else if(viewStyleTag=="mystuff"){
+            PR.sourcePov <- myStuff
+            draw_X_stack_XYwh(dr, PR)
+        }
     }
 
     void: addLabeledButton(our dashDrawing: dr, me GuiCoords:myCoords, me string: btnLabel) <- {

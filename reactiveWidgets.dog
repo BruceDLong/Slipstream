@@ -27,47 +27,146 @@ struct GLOBAL{
         return(curY)
     }
 }
+struct WindowControl: inherits=ReactiveControl{
+    void: drawHeader(our dashDrawing: dr, our ParamRec: PR) <- {
+        // dragging header
+        if(proactiveGUI.guiModelManager.isPovTopWindow(PR.sourcePov)){dr.addC(cmdSetColor, topTextColr)}
+        else{dr.addC(cmdSetColor, surfaceBkgnd)}
+        me GuiCoords:HedrRectXYWH{PR.posX, PR.posY, PR.posW, headerHeight-2}
 
+        // Block click-under
+        our ProactEvent:: blockEvents;
+        blockEvents.setTrigger(tPrimaryClick, HedrRectXYWH, PR.topPov); blockEvents.setGUI_Event1(eBlockEvents)
+        proactiveGUI.presenter.registerEvent(blockEvents)
+
+        dr.addRAA(cmdRoundTopRect, HedrRectXYWH, 15)
+        dr.add1(cmdFill)
+        dr.addC(cmdSetColor, titleTextColr)
+        dr.addTF(cmdRenderTextCentered, PR.posX+(PR.posW/2), PR.posY+(headerHeight/2)+(styler.smallFont.height/2-3), PR.title, styler.smallFont)
+        if(PR.screenPos!=NULL){
+            our ProactEvent:: dragEvent
+            dragEvent.setTrigger(tDragStart, HedrRectXYWH); dragEvent.setInfonEvent(eGUI_SetXY, PR.xPov, PR.yPov)
+            proactiveGUI.presenter.registerEvent(dragEvent)
+        }
+    }
+}
+struct TimeView: inherits=WindowControl{
+    void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
+        me int: height <- 200
+        me int: width  <- 300
+        me GuiCoords:RA{PR.posX, PR.posY, width, height}
+        dr.addC(cmdSetColor, surfaceBkgnd)
+        dr.addRAA(cmdRoundRect, RA, 15)
+        dr.add1(cmdFill)
+
+        // Block click-under
+        our ProactEvent:: blockEvents;
+        blockEvents.setTrigger(tPrimaryClick, RA, PR.topPov); blockEvents.setGUI_Event1(eBlockEvents)
+        proactiveGUI.presenter.registerEvent(blockEvents)
+
+        PR.posW <- width
+        PR.posH <- height
+        PR.title <- PR.sourcePov.pItem.type.asGiven
+        drawHeader(dr, PR)
+
+        me GuiCoords:RA1{PR.posX+(width/2)-50, PR.posY+height-25, 16, 16}
+        proactiveGUI.presenter.drawCircleButton(dr, RA1.X, RA1.Y, 10, 2, "<", PR.sourcePov.mySymbol()+"prev")
+
+        me GuiCoords:RA2{PR.posX+(width/2)+50, PR.posY+height-25, 16, 16}
+        proactiveGUI.presenter.drawCircleButton(dr, RA2.X, RA2.Y, 10, 2, ">", PR.sourcePov.mySymbol()+"next")
+
+        me int: timeIdx <- 0
+        our POV: displayPov <- PR.sourcePov.pItem.value.items.at(timeIdx)
+        if(displayPov!=NULL){
+            our ParamRec:: innerPR; innerPR.init(displayPov, PR.posX, PR.posY, width, height)
+            if(proactiveGUI.presenter.itemIsThing(PR.sourcePov.pItem.value.listSpec)){innerPR.viewStyleTag <- "3DThing"}
+            else{innerPR.viewStyleTag <- proactiveGUI.presenter.chooseviewStyleTag(innerPR)}
+            proactiveGUI.presenter.drawItem(dr, innerPR)
+        }
+    }
+}
+struct KanbanView: inherits=WindowControl{
+    void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
+        // Draw Columns
+        our ParamRec:: listPR; listPR.init(PR.dataPov, PR.posX, PR.posY+headerHeight, 0, 0)
+        listPR.topPov <- PR.sourcePov
+        listPR.viewStyleTagArg <- "headeredVList"
+        proactiveGUI.presenter.draw_X_stack_XYwh(dr, listPR)
+
+        PR.posW <- listPR.posW
+        PR.posH <- listPR.posH+headerHeight
+        drawHeader(dr, PR)
+
+        me GuiCoords:RA1{PR.posX+listPR.posW-25, PR.posY+3, 16, 16}
+        proactiveGUI.presenter.drawCircleButton(dr, RA1.X, RA1.Y, RA1.W/2, 3, "+", PR.sourcePov.mySymbol()+"AddItem")
+        our ProactEvent:: addListEvent;
+        addListEvent.setTrigger(tPrimaryClick, RA1, PR.topPov); addListEvent.setInfonEvent(eAddInfon, PR.dataPov, NULL) // ADD New Column
+        proactiveGUI.presenter.registerEvent(addListEvent)
+    }
+}
 struct Scene3D: inherits=ReactiveControl{
-    me bool: itemIsThing(our infon: item) <- {
-        return(!item.value.items.isEmpty() and item.value.items.first().type.asGiven =="thing")
+    void: tmp_colorCube(their Mesh: result, me float: arg, me cdColor: top, me cdColor: bottom, me cdColor: left, me cdColor: right, me  cdColor: front, me cdColor: back) <- {
+        result.tris.clear()
+        me Triangle3D: t1;
+        // SOUTH
+        t1.INIT(0.0, 0.0, 0.0,    0.0, arg, 0.0,    arg, arg, 0.0);   result.tris.append(t1)
+        t1.INIT(0.0, 0.0, 0.0,    arg, arg, 0.0,    arg, 0.0, 0.0);   result.tris.append(t1)
+        t1.color <- front
+        // EAST
+        t1.INIT(arg, 0.0, 0.0,    arg, arg, 0.0,    arg, arg, arg);   result.tris.append(t1)
+        t1.INIT(arg, 0.0, 0.0,    arg, arg, arg,    arg, 0.0, arg);   result.tris.append(t1)
+        t1.color <- right
+        // NORTH
+        t1.INIT(arg, 0.0, arg,    arg, arg, arg,    0.0, arg, arg);   result.tris.append(t1)
+        t1.INIT(arg, 0.0, arg,    0.0, arg, arg,    0.0, 0.0, arg);   result.tris.append(t1)
+        t1.color <- back
+        // WEST
+        t1.INIT(0.0, 0.0, arg,    0.0, arg, arg,    0.0, arg, 0.0);   result.tris.append(t1)
+        t1.INIT(0.0, 0.0, arg,    0.0, arg, 0.0,    0.0, 0.0, 0.0);   result.tris.append(t1)
+        t1.color <- left
+        // TOP
+        t1.INIT(0.0, arg, 0.0,    0.0, arg, arg,    arg, arg, arg);   result.tris.append(t1)
+        t1.INIT(0.0, arg, 0.0,    arg, arg, arg,    arg, arg, 0.0);   result.tris.append(t1)
+        t1.color <- top
+        // BOTTOM
+        t1.INIT(arg, 0.0, arg,    0.0, 0.0, arg,    0.0, 0.0, 0.0);   result.tris.append(t1)
+        t1.color <- bottom
     }
 
-    our Thing3D: attemptDraw(our POV:stuffPov) <- {
+    our Thing3D: attempt3DDraw(our POV:stuffPov) <- {
         me string: objType <- stuffPov.pItem.type.asGiven
-        if(!itemIsThing(stuffPov.pItem)){return(NULL)}
-
-our POV: tmpPov
-our POV: thingPov       <- fetchField(stuffPov, "thing")
-
-// Get Location
-our POV: locationPov    <- fetchField(thingPov, "location")
-their PovList: locItems
-me double: xLoc; me double: yLoc; me double: zLoc;
-if(locationPov){
-    locItems <- locationPov.pItem.value.items
-    if(locItems.size()==3){
-        tmpPov <- locItems.at(0); if(tmpPov){xLoc <- fetchDblFloatField(tmpPov)}
-        tmpPov <- locItems.at(1); if(tmpPov){yLoc <- fetchDblFloatField(tmpPov)}
-        tmpPov <- locItems.at(2); if(tmpPov){zLoc <- fetchDblFloatField(tmpPov)}
-    }
-}
-
-// Get orientation
-their POV: orientationPov <- fetchField(thingPov, "orientation")
-me double: xOri; me double: yOri; me double: zOri;
-their PovList: oriItems
-if(orientationPov){
-    oriItems <- orientationPov.pItem.value.items
-    if(oriItems.size()==3){
-        tmpPov <- oriItems.at(0); if(tmpPov){xOri <- fetchDblFloatField(tmpPov)}
-        tmpPov <- oriItems.at(1); if(tmpPov){yOri <- fetchDblFloatField(tmpPov)}
-        tmpPov <- oriItems.at(2); if(tmpPov){zOri <- fetchDblFloatField(tmpPov)}
-        print("ORIENT: x:", xOri," y:",yOri," z:",zOri,"     POV:"+tmpPov.stringify()+"\n")
-    }
-}
+        if(!proactiveGUI.presenter.itemIsThing(stuffPov.pItem)){return(NULL)}
 
         our Thing3D::thing
+        our POV: tmpPov
+        our POV: thingPov       <- fetchField(stuffPov, "thing")
+        // Get Location
+        our POV: locationPov    <- fetchField(thingPov, "location")
+        their PovList: locItems
+        me double: xLoc; me double: yLoc; me double: zLoc;
+        if(locationPov){
+            locItems <- locationPov.pItem.value.items
+            if(locItems.size()==3){
+                tmpPov <- locItems.at(0); if(tmpPov){xLoc <- fetchDblFloatField(tmpPov)}
+                tmpPov <- locItems.at(1); if(tmpPov){yLoc <- fetchDblFloatField(tmpPov)}
+                tmpPov <- locItems.at(2); if(tmpPov){zLoc <- fetchDblFloatField(tmpPov)}
+            }
+        }
+
+        // Get orientation
+        their POV: orientationPov <- fetchField(thingPov, "orientation")
+        me double: xOri; me double: yOri; me double: zOri;
+        their PovList: oriItems
+        if(orientationPov){
+            print("\norientationPov: ",orientationPov.stringify())
+            oriItems <- orientationPov.pItem.value.items
+            if(oriItems.size()==3){
+                tmpPov <- oriItems.at(0); if(tmpPov){xOri <- fetchDblFloatField(tmpPov)}
+                tmpPov <- oriItems.at(1); if(tmpPov){yOri <- fetchDblFloatField(tmpPov)}
+                tmpPov <- oriItems.at(2); if(tmpPov){zOri <- fetchDblFloatField(tmpPov)}
+                print("\nORIENT: x:", xOri," y:",yOri," z:",zOri,"     POV:"+tmpPov.stringify()+"\n")
+            }
+        }
             thing.name <- objType // TODO: This could be a better name. It's for debugging.
             thing.color <- Styler.Yellow
             thing.setLocation(xLoc, yLoc, zLoc)
@@ -80,6 +179,11 @@ if(orientationPov){
             case "rectangle":{}
             case "cube":{
                 our Mesh:: cubeMesh; meshGenerator.generateMesh(cubeMesh, "cube", 2, 0)
+                //our Mesh:: cubeMesh; tmp_colorCube(cubeMesh, 2, Styler.White, Styler.Yellow, Styler.Red, Styler.Orange, Styler.Blue, Styler.Green)
+                thing.meshes.append(cubeMesh)
+            }
+            case "colorCube":{
+                our Mesh:: cubeMesh; tmp_colorCube(cubeMesh, 2, Styler.White, Styler.Yellow, Styler.Red, Styler.Orange, Styler.Blue, Styler.Green)
                 thing.meshes.append(cubeMesh)
             }
             case "pipe":{}
@@ -92,7 +196,7 @@ if(orientationPov){
             default:{
                 our POV: p <- stuffPov.pItem.value.items.head
                 while(p != NULL){
-                    our Thing3D: object <- attemptDraw(p)
+                    our Thing3D: object <- attempt3DDraw(p)
                     if(object!=NULL){
                         thing.addPart(object)
                     }
@@ -146,40 +250,8 @@ me float: xRot
     }
 
     void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
-        me int: height <- 400
-        me int: width  <- 700
-   //     setUpMatrixes(90.0, PR.posX, PR.posY, width, height)
-        me GuiCoords:RA{PR.posX, PR.posY, width, height}
-        dr.addC(cmdSetColor, surfaceBkgnd)
-        dr.addRAA(cmdRoundRect, RA, 15)
-        dr.add1(cmdFill)
-
-        // Block click-under
-        our ProactEvent:: blockEvents;
-        blockEvents.setTrigger(tPrimaryClick, RA, PR.topPov); blockEvents.setGUI_Event1(eBlockEvents)
-        proactiveGUI.presenter.registerEvent(blockEvents)
-
-        // dragging header
-        PR.posW <- width
-        PR.posH <- height;
-
-        dr.addC(cmdSetColor, surfaceBkgnd)
-        me GuiCoords:HedrRectXYWH{PR.posX, PR.posY, width, headerHeight-2};
-        dr.addRAA(cmdRoundTopRect, HedrRectXYWH, 15)
-        dr.add1(cmdFill)
-        if(PR.screenPos!=NULL){
-            our ProactEvent:: dragEvent;
-            dragEvent.setTrigger(tDragStart, HedrRectXYWH); dragEvent.setInfonEvent(eGUI_SetXY, PR.xPov, PR.yPov)
-            proactiveGUI.presenter.registerEvent(dragEvent)
-        }
-
-        // Iterate over myStuff
-        our POV: stuffPov <- myStuff.pItem.value.items.front()
-        while(stuffPov!=NULL){
-            our Thing3D: object <- attemptDraw(stuffPov)
-            if(object!=NULL){dr.add3D(object)}
-            stuffPov <- stuffPov.next
-        }
+        our Thing3D: object <- attempt3DDraw(PR.sourcePov)
+        if(object!=NULL){dr.add3D(object)}
     }
 }
 
@@ -457,7 +529,7 @@ struct TextEditBox: inherits=ReactiveControl{
 }
 
 ///////////////////////// TerminalApp
-struct TerminalApp: inherits=ReactiveControl{
+struct TerminalApp: inherits=WindowControl{
     our GuiDataRec: GDR
     our InfonStream: iStream
     our ParamRec: thisPR
@@ -483,19 +555,9 @@ struct TerminalApp: inherits=ReactiveControl{
         blockEvents.setTrigger(tPrimaryClick, RA, PR.topPov); blockEvents.setGUI_Event1(eBlockEvents)
         proactiveGUI.presenter.registerEvent(blockEvents)
 
-        // dragging header
         PR.posW <- width
-        PR.posH <- height;
-
-        dr.addC(cmdSetColor, surfaceBkgnd)
-        me GuiCoords:HedrRectXYWH{PR.posX, PR.posY, width, headerHeight-2};
-        dr.addRAA(cmdRoundTopRect, HedrRectXYWH, 15)
-        dr.add1(cmdFill)
-        if(PR.screenPos!=NULL){
-            our ProactEvent:: dragEvent;
-            dragEvent.setTrigger(tDragStart, HedrRectXYWH); dragEvent.setInfonEvent(eGUI_SetXY, PR.xPov, PR.yPov)
-            proactiveGUI.presenter.registerEvent(dragEvent)
-        }
+        PR.posH <- height
+        drawHeader(dr, PR)
 
         // Fetch App Streams
         me string: GDR_ID <- PR.sourcePov.mySymbol()+"/terminalApp"

@@ -277,18 +277,24 @@ struct Presenter{
         return(mouseIsOver)
     }
 
+    me bool: itemIsThing(our infon: item) <- {
+        return(!item.value.items.isEmpty() and item.value.items.first().type.asGiven =="thing")
+    }
+
     me string: chooseviewStyleTag(our ParamRec: PR) <- {
         me string: retval
+        if(PR.sourcePov.pItem.value.timelike){return("timeView")}
+        if(itemIsThing(PR.sourcePov.pItem)){return("3DThing")}
         if(PR.propertiesPov!=NULL){
             our POV: viewStyleTag <- fetchField(PR.propertiesPov, "viewStyleTag")
             if(viewStyleTag){
-                me string: viewStyleTagTag <- fetchStringField(viewStyleTag)
-                return(viewStyleTagTag)
+                me string: VSTagStr <- fetchStringField(viewStyleTag)
+                return(VSTagStr)
             }
             viewStyleTag <- fetchField(PR.propertiesPov, "viewStyleTagDefault")
             if(viewStyleTag){
-                me string: viewStyleTagTag <- fetchStringField(viewStyleTag)
-                return(viewStyleTagTag)
+                me string: VSTagStr <- fetchStringField(viewStyleTag)
+                return(VSTagStr)
             }
         }
         me string: itemsType
@@ -336,7 +342,7 @@ struct Presenter{
         } else if (symbol=="<") {
             dr.addXY(cmdMoveTo, posX + radius, posY + radius - stickLen * sqrt(2.0))
             dr.addXY(cmdLineTo, posX + radius - stickLen * sqrt(2), posY + radius)
-            dr.addXY(cmdMoveTo, posX + radius, posY + radius + stickLen * sqrt(2.0))
+            dr.addXY(cmdLineTo, posX + radius, posY + radius + stickLen * sqrt(2.0))
         } else if (symbol==">") {
             dr.addXY(cmdMoveTo, posX + radius, posY + radius - stickLen * sqrt(2.0))
             dr.addXY(cmdLineTo, posX + radius + stickLen * sqrt(2), posY + radius)
