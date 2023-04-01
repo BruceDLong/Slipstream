@@ -152,23 +152,42 @@ struct Scene3D: inherits=ReactiveControl{
                 tmpPov <- locItems.at(2); if(tmpPov){zLoc <- fetchDblFloatField(tmpPov)}
             }
         }
-
+        // Get Color
+        our POV: colorPov    <- fetchField(stuffPov, "color")
+        if(colorPov){
+            our POV: huePov  <- fetchField(colorPov, "hue")
+            if(huePov){
+                me int: hue <- huePov.pItem.fetchInt()
+                switch(hue){
+                case 0:{thing.color <- Styler.Red}
+                case 4:{thing.color <- Styler.Blue}
+                case 30:{thing.color <- Styler.Orange}
+                case 55:{thing.color <- Styler.Yellow}
+                case 110:{thing.color <- Styler.Green}
+                case 185:{thing.color <- Styler.Cyan}
+                case 160:{thing.color <- Styler.Purple}
+                case 300:{thing.color <- Styler.Magenta}
+                case 345:{thing.color <- Styler.Pink}
+                }
+            }
+        }else{
+            thing.color <- Styler.Gray
+        }
         // Get orientation
         their POV: orientationPov <- fetchField(thingPov, "orientation")
         me double: xOri; me double: yOri; me double: zOri;
         their PovList: oriItems
         if(orientationPov){
-            print("\norientationPov: ",orientationPov.stringify())
+            //print("\n    orientationPov: ",orientationPov.stringify())
             oriItems <- orientationPov.pItem.value.items
             if(oriItems.size()==3){
                 tmpPov <- oriItems.at(0); if(tmpPov){xOri <- fetchDblFloatField(tmpPov)}
                 tmpPov <- oriItems.at(1); if(tmpPov){yOri <- fetchDblFloatField(tmpPov)}
                 tmpPov <- oriItems.at(2); if(tmpPov){zOri <- fetchDblFloatField(tmpPov)}
-                print("\nORIENT: x:", xOri," y:",yOri," z:",zOri,"     POV:"+tmpPov.stringify()+"\n")
+                //print("\nORIENT: x:", xOri," y:",yOri," z:",zOri,"     POV:"+tmpPov.stringify()+"\n")
             }
         }
             thing.name <- objType // TODO: This could be a better name. It's for debugging.
-            thing.color <- Styler.Yellow
             thing.setLocation(xLoc, yLoc, zLoc)
             thing.setScale(1.0, 1.0, 1.0)
             thing.rotateX(xOri+0.9)

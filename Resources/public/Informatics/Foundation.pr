@@ -35,6 +35,21 @@
     }
 */
 
+////// TEMP COLOR //////////////////////
+@hue = reel
+@saturation = reel
+@brightness = reel
+@color <en> = {hue, saturation, brightness}
+@red <en> = color:{hue:0}
+@blue <en> = color:{hue:4}
+@orange   <en> = color:{hue:30}
+@yellow  <en> = color:{hue:55}
+@green   <en> = color:{hue:110}
+@cyan    <en> = color:{hue:185}
+@purple  <en> = color:{hue:160}
+@magenta <en> = color:{hue:300}
+@pink    <en> = color:{hue:345}
+////////////////////////////
 
     // TODO: Length-metric, define units, add more basic shapes
     @xRot = reel
