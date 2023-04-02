@@ -339,10 +339,7 @@ struct Presenter{
         else if(viewStyleTag=="genericstring" or viewStyleTag=="genericstring_edit"){PR.viewStyleCtrl.draw(dr, PR)}
         else if(viewStyleTag=="genericnumber"){PR.viewStyleCtrl.draw(dr, PR)}
         else if(viewStyleTag=="3DThing"){me Scene3D: scene; scene.draw(dr, PR)}
-        else if(viewStyleTag=="mystuff"){
-            PR.sourcePov <- myStuff
-            draw_X_stack_XYwh(dr, PR)
-        }
+        else if(viewStyleTag=="mystuff"){PR.sourcePov <- myStuff; me StuffView: stuff; stuff.draw(dr, PR)}
     }
 
     void: addLabeledButton(our dashDrawing: dr, me GuiCoords:myCoords, me string: btnLabel) <- {

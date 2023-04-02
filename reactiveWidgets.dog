@@ -50,7 +50,39 @@ struct WindowControl: inherits=ReactiveControl{
         }
     }
 }
-struct TimeView: inherits=WindowControl{
+struct TimeView: inherits=ReactiveControl{
+    void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
+        me string: itemID <- PR.sourcePov.mySymbol()
+        me string: timeIdxID <- itemID+"/timeIdx"
+        me int: timeIdx <- proactiveGUI.presenter.modelMgr.getInt64(timeIdxID, 0)
+//print("TIME_DRAW idx:",timeIdx,"\n")
+        me int: height <- 200
+        me int: width  <- 300
+        me GuiCoords:RA{PR.posX, PR.posY, width, height}
+        me GuiCoords:RA1{PR.posX+(width/2)-50, PR.posY+height-25, 16, 16}
+        proactiveGUI.presenter.drawCircleButton(dr, RA1.X, RA1.Y, 10, 2, "<", itemID+"/prev")
+        our ProactEvent:: prevTimeEvent;
+        prevTimeEvent.setTrigger(tPrimaryClick, RA1, PR.sourcePov)
+        prevTimeEvent.setGUI_Store_Int1(timeIdxID, max(0, timeIdx-1))
+        proactiveGUI.presenter.registerEvent(prevTimeEvent)
+
+        me GuiCoords:RA2{PR.posX+(width/2)+50, PR.posY+height-25, 16, 16}
+        proactiveGUI.presenter.drawCircleButton(dr, RA2.X, RA2.Y, 10, 2, ">", itemID+"/next")
+        our ProactEvent:: nextTimeEvent;
+        nextTimeEvent.setTrigger(tPrimaryClick, RA2, PR.sourcePov)
+        nextTimeEvent.setGUI_Store_Int1(timeIdxID, min(PR.sourcePov.pItem.value.items.size()-1, timeIdx+1))
+        proactiveGUI.presenter.registerEvent(nextTimeEvent)
+
+        our POV: displayPov <- PR.sourcePov.pItem.value.items.at(timeIdx)
+        if(displayPov!=NULL){
+            our ParamRec:: innerPR; innerPR.init(displayPov, PR.posX, PR.posY, width, height)
+            if(proactiveGUI.presenter.itemIsThing(PR.sourcePov.pItem.value.listSpec)){innerPR.viewStyleTag <- "3DThing"}
+            else{innerPR.viewStyleTag <- proactiveGUI.presenter.chooseviewStyleTag(innerPR)}
+            proactiveGUI.presenter.drawItem(dr, innerPR)
+        }
+    }
+}
+struct StuffView: inherits=WindowControl{
     void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
         me int: height <- 200
         me int: width  <- 300
@@ -59,30 +91,12 @@ struct TimeView: inherits=WindowControl{
         dr.addRAA(cmdRoundRect, RA, 15)
         dr.add1(cmdFill)
 
-        // Block click-under
-        our ProactEvent:: blockEvents;
-        blockEvents.setTrigger(tPrimaryClick, RA, PR.topPov); blockEvents.setGUI_Event1(eBlockEvents)
-        proactiveGUI.presenter.registerEvent(blockEvents)
-
         PR.posW <- width
         PR.posH <- height
         PR.title <- PR.sourcePov.pItem.type.asGiven
         drawHeader(dr, PR)
 
-        me GuiCoords:RA1{PR.posX+(width/2)-50, PR.posY+height-25, 16, 16}
-        proactiveGUI.presenter.drawCircleButton(dr, RA1.X, RA1.Y, 10, 2, "<", PR.sourcePov.mySymbol()+"prev")
-
-        me GuiCoords:RA2{PR.posX+(width/2)+50, PR.posY+height-25, 16, 16}
-        proactiveGUI.presenter.drawCircleButton(dr, RA2.X, RA2.Y, 10, 2, ">", PR.sourcePov.mySymbol()+"next")
-
-        me int: timeIdx <- 0
-        our POV: displayPov <- PR.sourcePov.pItem.value.items.at(timeIdx)
-        if(displayPov!=NULL){
-            our ParamRec:: innerPR; innerPR.init(displayPov, PR.posX, PR.posY, width, height)
-            if(proactiveGUI.presenter.itemIsThing(PR.sourcePov.pItem.value.listSpec)){innerPR.viewStyleTag <- "3DThing"}
-            else{innerPR.viewStyleTag <- proactiveGUI.presenter.chooseviewStyleTag(innerPR)}
-            proactiveGUI.presenter.drawItem(dr, innerPR)
-        }
+        proactiveGUI.presenter.draw_X_stack_XYwh(dr, PR)
     }
 }
 struct KanbanView: inherits=WindowControl{
