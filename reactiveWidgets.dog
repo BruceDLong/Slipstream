@@ -147,7 +147,7 @@ struct Scene3D: inherits=ReactiveControl{
         t1.color <- bottom
     }
 
-    our Thing3D: attempt3DDraw(our POV:stuffPov) <- {
+    our Thing3D: attempt3DDraw(our POV:stuffPov, our ParamRec: PR, our Window3D: win3D) <- {
         me string: objType <- stuffPov.pItem.type.asGiven
         if(!proactiveGUI.presenter.itemIsThing(stuffPov.pItem)){return(NULL)}
 
@@ -201,13 +201,17 @@ struct Scene3D: inherits=ReactiveControl{
                 //print("\nORIENT: x:", xOri," y:",yOri," z:",zOri,"     POV:"+tmpPov.stringify()+"\n")
             }
         }
-            thing.name <- objType // TODO: This could be a better name. It's for debugging.
-            thing.setLocation(xLoc, yLoc, zLoc)
-            thing.setScale(1.0, 1.0, 1.0)
-            thing.rotateX(xOri+0.9)
-            thing.rotateY(yOri+0.5)
-            thing.rotateZ(zOri+0.2)
-            thing.calcThingMatx(mat4ID)
+        thing.name <- objType // TODO: This could be a better name. It's for debugging.
+        thing.setLocation(xLoc, yLoc, zLoc)
+        thing.setScale(1.0, 1.0, 1.0)
+        thing.rotateX(xOri+0.9)
+        thing.rotateY(yOri+0.5)
+        thing.rotateZ(zOri+0.2)
+        thing.calcThingMatx(mat4ID)
+        me int: height <- 200
+        me int: width  <- 300
+        win3D.setUpMatrixes(90.0, PR.posX, PR.posY, width, height)
+        win3D.lightSources <- lightSources
         switch(objType){
             case "rectangle":{}
             case "cube":{
@@ -229,7 +233,7 @@ struct Scene3D: inherits=ReactiveControl{
             default:{
                 our POV: p <- stuffPov.pItem.value.items.head
                 while(p != NULL){
-                    our Thing3D: object <- attempt3DDraw(p)
+                    our Thing3D: object <- attempt3DDraw(p, PR, win3D)
                     if(object!=NULL){
                         thing.addPart(object)
                     }
@@ -240,13 +244,12 @@ struct Scene3D: inherits=ReactiveControl{
         return(thing)
     }
 
-me float: xRot
     me bool: keyTyped(their GUI_KeyboardEvent: event) <- {
-    print("KEYTPED:\n")
-         me int32: cmd <- event.keyval
-         if((event.state & CONTROL_MASK) or cmd == 127 or cmd > 255){
-             me bool: cmdHandled <- false;
-             if(!cmdHandled){
+        print("KEYTPED:\n")
+        me int32: cmd <- event.keyval
+        if((event.state & CONTROL_MASK) or cmd == 127 or cmd > 255){
+            me bool: cmdHandled <- false;
+            if(!cmdHandled){
                 if(event.state & CONTROL_MASK) {
                     switch(cmd){
                         case KEY_a: {}                               // CTRL-A - Select all
@@ -255,7 +258,7 @@ me float: xRot
                     }
                 } else {
                     switch(cmd){
-                        case KEY_w:         { matProj.makeRotationX(xRot); xRot <+- 0.1}
+                        case KEY_w:         {}// win3D.matProj.makeRotationX(xRot); xRot <+- 0.1}
                         case KEY_s:         {}
                         case KEY_a:         {}
                         case KEY_d:         {}
@@ -275,16 +278,17 @@ me float: xRot
                         case KEY_ESCAPE:    {}
                     }
                 }
-             }
-         }
-         slipView.requestRedraw()
-         //print("KEY_PRESS:",event.keyval, " ==>", crntLine, "\n")
-         return(true)
+            }
+        }
+        slipView.requestRedraw()
+        //print("KEY_PRESS:",event.keyval, " ==>", crntLine, "\n")
+        return(true)
     }
 
     void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
-        our Thing3D: object <- attempt3DDraw(PR.sourcePov)
-        if(object!=NULL){dr.add3D(object)}
+        our Window3D:: win3D
+        our Thing3D: object <- attempt3DDraw(PR.sourcePov, PR, win3D)
+        if(object!=NULL){dr.add3D(object, win3D)}
     }
 }
 
@@ -499,8 +503,7 @@ struct TextEditBox: inherits=ReactiveControl{
          print("TEXTEDIT_BOX_CLICK!:",posX-(thisPR.posX+leftXPad), "\n")
          return(true)
      }
-    me float: xRot
-     me bool: keyTyped(their GUI_KeyboardEvent: event) <- { print("KEYTPED-XXX:",xRot,"\n"); matProj.makeRotationX(xRot); xRot <+- 0.1
+     me bool: keyTyped(their GUI_KeyboardEvent: event) <- {
          me int32: cmd <- event.keyval
          if((event.state & CONTROL_MASK) or cmd == 127 or cmd > 255){
              me bool: cmdHandled <- false;

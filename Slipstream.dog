@@ -621,14 +621,13 @@ our POV: myStuff // Do better design for this
     me ProactiveGUI: proactiveGUI
     their GUI_canvas: drawing_area
     their SlipView: slipView
+    their LightSource: lightSrc
+    me List<their LightSource>: lightSources
 }
 
 struct APP{
     void: init3DRenderSystem() <- {
-        setUpMatrixes(90.0, 80, 150, 700.0, 400.0)
-
         // Setup lights
-        their LightSource: lightSrc;
         Allocate(lightSrc)
         lightSrc.init(lsAmbient, Styler.DarkGray, 0.0, 0.0, 0.0)
         lightSources.append(lightSrc)
