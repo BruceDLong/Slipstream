@@ -108,8 +108,9 @@ struct GuiModelManager{
         our POV: dataInf       <- fetchField(slipView.boardInfons[slipView.crntBoardIdx], "data")
         their PovList: povList <- dataInf.pItem.value.items
         if(povToMove===povList.tail){return()}
+        me int: oldSize <- povList.size()
         povList.erase(povToMove)
-        povList.appendPov(povToMove)
+        if(oldSize>povList.size()){povList.appendPov(povToMove)}
     }
 
     me bool: isPovTopWindow(our POV: povToCheck) <- {

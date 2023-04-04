@@ -150,21 +150,23 @@ struct Scene3D: inherits=ReactiveControl{
     our Thing3D: attempt3DDraw(our POV:stuffPov, our ParamRec: PR, our Window3D: win3D) <- {
         me string: objType <- stuffPov.pItem.type.asGiven
         if(!proactiveGUI.presenter.itemIsThing(stuffPov.pItem)){return(NULL)}
-
+        me int: height <- 200
+        me int: width  <- 300
+        win3D.setUpMatrixes(90.0, PR.posX, PR.posY, width, height)
+        win3D.lightSources <- lightSources
         our Thing3D::thing
-        our POV: tmpPov
         our POV: thingPov       <- fetchField(stuffPov, "thing")
         // Get Location
         our POV: locationPov    <- fetchField(thingPov, "location")
-        their PovList: locItems
         me double: xLoc; me double: yLoc; me double: zLoc;
         if(locationPov){
-            locItems <- locationPov.pItem.value.items
-            if(locItems.size()==3){
-                tmpPov <- locItems.at(0); if(tmpPov){xLoc <- fetchDblFloatField(tmpPov)}
-                tmpPov <- locItems.at(1); if(tmpPov){yLoc <- fetchDblFloatField(tmpPov)}
-                tmpPov <- locItems.at(2); if(tmpPov){zLoc <- fetchDblFloatField(tmpPov)}
-            }
+            our POV: xLocPov  <- fetchField(locationPov, "xloc")
+            our POV: yLocPov  <- fetchField(locationPov, "yloc")
+            our POV: zLocPov  <- fetchField(locationPov, "zloc")
+            if(xLocPov){xLoc <- fetchDblFloatField(xLocPov)}
+            if(yLocPov){yLoc <- fetchDblFloatField(yLocPov)}
+            if(zLocPov){zLoc <- fetchDblFloatField(zLocPov)}
+            //print("\nLOC: x:", xLoc," y:",yLoc," z:",zLoc,"\n")
         }
         // Get Color
         our POV: colorPov    <- fetchField(stuffPov, "color")
@@ -188,18 +190,16 @@ struct Scene3D: inherits=ReactiveControl{
             thing.color <- Styler.Gray
         }
         // Get orientation
-        their POV: orientationPov <- fetchField(thingPov, "orientation")
+        our POV: orientationPov <- fetchField(thingPov, "orientation")
         me double: xOri; me double: yOri; me double: zOri;
-        their PovList: oriItems
         if(orientationPov){
-            //print("\n    orientationPov: ",orientationPov.stringify())
-            oriItems <- orientationPov.pItem.value.items
-            if(oriItems.size()==3){
-                tmpPov <- oriItems.at(0); if(tmpPov){xOri <- fetchDblFloatField(tmpPov)}
-                tmpPov <- oriItems.at(1); if(tmpPov){yOri <- fetchDblFloatField(tmpPov)}
-                tmpPov <- oriItems.at(2); if(tmpPov){zOri <- fetchDblFloatField(tmpPov)}
-                //print("\nORIENT: x:", xOri," y:",yOri," z:",zOri,"     POV:"+tmpPov.stringify()+"\n")
-            }
+            our POV: xRot  <- fetchField(orientationPov, "xrot")
+            our POV: yRot  <- fetchField(orientationPov, "yrot")
+            our POV: zRot  <- fetchField(orientationPov, "zrot")
+            if(xRot){xOri <- fetchDblFloatField(xRot)}
+            if(yRot){yOri <- fetchDblFloatField(yRot)}
+            if(zRot){zOri <- fetchDblFloatField(zRot)}
+            //print("\nORIENT: x:", xOri," y:",yOri," z:",zOri,"\n")
         }
         thing.name <- objType // TODO: This could be a better name. It's for debugging.
         thing.setLocation(xLoc, yLoc, zLoc)
@@ -208,10 +208,7 @@ struct Scene3D: inherits=ReactiveControl{
         thing.rotateY(yOri+0.5)
         thing.rotateZ(zOri+0.2)
         thing.calcThingMatx(mat4ID)
-        me int: height <- 200
-        me int: width  <- 300
-        win3D.setUpMatrixes(90.0, PR.posX, PR.posY, width, height)
-        win3D.lightSources <- lightSources
+
         switch(objType){
             case "rectangle":{}
             case "cube":{
