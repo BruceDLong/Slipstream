@@ -1,5 +1,11 @@
 { 76543
-
+@side = {
+    color
+}
+@colorCube = {T {&thing}|
+    color
+    *6+{side| ... }
+}
 @rcx = {T {&thing}|
     ...
 }
@@ -141,11 +147,23 @@ myStuff:{
     //cube:{ &thing:{orientation:{xRot:0.9, yRot:0.4, zRot:0.1}}}
     //rubix-cube:{T &thing:{orientation:{xRot:0.9, yRot:0.4, zRot:0.1}}}
     rcx:{T {&thing}|
-        cube:{&thing:{orientation:{xRot:0.9, yRot:0.4, zRot:0.1} location:{xLoc:0, yLoc:0, zLoc:0}} color=pink}
-        cube:{&thing:{orientation:{xRot:0.7, yRot:0.4, zRot:0.1} location:{xLoc:0.5, yLoc:0.5, zLoc:-5}} color=yellow}
-        cube:{&thing:{orientation:{xRot:0.5, yRot:0.4, zRot:0.1} location:{xLoc:1, yLoc:1, zLoc:-10}} color=green}
-        cube:{&thing:{orientation:{xRot:0.3, yRot:0.4, zRot:0.1} location:{xLoc:1.5, yLoc:1.5, zLoc:-15}} color=cyan}
-        cube:{&thing:{orientation:{xRot:0.1, yRot:0.4, zRot:0.1} location:{xLoc:2, yLoc:2, zLoc:-20}} color=purple}
+        colorCube:{
+            &thing:{orientation:{xRot:0.9, yRot:0.4, zRot:0.1} location:{xLoc:0, yLoc:0, zLoc:0}}
+            *6+{side|
+                {color=pink}
+                {color=blue}
+                {color=magenta}
+                {color=green}
+                {color=orange}
+                {color=purple}
+            }
+        }
+        colorCube:{&thing:{orientation:{xRot:1, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
+        colorCube:{&thing:{orientation:{xRot:2, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
+        colorCube:{&thing:{orientation:{xRot:3, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
+        colorCube:{&thing:{orientation:{xRot:4, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
+        colorCube:{&thing:{orientation:{xRot:5, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
+        colorCube:{&thing:{orientation:{xRot:6, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
     }
 
 }

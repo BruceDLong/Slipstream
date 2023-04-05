@@ -69,7 +69,17 @@ struct GLOBAL{
         our POV: retVal <- info.pItem.fetchField(fieldname)
         return(retVal)
     }
-
+    our POV: fetchListField(our POV: info, me string: fieldname) <- {
+        if(info==NULL){return(NULL)}
+        our POV: itm <- info.pItem.value.items.head
+        while(itm != NULL){
+            if(itm.pItem.value.fType==LST and itm.pItem.value.listSpec!=NULL and itm.pItem.value.listSpec.type!=NULL and itm.pItem.value.listSpec.type.asGiven==fieldname){
+                return(itm)
+            }
+            itm <- itm.next
+        }
+        return(NULL)
+    }
     me string: fetchStringField(our POV: info) <- {
         if(info==NULL){return("")}
         me string: retVal <- info.pItem.fetchString()

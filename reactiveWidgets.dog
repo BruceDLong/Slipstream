@@ -122,31 +122,43 @@ struct Scene3D: inherits=ReactiveControl{
     void: tmp_colorCube(their Mesh: result, me float: arg, me cdColor: top, me cdColor: bottom, me cdColor: left, me cdColor: right, me  cdColor: front, me cdColor: back) <- {
         result.tris.clear()
         me Triangle3D: t1;
-        // SOUTH
+        t1.setColor(front)
         t1.INIT(0.0, 0.0, 0.0,    0.0, arg, 0.0,    arg, arg, 0.0);   result.tris.append(t1)
         t1.INIT(0.0, 0.0, 0.0,    arg, arg, 0.0,    arg, 0.0, 0.0);   result.tris.append(t1)
-        t1.color <- front
-        // EAST
+        t1.setColor(right)
         t1.INIT(arg, 0.0, 0.0,    arg, arg, 0.0,    arg, arg, arg);   result.tris.append(t1)
         t1.INIT(arg, 0.0, 0.0,    arg, arg, arg,    arg, 0.0, arg);   result.tris.append(t1)
-        t1.color <- right
-        // NORTH
+        t1.setColor(back)
         t1.INIT(arg, 0.0, arg,    arg, arg, arg,    0.0, arg, arg);   result.tris.append(t1)
         t1.INIT(arg, 0.0, arg,    0.0, arg, arg,    0.0, 0.0, arg);   result.tris.append(t1)
-        t1.color <- back
-        // WEST
+        t1.setColor(left)
         t1.INIT(0.0, 0.0, arg,    0.0, arg, arg,    0.0, arg, 0.0);   result.tris.append(t1)
         t1.INIT(0.0, 0.0, arg,    0.0, arg, 0.0,    0.0, 0.0, 0.0);   result.tris.append(t1)
-        t1.color <- left
-        // TOP
+        t1.setColor(top)
         t1.INIT(0.0, arg, 0.0,    0.0, arg, arg,    arg, arg, arg);   result.tris.append(t1)
         t1.INIT(0.0, arg, 0.0,    arg, arg, arg,    arg, arg, 0.0);   result.tris.append(t1)
-        t1.color <- top
-        // BOTTOM
+        t1.setColor(bottom)
         t1.INIT(arg, 0.0, arg,    0.0, 0.0, arg,    0.0, 0.0, 0.0);   result.tris.append(t1)
-        t1.color <- bottom
+        t1.INIT(arg, 0.0, arg,    0.0, 0.0, 0.0,    arg, 0.0, 0.0);   result.tris.append(t1)
     }
-
+    me cdColor: getColorFromHue(our POV: huePov) <- {
+        me cdColor: retColor
+        if(huePov){
+            me int: hue <- huePov.pItem.fetchInt()
+            switch(hue){
+                case 0:{retColor <- Styler.Red}
+                case 4:{retColor <- Styler.Blue}
+                case 30:{retColor <- Styler.Orange}
+                case 55:{retColor <- Styler.Yellow}
+                case 110:{retColor <- Styler.Green}
+                case 185:{retColor <- Styler.Cyan}
+                case 160:{retColor <- Styler.Purple}
+                case 300:{retColor <- Styler.Magenta}
+                case 345:{retColor <- Styler.Pink}
+            }
+        }
+        return(retColor)
+    }
     our Thing3D: attempt3DDraw(our POV:stuffPov, our ParamRec: PR, our Window3D: win3D) <- {
         me string: objType <- stuffPov.pItem.type.asGiven
         if(!proactiveGUI.presenter.itemIsThing(stuffPov.pItem)){return(NULL)}
@@ -173,18 +185,7 @@ struct Scene3D: inherits=ReactiveControl{
         if(colorPov){
             our POV: huePov  <- fetchField(colorPov, "hue")
             if(huePov){
-                me int: hue <- huePov.pItem.fetchInt()
-                switch(hue){
-                case 0:{thing.color <- Styler.Red}
-                case 4:{thing.color <- Styler.Blue}
-                case 30:{thing.color <- Styler.Orange}
-                case 55:{thing.color <- Styler.Yellow}
-                case 110:{thing.color <- Styler.Green}
-                case 185:{thing.color <- Styler.Cyan}
-                case 160:{thing.color <- Styler.Purple}
-                case 300:{thing.color <- Styler.Magenta}
-                case 345:{thing.color <- Styler.Pink}
-                }
+                thing.color <- getColorFromHue(huePov)
             }
         }else{
             thing.color <- Styler.Gray
@@ -216,8 +217,39 @@ struct Scene3D: inherits=ReactiveControl{
                 //our Mesh:: cubeMesh; tmp_colorCube(cubeMesh, 2, Styler.White, Styler.Yellow, Styler.Red, Styler.Orange, Styler.Blue, Styler.Green)
                 thing.meshes.append(cubeMesh)
             }
-            case "colorCube":{
-                our Mesh:: cubeMesh; tmp_colorCube(cubeMesh, 2, Styler.White, Styler.Yellow, Styler.Red, Styler.Orange, Styler.Blue, Styler.Green)
+            case "colorcube":{
+                our POV: sides <- fetchListField(stuffPov, "side")
+                me cdColor: topColor    <- styler.Gray
+                me cdColor: bottomColor <- styler.Gray
+                me cdColor: leftColor   <- styler.Gray
+                me cdColor: rightColor  <- styler.Gray
+                me cdColor: frontColor  <- styler.Gray
+                me cdColor: backColor   <- styler.Gray
+                if(sides!=NULL){
+                    our POV: side <- sides.pItem.value.items.head
+                    me int: count <- 0
+                    while(side != NULL){
+                        our POV: colorPov  <- fetchField(side, "color")
+                        if(colorPov){
+                            our POV: huePov    <- fetchField(colorPov, "hue")
+                            me cdColor: sideColor
+                            if(huePov){
+                                me cdColor: color <- getColorFromHue(huePov)
+                                switch(count){
+                                    case 0: {topColor    <- color}
+                                    case 1: {bottomColor <- color}
+                                    case 2: {leftColor   <- color}
+                                    case 3: {rightColor  <- color}
+                                    case 4: {frontColor  <- color}
+                                    case 5: {backColor   <- color}
+                                }
+                            }
+                        }
+                        count <+- 1
+                        side <- side.next
+                    }
+                }
+                our Mesh:: cubeMesh; tmp_colorCube(cubeMesh, 1, topColor, bottomColor, leftColor, rightColor, frontColor, backColor)
                 thing.meshes.append(cubeMesh)
             }
             case "pipe":{}
