@@ -160,8 +160,8 @@ struct Scene3D: inherits=ReactiveControl{
         return(retColor)
     }
     our Thing3D: attempt3DDraw(our POV:stuffPov, our ParamRec: PR, our Window3D: win3D) <- {
-        me string: objType <- stuffPov.pItem.type.asGiven
-        if(!proactiveGUI.presenter.itemIsThing(stuffPov.pItem)){return(NULL)}
+        me string: objType <- stuffPov.pItem.getTypeStr()
+        //if(!proactiveGUI.presenter.itemIsThing(stuffPov.pItem)){return(NULL)}
         me int: height <- 200
         me int: width  <- 300
         win3D.setUpMatrixes(90.0, PR.posX, PR.posY, width, height)
@@ -182,6 +182,7 @@ struct Scene3D: inherits=ReactiveControl{
         }
         // Get Color
         our POV: colorPov    <- fetchField(stuffPov, "color")
+        if(colorPov==NULL and thingPov!=NULL){colorPov    <- fetchField(thingPov, "color")}
         if(colorPov){
             our POV: huePov  <- fetchField(colorPov, "hue")
             if(huePov){
@@ -214,7 +215,6 @@ struct Scene3D: inherits=ReactiveControl{
             case "rectangle":{}
             case "cube":{
                 our Mesh:: cubeMesh; meshGenerator.generateMesh(cubeMesh, "cube", 2, 0)
-                //our Mesh:: cubeMesh; tmp_colorCube(cubeMesh, 2, Styler.White, Styler.Yellow, Styler.Red, Styler.Orange, Styler.Blue, Styler.Green)
                 thing.meshes.append(cubeMesh)
             }
             case "colorcube":{

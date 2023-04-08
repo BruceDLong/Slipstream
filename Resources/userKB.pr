@@ -3,8 +3,8 @@
     color
 }
 @colorCube = {T {&thing}|
-    color
-    *6+{side| ... }
+   // color
+    //*6+{side| ... }
 }
 @rcx = {T {&thing}|
     ...
@@ -147,23 +147,28 @@ myStuff:{
     //cube:{ &thing:{orientation:{xRot:0.9, yRot:0.4, zRot:0.1}}}
     //rubix-cube:{T &thing:{orientation:{xRot:0.9, yRot:0.4, zRot:0.1}}}
     rcx:{T {&thing}|
-        colorCube:{
-            &thing:{orientation:{xRot:0.9, yRot:0.4, zRot:0.1} location:{xLoc:0, yLoc:0, zLoc:0}}
-            *6+{side|
-                {color=pink}
-                {color=blue}
-                {color=magenta}
-                {color=green}
-                {color=orange}
-                {color=purple}
-            }
+        *3+{colorCube |
+            colorCube:{&thing:{orientation:{xRot:1, yRot:0.0, zRot:0} location:{xLoc:-3, yLoc:-3, zLoc:3} color=pink}}
+            colorCube:{&thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:3} color=blue}}
+            colorCube:{&thing:{orientation:{xRot:5, yRot:0.0, zRot:0} location:{xLoc:3, yLoc:3, zLoc:3} color=green}}
         }
-        colorCube:{&thing:{orientation:{xRot:1, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
-        colorCube:{&thing:{orientation:{xRot:2, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
-        colorCube:{&thing:{orientation:{xRot:3, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
-        colorCube:{&thing:{orientation:{xRot:4, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
-        colorCube:{&thing:{orientation:{xRot:5, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
-        colorCube:{&thing:{orientation:{xRot:6, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
+        //colorCube:{
+            //&thing:{orientation:{xRot:0.9, yRot:0.4, zRot:0.1} location:{xLoc:0, yLoc:0, zLoc:0}}
+            //*6+{side|
+                //{color=pink}
+                //{color=blue}
+                //{color=magenta}
+                //{color=green}
+                //{color=orange}
+                //{color=purple}
+            //}
+        //}
+        //colorCube:{&thing:{orientation:{xRot:1, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
+        //colorCube:{&thing:{orientation:{xRot:2, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
+        //colorCube:{&thing:{orientation:{xRot:3, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
+        //colorCube:{&thing:{orientation:{xRot:4, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
+        //colorCube:{&thing:{orientation:{xRot:5, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
+        //colorCube:{&thing:{orientation:{xRot:6, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:0}}}
     }
 
 }
