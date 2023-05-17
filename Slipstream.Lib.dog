@@ -354,9 +354,11 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
     }
     void: start() <- {
       //agent.device <- connectionMgr.device.initAndLoad(connectionMgr, "device", masterFile)
-        agent.user   <- connectionMgr.user.initAndLoad(connectionMgr,   "user", "file:///userKB.pr")
       //agent.world  <- connectionMgr.world.initAndLoad(connectionMgr,  "world","quic://[::1]:2006/public/PublicKB.pr")
         agent.world  <- connectionMgr.world.initAndLoad(connectionMgr,  "world","file:///public/PublicKB.pr")
+        sleep(1000)
+        agent.user   <- connectionMgr.user.initAndLoad(connectionMgr,   "user", "file:///userKB.pr")
+       // sleep(1000)
       //agent.world  <- connectionMgr.world.initAndLoad(connectionMgr,  "world","clip://localhost/bruce")
 
 print("PublicKB:"+toString(connectionMgr.user.repoInfon)+"\n")

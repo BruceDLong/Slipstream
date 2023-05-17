@@ -70,10 +70,12 @@ struct TimeView: inherits=ReactiveControl{
         proactiveGUI.presenter.drawCircleButton(dr, RA2.X, RA2.Y, 10, 2, ">", itemID+"/next")
         our ProactEvent:: nextTimeEvent;
         nextTimeEvent.setTrigger(tPrimaryClick, RA2, PR.sourcePov)
-        nextTimeEvent.setGUI_Store_Int1(timeIdxID, min(PR.sourcePov.pItem.value.items.size()-1, timeIdx+1))
+        me int: minIdx <- max(0, PR.sourcePov.pItem.value.items.size()-1)
+        nextTimeEvent.setGUI_Store_Int1(timeIdxID, min(minIdx, timeIdx+1))
         proactiveGUI.presenter.registerEvent(nextTimeEvent)
 
         our POV: displayPov <- PR.sourcePov.pItem.value.items.at(timeIdx)
+        //print("\nTIME pov: "+displayPov.stringify())
         if(displayPov!=NULL){
             our ParamRec:: innerPR; innerPR.init(displayPov, PR.posX, PR.posY, width, height)
             if(proactiveGUI.presenter.itemIsThing(PR.sourcePov.pItem.value.listSpec)){innerPR.viewStyleTag <- "3DThing"}
@@ -95,7 +97,7 @@ struct StuffView: inherits=WindowControl{
         PR.posH <- height
         PR.title <- PR.sourcePov.pItem.type.asGiven
         drawHeader(dr, PR)
-
+        //print("\n____________________________\nSTUFF pov: "+PR.sourcePov.stringify()+"\n____________________________")
         proactiveGUI.presenter.draw_X_stack_XYwh(dr, PR)
     }
 }
@@ -162,6 +164,8 @@ struct Scene3D: inherits=ReactiveControl{
     our Thing3D: attempt3DDraw(our POV:stuffPov, our ParamRec: PR, our Window3D: win3D) <- {
         me string: objType <- stuffPov.pItem.getTypeStr()
         //if(!proactiveGUI.presenter.itemIsThing(stuffPov.pItem)){return(NULL)}
+        //print("\n\n3D objType: "+objType)
+        //print("\n\n3D pov: "+stuffPov.stringify())
         me int: height <- 200
         me int: width  <- 300
         win3D.setUpMatrixes(90.0, PR.posX, PR.posY, width, height)
@@ -206,9 +210,9 @@ struct Scene3D: inherits=ReactiveControl{
         thing.name <- objType // TODO: This could be a better name. It's for debugging.
         thing.setLocation(xLoc, yLoc, zLoc)
         thing.setScale(1.0, 1.0, 1.0)
-        thing.rotateX(xOri+0.9)
-        thing.rotateY(yOri+0.5)
-        thing.rotateZ(zOri+0.2)
+        thing.rotateX(xOri)
+        thing.rotateY(yOri)
+        thing.rotateZ(zOri)
         thing.calcThingMatx(mat4ID)
 
         switch(objType){
@@ -219,12 +223,12 @@ struct Scene3D: inherits=ReactiveControl{
             }
             case "colorcube":{
                 our POV: sides <- fetchListField(stuffPov, "side")
-                me cdColor: topColor    <- styler.Gray
-                me cdColor: bottomColor <- styler.Gray
-                me cdColor: leftColor   <- styler.Gray
-                me cdColor: rightColor  <- styler.Gray
-                me cdColor: frontColor  <- styler.Gray
-                me cdColor: backColor   <- styler.Gray
+                me cdColor: topColor    <- thing.color
+                me cdColor: bottomColor <- thing.color
+                me cdColor: leftColor   <- thing.color
+                me cdColor: rightColor  <- thing.color
+                me cdColor: frontColor  <- thing.color
+                me cdColor: backColor   <- thing.color
                 if(sides!=NULL){
                     our POV: side <- sides.pItem.value.items.head
                     me int: count <- 0

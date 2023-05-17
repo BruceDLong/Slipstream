@@ -62,7 +62,7 @@
     @diameter = reel
     @gauge = reel
     @orientation <en> = {xRot, yRot, zRot}
-    @location <en> = {xPos, yPos, zPos}
+    @location <en> = {xLoc, yLoc, zLoc}
     @thing <en> = {location, orientation}
     @tube <en> = {&thing, length, diameter, gauge, color}
     @cylinder <en> = {&thing, length, diameter, gauge, color}
