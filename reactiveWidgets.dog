@@ -120,6 +120,9 @@ struct KanbanView: inherits=WindowControl{
         proactiveGUI.presenter.registerEvent(addListEvent)
     }
 }
+struct GLOBAL{ // Temp code to do rotating cube
+    me int: frameNumber
+}
 struct Scene3D: inherits=ReactiveControl{
     void: tmp_colorCube(their Mesh: result, me float: arg, me cdColor: top, me cdColor: bottom, me cdColor: left, me cdColor: right, me  cdColor: front, me cdColor: back) <- {
         result.tris.clear()
@@ -207,6 +210,12 @@ struct Scene3D: inherits=ReactiveControl{
             if(zRot){zOri <- fetchDblFloatField(zRot)}
             //print("\nORIENT: x:", xOri," y:",yOri," z:",zOri,"\n")
         }
+if(objType=="rcxstate"){
+    xOri <+- frameNumber * 0.01
+    yOri <+- frameNumber * 0.02
+    zOri <+- frameNumber * 0.00
+    frameNumber <+- 1
+}
         thing.name <- objType // TODO: This could be a better name. It's for debugging.
         thing.setLocation(xLoc, yLoc, zLoc)
         thing.setScale(1.0, 1.0, 1.0)
