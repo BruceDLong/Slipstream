@@ -124,7 +124,7 @@ struct GLOBAL{ // Temp code to do rotating cube
     me int: frameNumber
 }
 struct Scene3D: inherits=ReactiveControl{
-    void: tmp_colorCube(their Mesh: result, me float: arg, me cdColor: top, me cdColor: bottom, me cdColor: left, me cdColor: right, me  cdColor: front, me cdColor: back) <- {
+    void: tmp_colorCube(their Mesh: result, me float: arg, me cdColor: top, me cdColor: front, me cdColor: right, me cdColor: bottom, me  cdColor: back, me cdColor: left) <- {
         result.tris.clear()
         me Triangle3D: t1;
         t1.setColor(front)
@@ -210,9 +210,11 @@ struct Scene3D: inherits=ReactiveControl{
             if(zRot){zOri <- fetchDblFloatField(zRot)}
             //print("\nORIENT: x:", xOri," y:",yOri," z:",zOri,"\n")
         }
-if(objType=="rcxstate"){
-    xOri <+- frameNumber * 0.01
-    yOri <+- frameNumber * 0.02
+our WordUse:: word
+word.asGiven <- "rcxstate"
+if(stuffPov.pItem.type.isCompatibleWith(word)){
+    xOri <+- frameNumber * 0.03
+    yOri <+- frameNumber * 0.06
     zOri <+- frameNumber * 0.00
     frameNumber <+- 1
 }
@@ -223,7 +225,8 @@ if(objType=="rcxstate"){
         thing.rotateY(yOri)
         thing.rotateZ(zOri)
         thing.calcThingMatx(mat4ID)
-
+//me int: strLen <- objType.size()
+//if(strLen>4){if(objType.subStr(strLen-4)=="cube"){objType<-"colorcube"}}
         switch(objType){
             case "rectangle":{}
             case "cube":{
@@ -250,11 +253,11 @@ if(objType=="rcxstate"){
                                 me cdColor: color <- getColorFromHue(huePov)
                                 switch(count){
                                     case 0: {topColor    <- color}
-                                    case 1: {bottomColor <- color}
-                                    case 2: {leftColor   <- color}
-                                    case 3: {rightColor  <- color}
-                                    case 4: {frontColor  <- color}
-                                    case 5: {backColor   <- color}
+                                    case 1: {frontColor  <- color}
+                                    case 2: {rightColor  <- color}
+                                    case 3: {bottomColor <- color}
+                                    case 4: {backColor   <- color}
+                                    case 5: {leftColor   <- color}
                                 }
                             }
                         }
@@ -262,7 +265,7 @@ if(objType=="rcxstate"){
                         side <- side.next
                     }
                 }
-                our Mesh:: cubeMesh; tmp_colorCube(cubeMesh, 1, topColor, bottomColor, leftColor, rightColor, frontColor, backColor)
+                our Mesh:: cubeMesh; tmp_colorCube(cubeMesh, 1, topColor, frontColor, rightColor, bottomColor, backColor, leftColor)
                 thing.meshes.append(cubeMesh)
             }
             case "pipe":{}
