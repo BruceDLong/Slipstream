@@ -4,176 +4,175 @@
 @edgeCube   = {{thing *6+{side| ... }}| ... }
 @cornerCube = {{thing *6+{side| ... }}| ... }
 @centerCube = {{colorCube}| ... }
-@rcxState   = {{*6+{centerCube| ... } *12+{edgeCube| ... } *8+{cornerCube| ... }}|
-    {
-        *6+{centerCube|
-            centerCube:{   // TOP   purple
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0, zRot:0} location:{xLoc:0, yLoc:-1.1, zLoc:0}}
-                    *6+{side|{color=pink}{color=pink}{color=pink}{color=purple}{color=pink}{color=pink}}
-                }
+@rubixState   = {{*6+{centerCube| ... } *12+{edgeCube| ... } *8+{cornerCube| ... }}}
+@solvedState =    rubixState:{
+    *6+{centerCube|
+        centerCube:{   // TOP   purple
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0, zRot:0} location:{xLoc:0, yLoc:-1.1, zLoc:0}}
+                *6+{side|{color=pink}{color=pink}{color=pink}{color=purple}{color=pink}{color=pink}}
             }
-            centerCube:{   // BOTTOM    yellow
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:1.1, zLoc:0}}
-                    *6+{side|{color=yellow}{color=pink}{color=pink}{color=pink}{color=pink}{color=pink}}
-                }
+        }
+        centerCube:{   // BOTTOM    yellow
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:1.1, zLoc:0}}
+                *6+{side|{color=yellow}{color=pink}{color=pink}{color=pink}{color=pink}{color=pink}}
             }
-            centerCube:{   // LEFT  green
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0, zRot:0} location:{xLoc:-1.1, yLoc:0, zLoc:0}}
-                    *6+{side|{color=pink}{color=pink}{color=pink}{color=pink}{color=pink}{color=green}}
-                }
+        }
+        centerCube:{   // LEFT  green
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0, zRot:0} location:{xLoc:-1.1, yLoc:0, zLoc:0}}
+                *6+{side|{color=pink}{color=pink}{color=pink}{color=pink}{color=pink}{color=green}}
             }
-            centerCube:{   //  RIGHT    blue
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0, zRot:0} location:{xLoc:1.1, yLoc:0, zLoc:0}}
-                    *6+{side|{color=pink}{color=pink}{color=blue}{color=pink}{color=pink}{color=pink}}
-                }
+        }
+        centerCube:{   //  RIGHT    blue
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0, zRot:0} location:{xLoc:1.1, yLoc:0, zLoc:0}}
+                *6+{side|{color=pink}{color=pink}{color=blue}{color=pink}{color=pink}{color=pink}}
             }
-            centerCube:{   // BACK  orange
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:1.1}}
+        }
+        centerCube:{   // BACK  orange
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:1.1}}
                     *6+{side|{color=pink}{color=pink}{color=pink}{color=pink}{color=orange}{color=pink}}
-                }
             }
-            centerCube:{   // FRONT   red
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:-1.1}}
-                    *6+{side|{color=pink}{color=red}{color=pink}{color=pink}{color=pink}{color=pink}}
-                }
-            }
-            ...
         }
-        *12+{edgeCube|
-            edgeCube:{   // BACK TOP orange purple
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0.0} location:{xLoc:0, yLoc:-1.1, zLoc:1.1}}
-                    *6+{side|{color=pink}{color=pink}{color=pink}{color=purple}{color=orange}{color=pink}}
-                }
+        centerCube:{   // FRONT   red
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:-1.1}}
+                *6+{side|{color=pink}{color=red}{color=pink}{color=pink}{color=pink}{color=pink}}
             }
-            edgeCube:{   // BACK BOTTOM orange yellow
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:1.1, zLoc:1.1}}
-                    *6+{side|{color=yellow}{color=pink}{color=pink}{color=pink}{color=orange}{color=pink}}
-                }
-            }
-            edgeCube:{   // BACK LEFT orange green
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:-1.1, yLoc:0, zLoc:1.1}}
-                    *6+{side|{color=pink}{color=pink}{color=pink}{color=pink}{color=orange}{color=green}}
-                }
-            }
-            edgeCube:{   // BACK RIGHT orange blue
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:1.1, yLoc:0, zLoc:1.1}}
-                    *6+{side|{color=pink}{color=pink}{color=blue}{color=pink}{color=orange}{color=pink}}
-                }
-            }
-            edgeCube:{   // TOP LEFT green purple
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:-1.1, yLoc:-1.1, zLoc:0}}
-                    *6+{side|{color=pink}{color=pink}{color=pink}{color=purple}{color=pink}{color=green}}
-                }
-            }
-            edgeCube:{   // TOP RIGHT purple blue
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:1.1, yLoc:-1.1, zLoc:0}}
-                    *6+{side|{color=yellow}{color=pink}{color=blue}{color=purple}{color=pink}{color=pink}}
-                }
-            }
-            edgeCube:{   // BOTTOM LEFT yellow green
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:-1.1, yLoc:1.1, zLoc:0}}
-                    *6+{side|{color=yellow}{color=pink}{color=pink}{color=pink}{color=pink}{color=green}}
-                }
-            }
-            edgeCube:{   // BOTTOM RIGHT yellow blue
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:1.1, yLoc:1.1, zLoc:0}}
-                    *6+{side|{color=yellow}{color=pink}{color=blue}{color=pink}{color=pink}{color=pink}}
-                }
-            }
-            edgeCube:{   // FRONT TOP red purple
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:-1.1, zLoc:-1.1}}
-                    *6+{side|{color=pink}{color=red}{color=pink}{color=purple}{color=pink}{color=pink}}
-                }
-            }
-            edgeCube:{   // FRONT LEFT red green
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:-1.1, yLoc:0, zLoc:-1.1}}
-                    *6+{side|{color=pink}{color=red}{color=pink}{color=pink}{color=pink}{color=green}}
-                }
-            }
-            edgeCube:{   // FRONT RIGHT red blue
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:1.1, yLoc:0, zLoc:-1.1}}
-                    *6+{side|{color=pink}{color=red}{color=blue}{color=pink}{color=pink}{color=pink}}
-                }
-            }
-            edgeCube:{   // FRONT BOTTOM red yellow
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:1.1, zLoc:-1.1}}
-                    *6+{side|{color=yellow}{color=red}{color=pink}{color=pink}{color=pink}{color=pink}}
-                }
-            }
-            ...
         }
-        *8+{cornerCube|
-            cornerCube:{   // BACK TOP LEFT orange purple green
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:-1.1, yLoc:-1.1, zLoc:1.1}}
-                    *6+{side|{color=pink}{color=pink}{color=pink}{color=purple}{color=orange}{color=green}}
-                }
+    }
+    *12+{edgeCube|
+        edgeCube:{   // BACK TOP orange purple
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0.0} location:{xLoc:0, yLoc:-1.1, zLoc:1.1}}
+                *6+{side|{color=pink}{color=pink}{color=pink}{color=purple}{color=orange}{color=pink}}
             }
-            cornerCube:{   // BACK TOP RIGHT orange purple blue
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:1.1, yLoc:-1.1, zLoc:1.1}}
-                    *6+{side|{color=pink}{color=pink}{color=blue}{color=purple}{color=orange}{color=pink}}
-                }
+        }
+        edgeCube:{   // BACK BOTTOM orange yellow
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:1.1, zLoc:1.1}}
+                *6+{side|{color=yellow}{color=pink}{color=pink}{color=pink}{color=orange}{color=pink}}
             }
-            cornerCube:{   // BACK BOTTOM LEFT orange yellow green
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:-1.1, yLoc:1.1, zLoc:1.1}}
-                    *6+{side|{color=yellow}{color=pink}{color=pink}{color=pink}{color=orange}{color=green}}
-                }
+        }
+        edgeCube:{   // BACK LEFT orange green
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:-1.1, yLoc:0, zLoc:1.1}}
+                *6+{side|{color=pink}{color=pink}{color=pink}{color=pink}{color=orange}{color=green}}
             }
-            cornerCube:{   // BACK BOTTOM RIGHT orange yellow blue
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:1.1, yLoc:1.1, zLoc:1.1}}
-                    *6+{side|{color=yellow}{color=pink}{color=blue}{color=pink}{color=orange}{color=pink}}
-                }
+        }
+        edgeCube:{   // BACK RIGHT orange blue
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:1.1, yLoc:0, zLoc:1.1}}
+                *6+{side|{color=pink}{color=pink}{color=blue}{color=pink}{color=orange}{color=pink}}
             }
-            cornerCube:{   // FRONT TOP LEFT red purple green
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:-1.1, yLoc:-1.1, zLoc:-1.1}}
-                    *6+{side|{color=pink}{color=red}{color=pink}{color=purple}{color=pink}{color=green}}
-                }
+        }
+        edgeCube:{   // TOP LEFT green purple
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:-1.1, yLoc:-1.1, zLoc:0}}
+                *6+{side|{color=pink}{color=pink}{color=pink}{color=purple}{color=pink}{color=green}}
             }
-            cornerCube:{   // FRONT TOP RIGHT red purple blue
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:1.1, yLoc:-1.1, zLoc:-1.1}}
-                    *6+{side|{color=pink}{color=red}{color=blue}{color=purple}{color=pink}{color=pink}}
-                }
+        }
+        edgeCube:{   // TOP RIGHT purple blue
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:1.1, yLoc:-1.1, zLoc:0}}
+                *6+{side|{color=yellow}{color=pink}{color=blue}{color=purple}{color=pink}{color=pink}}
             }
-            cornerCube:{   // FRONT BOTTOM LEFT red yellow green
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:-1.1, yLoc:1.1, zLoc:-1.1}}
-                    *6+{side|{color=yellow}{color=red}{color=pink}{color=pink}{color=pink}{color=green}}
-                }
+        }
+        edgeCube:{   // BOTTOM LEFT yellow green
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:-1.1, yLoc:1.1, zLoc:0}}
+                *6+{side|{color=yellow}{color=pink}{color=pink}{color=pink}{color=pink}{color=green}}
             }
-            cornerCube:{   // FRONT BOTTOM RIGHT red yellow blue
-                colorCube:{
-                    thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:1.1, yLoc:1.1, zLoc:-1.1}}
-                    *6+{side|{color=yellow}{color=red}{color=blue}{color=pink}{color=pink}{color=pink}}
-                }
+        }
+        edgeCube:{   // BOTTOM RIGHT yellow blue
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:1.1, yLoc:1.1, zLoc:0}}
+                *6+{side|{color=yellow}{color=pink}{color=blue}{color=pink}{color=pink}{color=pink}}
             }
-            ...
+        }
+        edgeCube:{   // FRONT TOP red purple
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:-1.1, zLoc:-1.1}}
+                *6+{side|{color=pink}{color=red}{color=pink}{color=purple}{color=pink}{color=pink}}
+            }
+        }
+        edgeCube:{   // FRONT LEFT red green
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:-1.1, yLoc:0, zLoc:-1.1}}
+                *6+{side|{color=pink}{color=red}{color=pink}{color=pink}{color=pink}{color=green}}
+            }
+        }
+        edgeCube:{   // FRONT RIGHT red blue
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:1.1, yLoc:0, zLoc:-1.1}}
+                *6+{side|{color=pink}{color=red}{color=blue}{color=pink}{color=pink}{color=pink}}
+            }
+        }
+        edgeCube:{   // FRONT BOTTOM red yellow
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:0, yLoc:1.1, zLoc:-1.1}}
+                *6+{side|{color=yellow}{color=red}{color=pink}{color=pink}{color=pink}{color=pink}}
+            }
+        }
+    }
+    *8+{cornerCube|
+        cornerCube:{   // BACK TOP LEFT orange purple green
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:-1.1, yLoc:-1.1, zLoc:1.1}}
+                *6+{side|{color=pink}{color=pink}{color=pink}{color=purple}{color=orange}{color=green}}
+            }
+        }
+        cornerCube:{   // BACK TOP RIGHT orange purple blue
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:1.1, yLoc:-1.1, zLoc:1.1}}
+                *6+{side|{color=pink}{color=pink}{color=blue}{color=purple}{color=orange}{color=pink}}
+            }
+        }
+        cornerCube:{   // BACK BOTTOM LEFT orange yellow green
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:-1.1, yLoc:1.1, zLoc:1.1}}
+                *6+{side|{color=yellow}{color=pink}{color=pink}{color=pink}{color=orange}{color=green}}
+            }
+        }
+        cornerCube:{   // BACK BOTTOM RIGHT orange yellow blue
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:1.1, yLoc:1.1, zLoc:1.1}}
+                *6+{side|{color=yellow}{color=pink}{color=blue}{color=pink}{color=orange}{color=pink}}
+            }
+        }
+        cornerCube:{   // FRONT TOP LEFT red purple green
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:-1.1, yLoc:-1.1, zLoc:-1.1}}
+                *6+{side|{color=pink}{color=red}{color=pink}{color=purple}{color=pink}{color=green}}
+            }
+        }
+        cornerCube:{   // FRONT TOP RIGHT red purple blue
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:1.1, yLoc:-1.1, zLoc:-1.1}}
+                *6+{side|{color=pink}{color=red}{color=blue}{color=purple}{color=pink}{color=pink}}
+            }
+        }
+        cornerCube:{   // FRONT BOTTOM LEFT red yellow green
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:-1.1, yLoc:1.1, zLoc:-1.1}}
+                *6+{side|{color=yellow}{color=red}{color=pink}{color=pink}{color=pink}{color=green}}
+            }
+        }
+        cornerCube:{   // FRONT BOTTOM RIGHT red yellow blue
+            colorCube:{
+                thing:{orientation:{xRot:0, yRot:0.0, zRot:0} location:{xLoc:1.1, yLoc:1.1, zLoc:-1.1}}
+                *6+{side|{color=yellow}{color=red}{color=blue}{color=pink}{color=pink}{color=pink}}
+            }
         }
     }
 }
-@rcx = {T {thing rcxState}| ... }
+
+
+
+@rubix = {T {thing, rubixState}| ... }
 
 
 bruceLong:{
@@ -309,12 +308,12 @@ bruceLong:{
 }
 
 myStuff:{
-    rcx:{T {thing rcxState}|
-        {
-            thing:{orientation:{xRot:3, yRot:3, zRot:0} location:{xLoc:0, yLoc:0, zLoc:3.5}}
-            rcxState
-
+    rubix:{T {thing, rubixState}|
+        rubixState:{
+            thing:{orientation:{xRot:0, yRot:0, zRot:0} location:{xLoc:0, yLoc:0, zLoc:3.5}},
+            solvedState
         }
+
     }
 }  // End myStuff
 

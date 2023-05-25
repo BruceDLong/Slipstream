@@ -211,7 +211,7 @@ struct Scene3D: inherits=ReactiveControl{
             //print("\nORIENT: x:", xOri," y:",yOri," z:",zOri,"\n")
         }
 our WordUse:: word
-word.asGiven <- "rcxstate"
+word.asGiven <- "rubixstate"
 if(stuffPov.pItem.type.isCompatibleWith(word)){
     xOri <+- frameNumber * 0.03
     yOri <+- frameNumber * 0.06
