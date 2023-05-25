@@ -58,7 +58,7 @@ struct GLOBAL{
     me cdColor: surfaceBkgnd <- cdColor(20,20,20,200)
     me cdColor: popupBkgnd   <- cdColor(20,20,20,250)
     me cdColor: titleTextColr<- cdColor(200,200,200,225)
-    me cdColor: topTextColr  <- cdColor(0,200,200,225)
+    me cdColor: topTextColr  <- cdColor(10,10,10,225)
     me cdColor: taskCardColor<- cdColor(240,245,240,245)
     me cdColor: cardTextColr <- cdColor(20,30,20,200)
     me cdColor: footerBoxColr<- cdColor(80,80,80,200)
