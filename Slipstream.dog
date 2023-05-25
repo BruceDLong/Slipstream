@@ -622,9 +622,13 @@ struct SlipView: inherits=ProactiveGUIWidget{
 
 // load myStuff
 myStuff <- theInfon.fetchField("mystuff")
-callPeriodically(slipView, requestRedraw, 100)
+callPeriodically(SlipView, slipView, 100)
         return(false) // No errors
     }
+void: run() <-{
+    requestRedraw()
+}
+
 }
 
 struct GLOBAL{
