@@ -210,9 +210,12 @@ struct Scene3D: inherits=ReactiveControl{
             if(zRot){zOri <- fetchDblFloatField(zRot)}
             //print("\nORIENT: x:", xOri," y:",yOri," z:",zOri,"\n")
         }
+
+our infon:: item
 our WordUse:: word
+item.type    <- word
 word.asGiven <- "rubixstate"
-if(stuffPov.pItem.type.isCompatibleWith(word)){
+if(stuffPov.pItem.isCompatibleWith(item, false)){
     xOri <+- frameNumber * 0.03
     yOri <+- frameNumber * 0.06
     zOri <+- frameNumber * 0.00
@@ -741,7 +744,7 @@ struct TerminalApp: inherits=WindowControl{
         while(prevPov!=NULL and prevPov.pItem.infCharPos > charPos){
             prevPov <- prevPov.prev
         }
-        our POV: newPov <- thisPR.dataPov.pItem.value.items.insertAfter(prevPov, newInfon)
+        our POV: newPov <- thisPR.dataPov.pItem.value.items.insertAfter(prevPov, newInfon, 2000)
         if(newPov!=NULL){
             our POV: newProps <- fetchField(newPov, "properties")
             our POV: dataInf  <- fetchField(newPov, "data")
