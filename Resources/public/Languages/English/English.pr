@@ -62,8 +62,8 @@
 */
 
 %INSERT /EnglishWords.pr
-%INSERT /EnglishFirstNames.pr
-%INSERT /EnglishLastNames.pr
+//%INSERT /EnglishFirstNames.pr
+//%INSERT /EnglishLastNames.pr
 
 // TODO: History and Etymology
 
