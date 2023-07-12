@@ -73,7 +73,7 @@ struct GLOBAL{
         if(info==NULL){return(NULL)}
         our POV: itm <- info.pItem.value.items.head
         while(itm != NULL){
-            if(itm.pItem.value.fType==LST and itm.pItem.value.listSpec!=NULL and itm.pItem.value.listSpec.type!=NULL and itm.pItem.value.listSpec.type.asGiven==fieldname){
+            if(itm.pItem.value.fType==LST and itm.pItem.value.listSpec!=NULL and itm.pItem.value.listSpec.type!=NULL and itm.pItem.value.listSpec.type.normalType()==fieldname){
                 return(itm)
             }
             itm <- itm.next
@@ -600,7 +600,7 @@ struct SlipView: inherits=ProactiveGUIWidget{
         our POV: pov <- dataInf.pItem.value.items.front()
         while(pov){
             our infon: infn <- pov.pItem
-            if(infn.type!=NULL and unicodeMgr.normalizeStr(infn.type.asGiven)=="boardelement"){
+            if(infn.type!=NULL and infn.type.normalType()=="boardelement"){
                 boardInfons.append(pov)
             }
             pov <- pov.next
