@@ -136,8 +136,8 @@ struct ParamRec{
         yPov          <- NULL
         screenPos <- fetchField(propertiesPov, "screenpos")
         if(screenPos!=NULL){
-            xPov <- fetchField(screenPos, "xpos")
-            yPov <- fetchField(screenPos, "ypos")
+            xPov <- fetchField(screenPos, "xloc")
+            yPov <- fetchField(screenPos, "yloc")
             posX<-xPov.pItem.fetchDouble()
             posY<-yPov.pItem.fetchDouble()
         }

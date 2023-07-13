@@ -55,9 +55,9 @@
     @xRot = reel
     @yRot = reel
     @zRot = reel
-    @xPos = reel
-    @yPos = reel
-    @zPos = reel
+    @xLoc = reel
+    @yLoc = reel
+    @zLoc = reel
     @length = reel
     @diameter = reel
     @gauge = reel

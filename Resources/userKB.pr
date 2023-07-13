@@ -88,9 +88,9 @@ bruceLong:{
                 title:"Awesome World",
                 backgroundPic:"Lake-Summer-Mountain.png"
             }
-            data:{tasklist:{properties:{title:$ screenPos:{xPos:_ yPos:_}} data:{task:{properties:{title:$ member:$} data:{_}}| ...} ...}|
+            data:{tasklist:{properties:{title:$ screenPos:{xLoc:_ yLoc:_}} data:{task:{properties:{title:$ member:$} data:{_}}| ...} ...}|
                 TaskList:{
-                    properties:{title:"CodeDog" screenPos:{xPos:20 yPos:100}}
+                    properties:{title:"CodeDog" screenPos:{xLoc:20 yLoc:100}}
                     data:{
                         task:{properties:{title:"comment System" member:"Bruce"} data:{1}}
                         task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{2}}
@@ -99,13 +99,13 @@ bruceLong:{
                 }
 
                 TaskList:{
-                    properties:{title:"Proteus" screenPos:{xPos:350 yPos:80}}
+                    properties:{title:"Proteus" screenPos:{xLoc:350 yLoc:80}}
                     data:{task:{properties:{title:"comment System" member:"Bruce"} data:{4}}
                     }
                 }
 
                 TaskList:{
-                    properties:{title:"Slipstream App" screenPos:{xPos:350 yPos:400}}
+                    properties:{title:"Slipstream App" screenPos:{xLoc:350 yLoc:400}}
                     data:{
                         task:{properties:{title:"comment System" member:"Bruce"} data:{5}}
                         task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{6}}
@@ -114,7 +114,7 @@ bruceLong:{
                 }
 
                 TaskList:{
-                    properties:{title:"Aetria" screenPos:{xPos:650 yPos:80}}
+                    properties:{title:"Aetria" screenPos:{xLoc:650 yLoc:80}}
                     data:{
                         task:{properties:{title:"Add location and scale to meshes" member:"Bruce"} data:{8}}
                         task:{properties:{title:"CodeDog.swift.Lib.dog" member:"Tiffany"} data:{9}}
@@ -132,11 +132,11 @@ bruceLong:{
                 title:"Slipstream Projects",
                 backgroundPic:"HD-Peaceful-Background.png"
             }
-            data:{{properties:{title:$ screenPos:{xPos:_ yPos:_}} data:{...}}|
+            data:{{properties:{title:$ screenPos:{xLoc:_ yLoc:_}} data:{...}}|
                 kanban:{
                     properties:{
                         title:"Phase 1 Kanban"
-                        screenPos:{xPos:50 yPos:100}
+                        screenPos:{xLoc:50 yLoc:100}
                     }
                     data:{ tasklist:{properties:{title:$} data:{task:{properties:{title:$ member:$} data:{}}|  task:{properties:{title:$ member:$} data:{}}...}}|
                         TaskList:{
@@ -189,14 +189,14 @@ bruceLong:{
                 }
 
                 terminal: {
-                    properties:{title:"Term1" screenPos:{xPos:40 yPos:90}}
+                    properties:{title:"Term1" screenPos:{xLoc:40 yLoc:90}}
                     data:{term-entry:{properties:{sourceID:$ width:_} data:{...}}|
                     ...
                     }
                 }
 
                 myStuff: {
-                    properties:{title:"Bruce's Stuff" screenPos:{xPos:80 yPos:400}}
+                    properties:{title:"Bruce's Stuff" screenPos:{xLoc:80 yLoc:400}}
                     data:{object|
                     ...
                     }
