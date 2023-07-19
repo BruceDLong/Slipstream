@@ -63,12 +63,6 @@ struct GLOBAL{
     me cdColor: cardTextColr <- cdColor(20,30,20,200)
     me cdColor: footerBoxColr<- cdColor(80,80,80,200)
 
-
-    our POV: fetchField(our POV: info, me string: fieldname) <- {
-        if(info==NULL){return(NULL)}
-        our POV: retVal <- info.pItem.fetchField(fieldname)
-        return(retVal)
-    }
     our POV: fetchListField(our POV: info, me string: fieldname) <- {
         if(info==NULL){return(NULL)}
         our POV: itm <- info.pItem.value.items.head
@@ -79,12 +73,6 @@ struct GLOBAL{
             itm <- itm.next
         }
         return(NULL)
-    }
-    me string: fetchStringField(our POV: info) <- {
-        if(info==NULL){return("")}
-        me string: retVal <- info.pItem.fetchString()
-        if(info.pItem.value.format==fUnknown){retVal <- ""}
-        return(retVal)
     }
 
     me int: fetchIntField(our POV: info) <- {
@@ -115,7 +103,7 @@ struct GLOBAL{
 struct GuiModelManager{
 
     void: moveInfItemToEndToList(our POV: povToMove) <- { // Bring a window to the top of the screen Z-stack
-        our POV: dataInf       <- fetchField(slipView.boardInfons[slipView.crntBoardIdx], "data")
+        our POV: dataInf       <- safeFetchField(slipView.boardInfons[slipView.crntBoardIdx], "data")
         their PovList: povList <- dataInf.pItem.value.items
         if(povToMove===povList.tail){return()}
         me int: oldSize <- povList.size()
@@ -193,9 +181,9 @@ struct InfonicStructView: inherits=ReactiveControl{
 struct InfonicWidgetView: inherits=ReactiveControl{
     void: drawFromID(me string: guiItemID) <- {
         our GuiDataRec: GDR <- proactiveGUI.presenter.modelMgr.fetchGuiData(guiItemID)
-        our POV: propertiesInf <- fetchField(GDR.pov, "properties")
-        our POV: titleInf      <- fetchField(propertiesInf, "title")
-        our POV: dataInf       <- fetchField(GDR.pov, "data")
+        our POV: propertiesInf <- safeFetchField(GDR.pov, "properties")
+        our POV: titleInf      <- safeFetchField(propertiesInf, "title")
+        our POV: dataInf       <- safeFetchField(GDR.pov, "data")
         me GUI_Scalar: popupHeight <- 400
         me GUI_Scalar: popupWidth  <- 400
         me GUI_Scalar: border <- 8
@@ -418,8 +406,8 @@ struct Presenter{
         me int: count <- 0
         our POV: pov <- listInfon.pItem.value.listSpec.value.items.front()
         while(pov){
-            our POV: propertiesInf <- fetchField(pov, "properties")
-            our POV: titleInf      <- fetchField(propertiesInf, "title")
+            our POV: propertiesInf <- safeFetchField(pov, "properties")
+            our POV: titleInf      <- safeFetchField(propertiesInf, "title")
             me string: title       <- fetchStringField(titleInf)
 
             me GuiCoords: ItmRA{posX, yCur, width, itemHeight}
@@ -449,8 +437,8 @@ struct Presenter{
         me int: xCur <- RA.X+10
         me int: count <- 0
         withEach board in slipView.boardInfons{
-            our POV: propertiesInf <- fetchField(board, "properties")
-            our POV: titleInf      <- fetchField(propertiesInf, "title")
+            our POV: propertiesInf <- safeFetchField(board, "properties")
+            our POV: titleInf      <- safeFetchField(propertiesInf, "title")
             me string: title       <- fetchStringField(titleInf)
 
             me GuiCoords: ItmRA{posX, yCur, width, boardItemHeight}
@@ -483,10 +471,10 @@ struct Presenter{
 
     void: drawDashboard(our dashDrawing: dr, our POV: board, me GUI_Scalar:posX, me GUI_Scalar:posY, me GUI_Scalar: width, me GUI_Scalar:height) <- {
         me string: itemID      <- board.mySymbol()
-        our POV: propertiesInf <- fetchField(board, "properties")
-        our POV: titleInf      <- fetchField(propertiesInf, "title")
-        our POV: backgroundInf <- fetchField(propertiesInf, "backgroundpic")
-        our POV: dataInf       <- fetchField(board, "data")
+        our POV: propertiesInf <- safeFetchField(board, "properties")
+        our POV: titleInf      <- safeFetchField(propertiesInf, "title")
+        our POV: backgroundInf <- safeFetchField(propertiesInf, "backgroundpic")
+        our POV: dataInf       <- safeFetchField(board, "data")
         me string: title       <- fetchStringField(titleInf)
         me string: background  <- fetchStringField(backgroundInf)
         me string: modalPopupID<- itemID+"/modalPoped"
@@ -609,11 +597,11 @@ struct SlipView: inherits=ProactiveGUIWidget{
     bool: loadData(our infon: theInfon) <- {
         myInfon <- theInfon
         userInfon     <- theInfon.fetchField("brucelong");             if(userInfon==NULL){log("extract userInfon = NULL"); return(true)}
-        projectsInf   <- fetchField(userInfon, "projects")
-        propertiesInf <- fetchField(projectsInf, "properties")
-        titleInf      <- fetchField(propertiesInf, "title")
-            title      <- fetchStringField(titleInf)
-        dataInf       <- fetchField(projectsInf, "data")
+        projectsInf   <- safeFetchField(userInfon, "projects")
+        propertiesInf <- safeFetchField(projectsInf, "properties")
+        titleInf      <- safeFetchField(propertiesInf, "title")
+        title         <- fetchStringField(titleInf)
+        dataInf       <- safeFetchField(projectsInf, "data")
 
         scanBoards()
         if(boardInfons.size()==0){logFatalError("No boards are loaded")}

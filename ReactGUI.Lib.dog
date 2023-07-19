@@ -8,6 +8,25 @@ struct GLOBAL{
         me GUI_Scalar: deltaY <- abs(y2-y1)
         return(sqrt(deltaX*deltaX + deltaY*deltaY))
     }
+    me string: fetchStringField(our POV: info) <- {
+        if(info==NULL){return("")}
+        me string: retVal <- info.pItem.fetchString()
+        if(info.pItem.value.format==fUnknown){retVal <- ""}
+        return(retVal)
+    }
+    our POV: fetchField(our POV: info, me string: paramName) <- {
+        if(info==NULL){return(NULL)}
+        our POV: retVal <- info.pItem.fetchField(paramName)
+        return(retVal)
+    }
+    our POV: safeFetchField(our POV: source, me string: paramName) <- {
+        our POV: retPov <- fetchField(source, paramName)
+        if(retPov==NULL){
+            print("\n\nERROR: Parameter "+paramName+" was not found. Exiting.\n")
+            logFatalError("Parameter "+paramName+" was not found.")
+        }
+        return(retPov)
+    }
 }
 
 struct EventTrigger:inherits=<mode[tPrimaryClick, tSecondaryClick, tPrimaryUp, tPrimaryDn, tSecondaryUp, tSecondaryDn,
@@ -126,18 +145,18 @@ struct ParamRec{
     void: init(our POV: source, me GUI_Scalar: X, me GUI_Scalar: Y, me GUI_Scalar: W, me GUI_Scalar: H) <- {
         sourcePov     <- source
         posX<-X; posY<-Y; posW<-W; posH<-H;
-        propertiesPov <- fetchField(source, "properties")
-        titlePov      <- fetchField(propertiesPov, "title")
+        propertiesPov <- safeFetchField(source, "properties")
+        titlePov      <- safeFetchField(propertiesPov, "title")
         title         <- fetchStringField(titlePov)
-        dataPov       <- fetchField(source, "data")
+        dataPov       <- safeFetchField(source, "data")
     // FIX!!    if(dataPov==NULL){print("\nWARNING:dataPov NULL in ParamRec.init.\n")}
         screenPos     <- NULL
         xPov          <- NULL
         yPov          <- NULL
         screenPos <- fetchField(propertiesPov, "screenpos")
         if(screenPos!=NULL){
-            xPov <- fetchField(screenPos, "xloc")
-            yPov <- fetchField(screenPos, "yloc")
+            xPov <- safeFetchField(screenPos, "xloc")
+            yPov <- safeFetchField(screenPos, "yloc")
             posX<-xPov.pItem.fetchDouble()
             posY<-yPov.pItem.fetchDouble()
         }

@@ -673,7 +673,7 @@ struct TerminalApp: inherits=WindowControl{
         }
         our POV: pov <- dataItems.back()
         while(pov){
-            our POV: dataInf          <- fetchField(pov, "data")
+            our POV: dataInf          <- safeFetchField(pov, "data")
             me string: entryText      <- fetchStringField(dataInf)
             me GUI_Scalar: textHeight <- WrappedTextHeight(PR.posW-10,shortedStr(entryText,295), styler.smallFont)
             heightACC   <+- textHeight
@@ -686,10 +686,10 @@ struct TerminalApp: inherits=WindowControl{
         me int: yCur <- PR.posY+headerHeight
         me int: crntLineNum <- 0
         while(pov!=NULL and pov!==dataItems.back()){
-            our POV: propertiesInf <- fetchField(pov, "properties")
-            our POV: dataInf       <- fetchField(pov, "data")
-            me string: sourceID   <- fetchStringField(fetchField(propertiesInf, "sourceid"))
-            me int64: entryWidth  <- fetchIntField(fetchField(propertiesInf, "width"))
+            our POV: propertiesInf <- safeFetchField(pov, "properties")
+            our POV: dataInf       <- safeFetchField(pov, "data")
+            me string: sourceID   <- fetchStringField(safeFetchField(propertiesInf, "sourceid"))
+            me int64: entryWidth  <- fetchIntField(safeFetchField(propertiesInf, "width"))
             me int64: numLines    <- entryWidth/editWidth+1
             me string: entryText  <- fetchStringField(dataInf)
             if(sourceID=="agent:RESULT"){dr.addC(cmdSetColor, styler.Yellow)}
@@ -746,9 +746,9 @@ struct TerminalApp: inherits=WindowControl{
         }
         our POV: newPov <- thisPR.dataPov.pItem.value.items.insertAfter(prevPov, newInfon, 2000)
         if(newPov!=NULL){
-            our POV: newProps <- fetchField(newPov, "properties")
-            our POV: dataInf  <- fetchField(newPov, "data")
-            our POV: newSrcID <- fetchField(newProps, "sourceid")
+            our POV: newProps <- safeFetchField(newPov, "properties")
+            our POV: dataInf  <- safeFetchField(newPov, "data")
+            our POV: newSrcID <- safeFetchField(newProps, "sourceid")
             dataInf.pItem.value.format  <- fLiteral
             dataInf.pItem.value.str     <- buffer
             newSrcID.pItem.value.format <- fLiteral
@@ -764,7 +764,7 @@ struct TerminalApp: inherits=WindowControl{
         our POV: newPov <- thisPR.dataPov.tryAddingTentativeChild()
         if(newPov!=NULL){
             newPov.pItem.infCharPos <- iStream.source.inputBuf.crntStreamSize
-            our POV: newProps <- fetchField(newPov, "properties")
+            our POV: newProps <- safeFetchField(newPov, "properties")
             our POV: newSrcID <- fetchField(newProps, "sourceid")
             if(newSrcID==NULL){} //DO_NOW: MAKE AND PLACE SourceID
             newSrcID.pItem.value.format <- fLiteral
