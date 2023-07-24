@@ -30,3 +30,15 @@
 *.exe
 *.out
 *.app
+
+# Proteus stuff:
+ErrFile.dog
+WorldManager.dog
+LinuxBuild/
+LinuxTestBuild/
+
+libraryLogs/
+
+JavaTestBuild/
+
+*.orig

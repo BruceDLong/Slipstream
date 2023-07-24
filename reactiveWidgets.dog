@@ -214,8 +214,8 @@ struct Scene3D: inherits=ReactiveControl{
 our infon:: item
 our WordUse:: word
 item.type    <- word
-word.asGiven <- "rubixstate"
-if(stuffPov.pItem.isCompatibleWith(item, false)){
+word.setAsGiven("rubixstate")
+if(stuffPov.pItem.type!=NULL and stuffPov.pItem.isCompatibleWith(item, false)){
     xOri <+- frameNumber * 0.03
     yOri <+- frameNumber * 0.06
     zOri <+- frameNumber * 0.00
@@ -228,8 +228,8 @@ if(stuffPov.pItem.isCompatibleWith(item, false)){
         thing.rotateY(yOri)
         thing.rotateZ(zOri)
         thing.calcThingMatx(mat4ID)
-//me int: strLen <- objType.size()
-//if(strLen>4){if(objType.subStr(strLen-4)=="cube"){objType<-"colorcube"}}
+me int: strLen <- objType.size()
+if(strLen>4){if(objType.subStr(strLen-4)=="cube"){objType<-"colorcube"}}
         switch(objType){
             case "rectangle":{}
             case "cube":{

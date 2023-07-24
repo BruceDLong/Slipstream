@@ -19,11 +19,11 @@
         edgeCube:{thing, *6+{side|{color=pink}{color=pink}{color=pink}{color=pink}{color=orange}{color=green}}}
         edgeCube:{thing, *6+{side|{color=pink}{color=pink}{color=blue}{color=pink}{color=orange}{color=pink}}}
         edgeCube:{thing, *6+{side|{color=pink}{color=pink}{color=pink}{color=purple}{color=pink}{color=green}}}
-        edgeCube:{thing, *6+{side|{color=yellow}{color=pink}{color=blue}{color=purple}{color=pink}{color=pink}}}
+        edgeCube:{thing, *6+{side|{color=pink}{color=pink}{color=blue}{color=purple}{color=pink}{color=pink}}}
         edgeCube:{thing, *6+{side|{color=yellow}{color=pink}{color=pink}{color=pink}{color=pink}{color=green}}}
         edgeCube:{thing, *6+{side|{color=yellow}{color=pink}{color=blue}{color=pink}{color=pink}{color=pink}}}
         edgeCube:{thing, *6+{side|{color=pink}{color=red}{color=pink}{color=purple}{color=pink}{color=pink}}}
-        edgeCube:{thing, *6+{side|{color=pink}{color=red}{color=blue}{color=pink}{color=pink}{color=pink}}}
+        edgeCube:{thing, *6+{side|{color=pink}{color=red}{color=pink}{color=pink}{color=pink}{color=green}}}
         edgeCube:{thing, *6+{side|{color=pink}{color=red}{color=blue}{color=pink}{color=pink}{color=pink}}}
         edgeCube:{thing, *6+{side|{color=yellow}{color=red}{color=pink}{color=pink}{color=pink}{color=pink}}}
     }
