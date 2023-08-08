@@ -6,46 +6,46 @@
 @centerCube = centerCube:{thing, *6+{side| ... }}
 @rubixState  = {
     *6+{centerCube|
-        centerCube:{thing, *6+{side|{color=pink}{color=pink}{color=pink}{color=purple}{color=pink}{color=pink}}}
-        centerCube:{thing, *6+{side|{color=yellow}{color=pink}{color=pink}{color=pink}{color=pink}{color=pink}}}
-        centerCube:{thing, *6+{side|{color=pink}{color=pink}{color=pink}{color=pink}{color=pink}{color=green}}}
-        centerCube:{thing, *6+{side|{color=pink}{color=pink}{color=blue}{color=pink}{color=pink}{color=pink}}}
-        centerCube:{thing, *6+{side|{color=pink}{color=pink}{color=pink}{color=pink}{color=orange}{color=pink}}}
-        centerCube:{thing, *6+{side|{color=pink}{color=red}{color=pink}{color=pink}{color=pink}{color=pink}}}
+        centerCube:{thing, *6+{side|{pink}{pink}{pink}{purple}{pink}{pink}}}
+        centerCube:{thing, *6+{side|{yellow}{pink}{pink}{pink}{pink}{pink}}}
+        centerCube:{thing, *6+{side|{pink}{pink}{pink}{pink}{pink}{green}}}
+        centerCube:{thing, *6+{side|{pink}{pink}{blue}{pink}{pink}{pink}}}
+        centerCube:{thing, *6+{side|{pink}{pink}{pink}{pink}{orange}{pink}}}
+        centerCube:{thing, *6+{side|{pink}{red}{pink}{pink}{pink}{pink}}}
     }
     *12+{edgeCube|
-        edgeCube:{thing, *6+{side|{color=pink}{color=pink}{color=pink}{color=purple}{color=orange}{color=pink}}}
-        edgeCube:{thing, *6+{side|{color=yellow}{color=pink}{color=pink}{color=pink}{color=orange}{color=pink}}}
-        edgeCube:{thing, *6+{side|{color=pink}{color=pink}{color=pink}{color=pink}{color=orange}{color=green}}}
-        edgeCube:{thing, *6+{side|{color=pink}{color=pink}{color=blue}{color=pink}{color=orange}{color=pink}}}
-        edgeCube:{thing, *6+{side|{color=pink}{color=pink}{color=pink}{color=purple}{color=pink}{color=green}}}
-        edgeCube:{thing, *6+{side|{color=pink}{color=pink}{color=blue}{color=purple}{color=pink}{color=pink}}}
-        edgeCube:{thing, *6+{side|{color=yellow}{color=pink}{color=pink}{color=pink}{color=pink}{color=green}}}
-        edgeCube:{thing, *6+{side|{color=yellow}{color=pink}{color=blue}{color=pink}{color=pink}{color=pink}}}
-        edgeCube:{thing, *6+{side|{color=pink}{color=red}{color=pink}{color=purple}{color=pink}{color=pink}}}
-        edgeCube:{thing, *6+{side|{color=pink}{color=red}{color=pink}{color=pink}{color=pink}{color=green}}}
-        edgeCube:{thing, *6+{side|{color=pink}{color=red}{color=blue}{color=pink}{color=pink}{color=pink}}}
-        edgeCube:{thing, *6+{side|{color=yellow}{color=red}{color=pink}{color=pink}{color=pink}{color=pink}}}
+        edgeCube:{thing, *6+{side|{pink}{pink}{pink}{purple}{orange}{pink}}}
+        edgeCube:{thing, *6+{side|{yellow}{pink}{pink}{pink}{orange}{pink}}}
+        edgeCube:{thing, *6+{side|{pink}{pink}{pink}{pink}{orange}{green}}}
+        edgeCube:{thing, *6+{side|{pink}{pink}{blue}{pink}{orange}{pink}}}
+        edgeCube:{thing, *6+{side|{pink}{pink}{pink}{purple}{pink}{green}}}
+        edgeCube:{thing, *6+{side|{pink}{pink}{blue}{purple}{pink}{pink}}}
+        edgeCube:{thing, *6+{side|{yellow}{pink}{pink}{pink}{pink}{green}}}
+        edgeCube:{thing, *6+{side|{yellow}{pink}{blue}{pink}{pink}{pink}}}
+        edgeCube:{thing, *6+{side|{pink}{red}{pink}{purple}{pink}{pink}}}
+        edgeCube:{thing, *6+{side|{pink}{red}{pink}{pink}{pink}{green}}}
+        edgeCube:{thing, *6+{side|{pink}{red}{blue}{pink}{pink}{pink}}}
+        edgeCube:{thing, *6+{side|{yellow}{red}{pink}{pink}{pink}{pink}}}
     }
     *8+{cornerCube|
-        cornerCube:{thing, *6+{side|{color=pink}{color=pink}{color=pink}{color=purple}{color=orange}{color=green}}}
-        cornerCube:{thing, *6+{side|{color=pink}{color=pink}{color=blue}{color=purple}{color=orange}{color=pink}}}
-        cornerCube:{thing, *6+{side|{color=yellow}{color=pink}{color=pink}{color=pink}{color=orange}{color=green}}}
-        cornerCube:{thing, *6+{side|{color=yellow}{color=pink}{color=blue}{color=pink}{color=orange}{color=pink}}}
-        cornerCube:{thing, *6+{side|{color=pink}{color=red}{color=pink}{color=purple}{color=pink}{color=green}}}
-        cornerCube:{thing, *6+{side|{color=pink}{color=red}{color=blue}{color=purple}{color=pink}{color=pink}}}
-        cornerCube:{thing, *6+{side|{color=yellow}{color=red}{color=pink}{color=pink}{color=pink}{color=green}}}
-        cornerCube:{thing, *6+{side|{color=yellow}{color=red}{color=blue}{color=pink}{color=pink}{color=pink}}}
+        cornerCube:{thing, *6+{side|{pink}{pink}{pink}{purple}{orange}{green}}}
+        cornerCube:{thing, *6+{side|{pink}{pink}{blue}{purple}{orange}{pink}}}
+        cornerCube:{thing, *6+{side|{yellow}{pink}{pink}{pink}{orange}{green}}}
+        cornerCube:{thing, *6+{side|{yellow}{pink}{blue}{pink}{orange}{pink}}}
+        cornerCube:{thing, *6+{side|{pink}{red}{pink}{purple}{pink}{green}}}
+        cornerCube:{thing, *6+{side|{pink}{red}{blue}{purple}{pink}{pink}}}
+        cornerCube:{thing, *6+{side|{yellow}{red}{pink}{pink}{pink}{green}}}
+        cornerCube:{thing, *6+{side|{yellow}{red}{blue}{pink}{pink}{pink}}}
     }
 }
 @solvedState =  rubixState:{
         *6+{centerCube|
             centerCube:{thing:{orientation:{xRot:0, yRot:0, zRot:0}, location:{xLoc:0, yLoc:-1.1, zLoc:0}},}
             centerCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:0, yLoc:1.1, zLoc:0}},}
-            centerCube:{thing:{orientation:{xRot:0, yRot:0, zRot:0}, location:{xLoc:-1.1, yLoc:0, zLoc:0}},}
-            centerCube:{thing:{orientation:{xRot:0, yRot:0, zRot:0}, location:{xLoc:1.1, yLoc:0, zLoc:0}},}
-            centerCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:0, yLoc:0, zLoc:1.1}},}
-            centerCube:{thing:{orientation:{xRot:0, yRot:0, zRot:0}, location:{xLoc:0, yLoc:0, zLoc:-1.1}},}
+            centerCube:{thing:{orientation:{xRot:0, yRot:0, zRot:0}, location:{xLoc:-1.1, yLoc:0, zLoc:0}}, }
+            centerCube:{thing:{orientation:{xRot:0, yRot:0, zRot:0}, location:{xLoc:1.1, yLoc:0, zLoc:0}}, }
+            centerCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:0, yLoc:0, zLoc:1.1}}, }
+            centerCube:{thing:{orientation:{xRot:0, yRot:0, zRot:0}, location:{xLoc:0, yLoc:0, zLoc:-1.1}}, }
         }
         *12+{edgeCube|
             edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0.0}, location:{xLoc:0, yLoc:-1.1, zLoc:1.1}},}
