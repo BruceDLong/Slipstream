@@ -1,17 +1,17 @@
 { 76543
 @side = {color}
-@colorCube  = colorCube :{thing, *6+{side| ... }}
-@edgeCube   = edgeCube  :{thing, *6+{side| ... }}
-@cornerCube = cornerCube:{thing, *6+{side| ... }}
-@centerCube = centerCube:{thing, *6+{side| ... }}
+@colorCube  = {thing, *6+{side| ... }}
+@edgeCube   = edgeCube:{thing, *6+{side| ... }}
+@cornerCube = {thing, *6+{side| ... }}
+@centerCube = {thing, color, *6+{side| {%.color}{pink}{pink}{pink}{pink}{pink} }}
 @rubixState  = {
     *6+{centerCube|
-        centerCube:{thing, *6+{side|{pink}{pink}{pink}{purple}{pink}{pink}}}
-        centerCube:{thing, *6+{side|{yellow}{pink}{pink}{pink}{pink}{pink}}}
-        centerCube:{thing, *6+{side|{pink}{pink}{pink}{pink}{pink}{green}}}
-        centerCube:{thing, *6+{side|{pink}{pink}{blue}{pink}{pink}{pink}}}
-        centerCube:{thing, *6+{side|{pink}{pink}{pink}{pink}{orange}{pink}}}
-        centerCube:{thing, *6+{side|{pink}{red}{pink}{pink}{pink}{pink}}}
+        centerCube:{purple}
+        centerCube:{yellow}
+        centerCube:{green}
+        centerCube:{blue}
+        centerCube:{orange}
+        centerCube:{red}
     }
     *12+{edgeCube|
         edgeCube:{thing, *6+{side|{pink}{pink}{pink}{purple}{orange}{pink}}}
