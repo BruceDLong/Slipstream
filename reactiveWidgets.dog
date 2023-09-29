@@ -124,27 +124,49 @@ struct GLOBAL{ // Temp code to do rotating cube
     me int: frameNumber
 }
 struct Scene3D: inherits=ReactiveControl{
-    void: tmp_colorCube(their Mesh: result, me float: arg, me cdColor: top, me cdColor: front, me cdColor: right, me cdColor: bottom, me  cdColor: back, me cdColor: left) <- {
-        result.tris.clear()
+    void: tmp_colorCube(our Thing3D: result, me float: arg, me cdColor: top, me cdColor: front, me cdColor: right, me cdColor: bottom, me  cdColor: back, me cdColor: left) <- {
         me Triangle3D: t1;
-        t1.setColor(front)
-        t1.INIT(0.0, 0.0, 0.0,    0.0, arg, 0.0,    arg, arg, 0.0);   result.tris.append(t1)
-        t1.INIT(0.0, 0.0, 0.0,    arg, arg, 0.0,    arg, 0.0, 0.0);   result.tris.append(t1)
-        t1.setColor(right)
-        t1.INIT(arg, 0.0, 0.0,    arg, arg, 0.0,    arg, arg, arg);   result.tris.append(t1)
-        t1.INIT(arg, 0.0, 0.0,    arg, arg, arg,    arg, 0.0, arg);   result.tris.append(t1)
-        t1.setColor(back)
-        t1.INIT(arg, 0.0, arg,    arg, arg, arg,    0.0, arg, arg);   result.tris.append(t1)
-        t1.INIT(arg, 0.0, arg,    0.0, arg, arg,    0.0, 0.0, arg);   result.tris.append(t1)
-        t1.setColor(left)
-        t1.INIT(0.0, 0.0, arg,    0.0, arg, arg,    0.0, arg, 0.0);   result.tris.append(t1)
-        t1.INIT(0.0, 0.0, arg,    0.0, arg, 0.0,    0.0, 0.0, 0.0);   result.tris.append(t1)
-        t1.setColor(top)
-        t1.INIT(0.0, arg, 0.0,    0.0, arg, arg,    arg, arg, arg);   result.tris.append(t1)
-        t1.INIT(0.0, arg, 0.0,    arg, arg, arg,    arg, arg, 0.0);   result.tris.append(t1)
-        t1.setColor(bottom)
-        t1.INIT(arg, 0.0, arg,    0.0, 0.0, arg,    0.0, 0.0, 0.0);   result.tris.append(t1)
-        t1.INIT(arg, 0.0, arg,    0.0, 0.0, 0.0,    arg, 0.0, 0.0);   result.tris.append(t1)
+        our Thing3D: t3d
+        our Mesh: mesh
+
+        me double: hArg <- arg/2
+        me double: nArg <- -hArg
+
+        Allocate(t3d); Allocate(mesh)
+        t3d.thingMatx.makeIdentity()
+        t1.INIT(nArg, nArg, nArg,    nArg, hArg, nArg,    hArg, hArg, nArg);  t1.setColor(front); mesh.tris.append(t1)
+        t1.INIT(nArg, nArg, nArg,    hArg, hArg, nArg,    hArg, nArg, nArg);   mesh.tris.append(t1); t3d.meshes.append(mesh)
+        result.addPart(t3d)
+
+        Allocate(t3d); Allocate(mesh)
+        t3d.thingMatx.makeIdentity()
+        t1.INIT(hArg, nArg, nArg,    hArg, hArg, nArg,    hArg, hArg, hArg);  t1.setColor(right);   mesh.tris.append(t1)
+        t1.INIT(hArg, nArg, nArg,    hArg, hArg, hArg,    hArg, nArg, hArg);   mesh.tris.append(t1); t3d.meshes.append(mesh)
+        result.addPart(t3d)
+
+        Allocate(t3d); Allocate(mesh)
+        t3d.thingMatx.makeIdentity()
+        t1.INIT(hArg, nArg, hArg,    hArg, hArg, hArg,    nArg, hArg, hArg);  t1.setColor(back);   mesh.tris.append(t1)
+        t1.INIT(hArg, nArg, hArg,    nArg, hArg, hArg,    nArg, nArg, hArg);   mesh.tris.append(t1); t3d.meshes.append(mesh)
+        result.addPart(t3d)
+
+        Allocate(t3d); Allocate(mesh)
+        t3d.thingMatx.makeIdentity()
+        t1.INIT(nArg, nArg, hArg,    nArg, hArg, hArg,    nArg, hArg, nArg);  t1.setColor(left);   mesh.tris.append(t1)
+        t1.INIT(nArg, nArg, hArg,    nArg, hArg, nArg,    nArg, nArg, nArg);   mesh.tris.append(t1); t3d.meshes.append(mesh)
+        result.addPart(t3d)
+
+        Allocate(t3d); Allocate(mesh)
+        t3d.thingMatx.makeIdentity()
+        t1.INIT(nArg, hArg, nArg,    nArg, hArg, hArg,    hArg, hArg, hArg);  t1.setColor(top);   mesh.tris.append(t1)
+        t1.INIT(nArg, hArg, nArg,    hArg, hArg, hArg,    hArg, hArg, nArg);   mesh.tris.append(t1); t3d.meshes.append(mesh)
+        result.addPart(t3d)
+
+        Allocate(t3d); Allocate(mesh)
+        t3d.thingMatx.makeIdentity()
+        t1.INIT(hArg, nArg, hArg,    nArg, nArg, hArg,    nArg, nArg, nArg);  t1.setColor(bottom);   mesh.tris.append(t1)
+        t1.INIT(hArg, nArg, hArg,    nArg, nArg, nArg,    hArg, nArg, nArg);   mesh.tris.append(t1); t3d.meshes.append(mesh)
+        result.addPart(t3d)
     }
     me cdColor: getColorFromHue(our POV: huePov) <- {
         me cdColor: retColor
@@ -222,11 +244,11 @@ if(stuffPov.pItem.type!=NULL and stuffPov.pItem.isCompatibleWith(item, false)){
     frameNumber <+- 1
 }
         thing.name <- objType // TODO: This could be a better name. It's for debugging.
-        thing.setLocation(xLoc, yLoc, zLoc)
         thing.setScale(1.0, 1.0, 1.0)
         thing.rotateX(xOri)
         thing.rotateY(yOri)
         thing.rotateZ(zOri)
+        thing.setLocation(xLoc, yLoc, zLoc)
         thing.calcThingMatx(mat4ID)
 me int: strLen <- objType.size()
 if(strLen>4){if(objType.subStr(strLen-4)=="cube"){objType<-"colorcube"}}
@@ -268,8 +290,7 @@ if(strLen>4){if(objType.subStr(strLen-4)=="cube"){objType<-"colorcube"}}
                         side <- side.next
                     }
                 }
-                our Mesh:: cubeMesh; tmp_colorCube(cubeMesh, 1, topColor, frontColor, rightColor, bottomColor, backColor, leftColor)
-                thing.meshes.append(cubeMesh)
+                tmp_colorCube(thing, 1, topColor, frontColor, rightColor, bottomColor, backColor, leftColor)
             }
             case "pipe":{}
             case "cone":{}
