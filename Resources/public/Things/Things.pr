@@ -3,7 +3,7 @@
 // Language: en
 
 {
-
+%INSERT /rubixCube.pr
     @top-tube <en> = tube
     @head-tube <en> = tube
     @bike-fork <en> = tube
