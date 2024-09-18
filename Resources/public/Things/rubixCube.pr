@@ -4,6 +4,7 @@
 
 {
 @side = {color}
+@colorCube  = {thing, *6+{side| ... }}
 @edgeCube   = edgeCube:{thing, *6+{side| ... }}
 @cornerCube = {thing, *6+{side| ... }}
 @centerCube = {thing, color, *6+{side| {%.color}{pink}{pink}{pink}{pink}{pink} }}

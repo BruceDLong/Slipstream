@@ -1,4 +1,39 @@
-{ 76543
+{  76543
+
+@solvedState2 =  rubixState:{
+        *6+{centerCube|
+            centerCube:{thing:{orientation:{xRot:3.14, yRot:0, zRot:0}, location:{xLoc:0, yLoc:-1.1, zLoc:0}},}
+            centerCube:{thing:{orientation:{xRot:0, yRot:0, zRot:0}, location:{xLoc:0, yLoc:1.1, zLoc:0}},}
+            centerCube:{thing:{orientation:{xRot:0, yRot:0, zRot:1.57}, location:{xLoc:-1.1, yLoc:0, zLoc:0}}, }
+            centerCube:{thing:{orientation:{xRot:0, yRot:0, zRot:-1.57}, location:{xLoc:1.1, yLoc:0, zLoc:0}}, }
+            centerCube:{thing:{orientation:{xRot:1.57, yRot:0, zRot:0}, location:{xLoc:0, yLoc:0, zLoc:1.1}}, }
+            centerCube:{thing:{orientation:{xRot:-1.57, yRot:0, zRot:0}, location:{xLoc:0, yLoc:0, zLoc:-1.1}}, }
+        },
+        *12+{edgeCube|
+            edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0.0}, location:{xLoc:0, yLoc:-1.1, zLoc:1.1}},}
+            edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:0, yLoc:1.1, zLoc:1.1}},}
+            edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:-1.1, yLoc:0, zLoc:1.1}},}
+            edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0,} location:{xLoc:1.1, yLoc:0, zLoc:1.1}},}
+            edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:-1.1, yLoc:-1.1, zLoc:0}},}
+            edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:1.1, yLoc:-1.1, zLoc:0}},}
+            edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:-1.1, yLoc:1.1, zLoc:0}},}
+            edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:1.1, yLoc:1.1, zLoc:0}},}
+            edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:0, yLoc:-1.1, zLoc:-1.1}},}
+            edgeCube:{thing:{orientation:{xRot:0.5, yRot:0.0, zRot:0}, location:{xLoc:-1.1, yLoc:0, zLoc:-1.1}},}
+            edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:1.1, yLoc:0, zLoc:-1.1}},}
+            edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:0, yLoc:1.1, zLoc:-1.1}},}
+        },
+        *8+{cornerCube|
+            cornerCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:-1.1, yLoc:-1.1, zLoc:1.1}},}
+            cornerCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:1.1, yLoc:-1.1, zLoc:1.1}},}
+            cornerCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:-1.1, yLoc:1.1, zLoc:1.1}},}
+            cornerCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:1.1, yLoc:1.1, zLoc:1.1}},}
+            cornerCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:-1.1, yLoc:-1.1, zLoc:-1.1}},}
+            cornerCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:1.1, yLoc:-1.1, zLoc:-1.1}},}
+            cornerCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:-1.1, yLoc:1.1, zLoc:-1.1}},}
+            cornerCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:1.1, yLoc:1.1, zLoc:-1.1}},}
+        }
+    }
 
 bruceLong:{
   projects:{
@@ -139,6 +174,10 @@ myStuff:{
         {
             thing:{orientation:{xRot:3, yRot:3, zRot:0}, location:{xLoc:0, yLoc:0, zLoc:3.5}},
             solvedState
+        }
+        {
+            thing:{orientation:{xRot:3, yRot:3, zRot:0}, location:{xLoc:0, yLoc:0, zLoc:3.5}},
+            solvedState2
         }
     }
 }  // End myStuff
