@@ -187,6 +187,10 @@ struct inf{
             baseline.items[idx] <- crntItm
             //print("IDX:"+toString(parent.indexOf(crntItm))+"   parent.base IDX:"+toString(newIDX)+" \n")
             crntItm <- parent.findNext(crntItm, divisor, parentSize)
+            if(crntItm===startItm){
+                crntItm <- parent.findNext(crntItm, 1, parentSize)
+                startItm <- crntItm
+            }
         }
         withEach item in parent.baseline.items{
             //print("item.mySymbol:",item.mySymbol()+"\n")
@@ -217,6 +221,10 @@ struct inf{
             baseline.items[idx] <- crntItm
             //print("IDX:"+toString(parent.indexOf(crntItm))+"   parent.base IDX:"+toString(newIDX)+" \n")
             crntItm <- parent.findNext(crntItm, 1, parentSize)
+            if(crntItm===startItm){
+                crntItm <- parent.findNext(crntItm, 1, parentSize)
+                startItm <- crntItm
+            }
         }
         withEach item in parent.baseline.items{
             //print("item.mySymbol:",item.mySymbol()+"\n")
@@ -269,6 +277,7 @@ struct inf{
             }
             return(count)
         }
+        return(-1)
     }
 
     void: rebase(their inf: zero, me int: newBaseVal) <- {
