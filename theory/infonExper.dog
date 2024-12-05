@@ -193,6 +193,9 @@ struct inf{
                 startItm <- crntItm
             }
         }
+
+        me inf: baseStart <- parent.baseline.items[0]
+        me inf: base <- baseStart
         withEach item in parent.baseline.items{
             //print("item.mySymbol:",item.mySymbol()+"\n")
             withEach result in baseItems{
@@ -201,6 +204,11 @@ struct inf{
                     //print("    items[result].mySymbol:",parent.baseline.items[result].mySymbol())
                     //print("    result:",result,"\n")
                 }
+            }
+            base <- parent.baseline.findNext(base, divisor, parentSize)
+            if(base === baseStart){
+                base <- parent.baseline.findNext(base, 1, parentSize)
+                baseStart <- base
             }
         }
     }
