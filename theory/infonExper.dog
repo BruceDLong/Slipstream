@@ -33,7 +33,7 @@ do makeGUI(GUI_Spec)
 
 struct GLOBAL{
 
-    me string:zeroOrOneMode <- "one" // Change to switch mode
+    me string:zeroOrOneMode <- "zero" // Change to switch mode
 
     void: drawArrow(their GUI_ctxt: cr, me int: startX, me int: startY, me int: endX, me int: endY) <- {
         me double: tipLength <- 10
@@ -96,6 +96,7 @@ struct inf{
     void: initAsBaseline(me int: size) <- {
         baseline <- self
         isBase <- true
+        items.clear()
         withEach count in RANGE(0..size){
             their inf:: itm   // allocate a null inf
             items.append(itm)
@@ -173,8 +174,8 @@ struct inf{
         me int: parentSize <- parent.items.size()
         me int: resultSize <- parentSize/divisor
 
-        their inf: startItm <- parent.items[1]
-        //their inf: startItm <- parent.items[parent.indexOf(parent.baseline.items[1])]
+        their inf: startItm <- parent.items[0%parentSize]
+        //their inf: startItm <- parent.items[parent.indexOf(parent.baseline.items[1%parentSize])]
         their inf: crntItm <- startItm
         //print("parentSize:",parentSize," resultSize:",resultSize,"\n")
         their inf:: bLine
@@ -207,8 +208,8 @@ struct inf{
     void: initAsDivisor(their inf: parent, me int: quotient) <-{
         me int: parentSize <- parent.items.size()
         me int: resultSize <- parentSize/quotient
-        //their inf: startItm <- parent.items[0]
-        their inf: startItm <- parent.items[parent.indexOf(parent.baseline.items[0])]
+        their inf: startItm <- parent.items[0%parentSize]
+        //their inf: startItm <- parent.items[parent.indexOf(parent.baseline.items[1%parentSize])]
         their inf: crntItm <- startItm
         //print("parentSize:",parentSize," resultSize:",resultSize,"\n")
         their inf:: bLine
@@ -239,9 +240,9 @@ struct inf{
     }
 
     me int: negMod(me int:val, me int:mod) <- {
-    if(val<0){return(val+mod)}
-    return(val%mod)
-}
+        if(val<0){return(val+mod)}
+        return(val%mod)
+    }
 
     me int: value() <- {
         me int: size <- items.size()
@@ -269,13 +270,9 @@ struct inf{
         }
         else if(zeroOrOneMode=="zero"){
             if(size==1){return(0)}
-            me int: count <- 0
-            //their inf: crnt <- items[1]
-            their inf: crnt <- items[indexOf(baseline.items[0])]
-            while(count<size and !(crnt===baseline.items[count % size])){
-                count <+- 1
-            }
-            return(count)
+             me int: zeroIDX <- indexOf(baseline.items[0]) // Find 0 in items
+             me int: prevIDX <- baseline.indexOf(items[negMod(zeroIDX+1,size)])
+             return(prevIDX)
         }
         return(-1)
     }
@@ -518,6 +515,25 @@ struct testRebaseCombos{
 struct testQuotients{
     me inf: masterBaseline
 
+    me int: QFails <- 0
+    me int: DFails <- 0
+    me int: total <- 0
+
+    me string: printResult(me int:Swanted, me int: Vwanted, me int: Sgot, me int:Vgot, me int:term, me string: tailStr) <- {
+        me string: S <- ""
+        S <+- "*"+toString(Swanted)+"+"+toString(Vwanted)+"\t"
+        if(Swanted==Sgot and Vwanted==Vgot){S <+- "PASS\t"}
+        else if((zeroOrOneMode=="one")  and Vwanted == 0 and Vgot==1){S <+- "ZERO!\t"}
+        else if((zeroOrOneMode=="zero") and Vwanted == 0 and Vgot==1){S <+- "ONE!!\t"}
+        else {
+            S <+- "*"+toString(Sgot)+"+"+toString(Vgot)+"\t"
+            if(term==0){DFails<+- 1}
+            else if(term==1){QFails<+- 1}
+            S <+- tailStr
+        }
+        return(S)
+    }
+
     void: checkJoin(their inf: term, me int: size, me int: value, me int: quotient) <- {
         me int: divisor <- size / quotient
         me inf: Q
@@ -525,22 +541,48 @@ struct testQuotients{
         me inf: D
         D.initAsDivisor(term, quotient)
 
-        print("\n",divisor,"*",quotient,": \t", dispFieldAsText(D.stringifyLong(0),50)," X ",
-                dispFieldAsText(Q.stringifyLong(0),50))
-        print("\t\t =  *",Q.items.size() * D.items.size()," +", Q.value() * D.items.size() + D.value()," ")
-        print("\t\t =  *",D.items.size() * Q.items.size()," +", D.value() * Q.items.size() + Q.value(),"\n")
+        total <+- 1
+        me int: Sd <- divisor
+        me int: Sq <- quotient
+        me int: Vd <- value / Sq
+        me int: Vq <- value - (Vd*Sq)
+        me int: result <- Vd * Sq + Vq
+        //print(" Sd, Sq, Vd, Vq:", Sd,",  ", Sq,",  ", Vd,",  ", Vq,"\n")
+        print("\t",divisor,"*",quotient,":\t",
+                printResult(Sd, Vd, D.items.size(),D.value(), 0, ""),"\t\t",
+                printResult(Sq,Vq,Q.items.size(),Q.value(), 1, "\t\t"+Q.stringifyLong(0)),
+                "\n")
+        //~ if(Q.value() == Vq){
+            //~ print("\t",divisor,"*",quotient,": \tPASSED\n")
+        //~ } else{
+            //~ print("\t",divisor,"*",quotient,": \t *",Sq,"+",Vq,"\tgot: *",Q.items.size(),"+",Q.value(),"\n")
+           // print("\t",divisor,"*",quotient,": \t", //dispFieldAsText(D.stringifyLong(0),50)," X ",
+          //          dispFieldAsText(Q.stringifyLong(0),50))
+//          print("\t\t =  *",Q.items.size() * D.items.size()," +", Q.value() * D.items.size() + D.value()," ")
+           // print("\t\t =  *",D.items.size() * Q.items.size()," +", D.value() * Q.items.size() + Q.value(),"\n")
+        //~ }
     }
 
     void: doTest() <- {
-        masterBaseline.initAsBaseline(12)
-        their inf:: term; term.initInf(masterBaseline, 12, 5)
-        print("\n TERM: ", term.stringifyLong(0), "\n")
-        checkJoin(term, 12, 5, 4)
-        checkJoin(term, 12, 5, 3)
-        checkJoin(term, 12, 5, 2)
-        checkJoin(term, 12, 5, 6)
-        checkJoin(term, 12, 5, 1)
-        checkJoin(term, 12, 5, 12)
+        me int: maxToTest <- 12
+        withEach size in RANGE(1..maxToTest+1){
+            masterBaseline.initAsBaseline(size)
+            print("\n####################################################\n")
+            print("BASE:",masterBaseline.stringifyLong(0), "\n")
+            print("----------------------------------------------------\n")
+            withEach val in RANGE(0..size){
+                their inf:: term; term.initInf(masterBaseline, size, val)
+                print("  PROD(*",size,"+",val,"):\t", term.stringifyLong(0), "\n")
+                withEach D in RANGE(1..size+1){
+                    me int: Q <- size / D
+                    if(Q * D == size){
+                        checkJoin(term, size, val, Q)
+                    }
+                }
+                print("\n")
+            }
+        }
+print("\n\n D-Fails:",DFails, "    Q-Fails:",QFails, "    Total:", total,"\n")
     }
 }
 struct infonWidget: inherits=DashboardWidget{
@@ -552,7 +594,7 @@ struct infonWidget: inherits=DashboardWidget{
         lineColor2 <- cdColor(0,250,255,255)
         their inf:: masterBaseline
         masterBaseline.initAsBaseline(25)//maxSize*maxSize)
-        their inf:: term; term.initInf(masterBaseline, 10, 6)
+        their inf:: term; term.initInf(masterBaseline, 12, 5)
         infons.append(term)
 
 exit(1)
