@@ -120,7 +120,9 @@ struct inf{
         withEach idx in RANGE(0..size){
             if(item===items[idx]){return(idx)}
         }
-        print("Index not found\n")
+        print("Index of ",item.mySymbol()," not found in:")
+        withEach idx in RANGE(0..size){print(items[idx].mySymbol(),"  ")}
+        print("\n")
         return(-1)
     }
 
@@ -177,15 +179,19 @@ struct inf{
         their inf: startItm <- parent.items[0%parentSize]
         //their inf: startItm <- parent.items[parent.indexOf(parent.baseline.items[1%parentSize])]
         their inf: crntItm <- startItm
-        //print("parentSize:",parentSize," resultSize:",resultSize,"\n")
+        //print("  parentSize:",parentSize," resultSize:",resultSize,"\n")
         their inf:: bLine
         bLine.initAsBaseline(resultSize)
         baseline <- bLine
         me List<me int>:baseItems
+    //    print("  QUOT               [")
         withEach idx in RANGE(0..resultSize){
             me int: newIDX <- parent.baseline.indexOf(crntItm)
+     //       print("%",newIDX," ",parent.baseline.items[newIDX].mySymbol(),"   ")
             baseItems.append(newIDX)
-            baseline.items[idx] <- crntItm
+            //baseline.items[idx] <- crntItm
+     //       print("ADDING: ",crntItm.mySymbol(),"\n")
+            items.append(crntItm)
             //print("IDX:"+toString(parent.indexOf(crntItm))+"   parent.base IDX:"+toString(newIDX)+" \n")
             crntItm <- parent.findNext(crntItm, divisor, parentSize)
             if(crntItm===startItm){
@@ -193,24 +199,29 @@ struct inf{
                 startItm <- crntItm
             }
         }
+   //     print("]\n")
 
-        me inf: baseStart <- parent.baseline.items[0]
-        me inf: base <- baseStart
+        their inf: baseStart <- parent.baseline.items[0]
+        me int: count <- 0
         withEach item in parent.baseline.items{
-            //print("item.mySymbol:",item.mySymbol()+"\n")
+    //        print("item.mySymbol:",item.mySymbol()+" (")
             withEach result in baseItems{
+                //print(parent.baseline.items[result].mySymbol())
                 if(item.mySymbol()==parent.baseline.items[result].mySymbol()){
-                    items.append(item)
-                    //print("    items[result].mySymbol:",parent.baseline.items[result].mySymbol())
-                    //print("    result:",result,"\n")
+                    baseline.items[count] <- parent.baseline.items[result]
+            count <+- 1
+    //                print("    PB[",result,"].mySymbol:",parent.baseline.items[result].mySymbol())
+                    break()
                 }
+     //           print(", ")
             }
-            base <- parent.baseline.findNext(base, divisor, parentSize)
-            if(base === baseStart){
-                base <- parent.baseline.findNext(base, 1, parentSize)
-                baseStart <- base
-            }
+     //       print(")\n")
         }
+     //   print("REturning QUAT:",baseline.stringifyLong(0),"\n")
+     //   print("BASELINE:")
+      //  withEach item2 in baseline.items{print(item2.mySymbol()," ")}
+     //   print("\nVALUE:");
+     //   withEach item3 in items{print(item3.mySymbol()," ")}
     }
 
     void: initAsDivisor(their inf: parent, me int: quotient) <-{
@@ -258,7 +269,9 @@ struct inf{
             if(size==1){return(0)}
             me int: count <- 0
              me int: zeroIDX <- indexOf(baseline.items[0]) // Find 0 in items
+             if(zeroIDX==-1){print("\nAt: Val1\n"); exit(1);}
              me int: prevIDX <- baseline.indexOf(items[negMod(zeroIDX-1,size)])
+             if(prevIDX==-1){print("\nAt: Val2\n"); exit(1);}
              //print("  ### zeroIDX:",zeroIDX, "   prevIDX:", prevIDX,"\n")
              return(size-prevIDX)
 
@@ -279,7 +292,9 @@ struct inf{
         else if(zeroOrOneMode=="zero"){
             if(size==1){return(0)}
              me int: zeroIDX <- indexOf(baseline.items[0]) // Find 0 in items
+             if(zeroIDX==-1){print("\nAt: Val3\n"); exit(1);}
              me int: prevIDX <- baseline.indexOf(items[negMod(zeroIDX+1,size)])
+             if(prevIDX==-1){print("\nAt: Val4\n"); print("in ",mySymbol(),"\n"); exit(1);}
              return(prevIDX)
         }
         return(-1)
@@ -544,11 +559,11 @@ struct testQuotients{
 
     void: checkJoin(their inf: term, me int: size, me int: value, me int: quotient) <- {
         me int: divisor <- size / quotient
-        me inf: Q
-        Q.initAsQuotient(term, divisor)
         me inf: D
         D.initAsDivisor(term, quotient)
-
+        their inf:: Q
+        Q.initAsQuotient(term, divisor)
+//print("INF-Q:",Q.mySymbol(),"\n")
         total <+- 1
         me int: Sd <- divisor
         me int: Sq <- quotient
