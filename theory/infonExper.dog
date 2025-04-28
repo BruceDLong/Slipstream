@@ -22,7 +22,7 @@ runCode=`
     //~ me iExp: exp
     //~ exp.run()
 
-    //~ me testConstructing: testCtring
+    //~ me testConstructing: testCtring // Uncomment these two lines to print combinations
     //~ testCtring.run()
 
     me testQuotients: testQ
@@ -35,6 +35,10 @@ do makeGUI(GUI_Spec)
 struct GLOBAL{
 
     me string:zeroOrOneMode <- "zero" // Change to switch mode
+
+    me List<me cdColor>: cosetColors
+
+    me int: globalItemIdx <- 0 // Used to check which item is being processed
 
     void: drawArrow(their GUI_ctxt: cr, me int: startX, me int: startY, me int: endX, me int: endY) <- {
         me double: tipLength <- 10
@@ -67,8 +71,12 @@ struct inf{
     our inf: baseline
     me List<our inf>: items
     me flag: isBase
+    me flag: allIdent
 
-    me int: isValid(me int: val) <- {
+    me mode[dFull, dQuotient, dDivisor]: dispMode
+    me int: dispArg
+
+    me bool: isValid(me int: val) <- {
         me int: size <- items.size()
 
              me int: zeroIDX <- indexOf(baseline.items[0]) // Find 0 in items
@@ -132,10 +140,15 @@ struct inf{
         return(-1)
     }
 
-    our inf: findNext(their inf: crnt, me int: n, me int: size) <- {
+    me int: findNextIdx(their inf: crnt, me int: n, me int: size) <- {
         me int: crntPos <- indexOf(crnt)
         if(crntPos==-1){print("\n\nCould not find index of arg.\n")}
         me int: nextPos <- (crntPos+n)%size
+        return(nextPos)
+    }
+
+    our inf: findNext(their inf: crnt, me int: n, me int: size) <- {
+        me int: nextPos <- findNextIdx(crnt, n, size)
         return(items[nextPos])
     }
 
@@ -156,6 +169,7 @@ struct inf{
                 startItm <- crntItm
             }
         }
+        if(value==0){allIdent<-true}
         //print("\n")
     }
 
@@ -182,6 +196,22 @@ struct inf{
             our inf:: itm; itm.initAsCoset(parent, quotient, pos)
             items.append(itm)
         }
+    }
+
+    me int: numItemsInCoset() <- {
+        me int: size <- items.size()
+        me int: val <- value()
+        our inf: startItm <- baseline.items[0]
+        our inf: crntItm <- startItm
+        me int: count <- 0
+        withEach idx in RANGE(0..size){
+            count <+- 1
+            crntItm <- baseline.findNext(crntItm, val, size)
+            if(crntItm===startItm){
+                return(count)
+            }
+        }
+        return(-1)
     }
 
     void: initAsQuotient(our inf: parent, me int: divisor) <-{
@@ -221,7 +251,7 @@ struct inf{
 
     }
 
-    void: initAsDivisor(our inf: parent, me int: quotient, me int:phase) <-{
+    void: initAsDivisor(our inf: parent, me int: quotient, me int:phase, me int: projValue) <-{
         // Determine the roles of value and base for flexibility
         our inf: val <- parent; // Default: use parent for value
         our inf: base <- parent.baseline; // Default: use baseline for base
@@ -229,6 +259,7 @@ struct inf{
         // Adjust size calculations based on the current roles
         me int: parentSize <- val.items.size()
         me int: resultSize <- parentSize/quotient
+
         if (parentSize % quotient != 0) {
             print("Warning: Parent size is not divisible by the quotient. Results may be incorrect.\n")
         }
@@ -243,36 +274,69 @@ struct inf{
         bLine.initAsBaseline(resultSize, bLine)
         baseline <- bLine
         me List<me int>:baseItems
-
-        print("  DIV:  [")
+        me bool: doCarry <- false
+ //       print("  DIV:  [")
         // Collect the divisor items
+        me int: crntInfIdx <- 0
+        me int: prevInfIdx <- 0
         withEach idx in RANGE(0..resultSize){
+            // determine if there are more than 1 coset
+            if(idx == 0){}
+
             // Add the current item to the result
             me int: newIDX <- base.indexOf(crntItm)
-            print("%",newIDX," ",base.items[newIDX].mySymbol(),"   ")
+ //           print("%",newIDX," ",base.items[newIDX].mySymbol(),"   ")
 
             baseItems.append(newIDX)
             items.append(crntItm)
             // Find the next item in the value array
-            crntItm <- val.findNext(crntItm, 1, parentSize)
+            prevInfIdx <- crntInfIdx
+            crntInfIdx <- val.findNextIdx(crntItm, 1, parentSize)
+            crntItm <- val.items[crntInfIdx]
 
-        }
-        print("]\n")
-
-        // Map the collected items back to the baseline
-        our inf: lastItem <- baseItems[baseItems.size()-1]
-        me int: count <- 0
-        withEach item in parent.baseline.items{
-          //  if(count==1 && item
-            withEach result in baseItems{
-                if(item.mySymbol()==parent.baseline.items[result].mySymbol()){
-                    baseline.items[count] <- parent.baseline.items[result]
-                    count <+- 1
-                    break()
+            // Determine if we need to unwrap a carry
+            if(!doCarry and prevInfIdx!=0 and prevInfIdx < crntInfIdx){
+                me int: crntNumItems <- idx
+                me int: projectedNumCosets <- resultSize / crntNumItems
+                if(crntNumItems*projectedNumCosets < resultSize){
+                    if(parentSize != resultSize){  // Filter last value -- because reverse order causes false positive
+                      print("DoCarry: ",prevInfIdx," ",crntInfIdx,"   ID:",globalItemIdx,"\n")
+                        doCarry <- true
+                    }
                 }
             }
         }
-    print(stringifyFull("Result infon"),"\n")
+//        print("]\n")
+
+        // Map the collected items back to the baseline
+        our inf: lastItem <- base.items[baseItems[baseItems.size()-1]]
+        me int: lastIdx <- base.indexOf(lastItem)
+        allIdent <- (lastIdx <= quotient)
+   //     if(allIdent){print(" ALLIDENT ")}
+   
+        me int: count <- 0
+        me int: idx <- 0
+        withEach item in parent.baseline.items{
+            withEach result in baseItems{
+                if(item.mySymbol()==parent.baseline.items[result].mySymbol()){
+                    if(doCarry and lastItem.mySymbol()==item.mySymbol() and (idx == 1) and count+1<resultSize){
+                        print(" TAILED ",lastItem.mySymbol(), " idx:",idx," resultSize:",resultSize ,"\n")
+
+                    }
+                    else {
+                        baseline.items[count] <- parent.baseline.items[result]
+                        count <+- 1
+                    }
+                    break()
+                }
+            }
+            idx <+- 1
+        }
+        if(count < baseItems.size()){
+            baseline.items[count] <- lastItem
+     //       print("SET baseline.items[",count,"] to ",lastItem.mySymbol(),"\n")
+        }
+ //   print(stringifyFull("Result infon"),"\n")
 
     }
 
@@ -312,27 +376,12 @@ struct inf{
              if(zeroIDX==-1){print("\nAt: Val3\n"); exit(1);}
              me int: prevIDX <- baseline.indexOf(items[negMod(zeroIDX+1,size)])
              if(prevIDX==-1){print("\nAt: Val4\n"); print("in ",mySymbol(),"\n"); exit(1);}
+             if(prevIDX==1){
+     //            if(allIdent){prevIDX <- 0}
+             }
              return(prevIDX)
         }
         return(-1)
-    }
-
-    void: rebase(our inf: zero, me int: newBaseVal) <- {
-        me int: size <- items.size()
-        if(zero.items.size() != size){print("\n\nError: in Rebase: this.size!=zero.size: zsize:",zero.items.size(),"  size:",size,"\n")}
-        our inf: startItm <- zero.items[0]
-        our inf: crntItm <- startItm
-        items.clear()
-        //baseline <- zero
-        withEach idx in RANGE(0..size){
-            crntItm <- zero.findNext(crntItm, newBaseVal, size)
-            //print(toString(indexOf(crntItm))+" ")
-            items.append(crntItm)
-            if(crntItm===startItm){
-                crntItm <- zero.findNext(crntItm, 1, size)
-                startItm <- crntItm
-            }
-        }
     }
 
     me string: stringify() <- {
@@ -404,35 +453,70 @@ struct inf{
         }
     }
 
-    void: draw(their GUI_ctxt: cr, me int: xLoc, me int: yLoc) <- {
-
-        print("In DRAW Infon\n")
+    void: draw(their GUI_ctxt: cr, me int: xLoc, me int: yLoc, me float: scale <- 1.0) <- {
+        cairo_save(cr)
+        cr.setScale(scale, scale)
+        xLoc <- xLoc*(1/scale)
+        yLoc <- yLoc*(1/scale)
         if(self==NULL){
             cr.setColor(styler.Black)
             renderText(cr, "NULL ", textFont, xLoc, yLoc)
             cr.strokeNow()
+            cairo_restore(cr)
             return()
         }
         me string: S <- stringify()+":"
-        if(isBase){S <- "BASE:"}
-            cr.setColor(styler.Black)
-            renderText(cr, S, textFont, xLoc, yLoc+20)
+        if(isBase){S <- " Ref:"}
+        cr.setColor(styler.Black)
+        renderText(cr, S, textFont, xLoc, yLoc+20)
+        renderText(cr, " Ref:", textFont, xLoc, yLoc+70)
+        cr.strokeNow()
+
+        me int: size <- items.size()
+        me int: itemsPerCoset <- numItemsInCoset()
+
+        me int: xpos <- xLoc+65
+        //cr.rectangle(xpos, yLoc, size*30, 25); cr.strokeNow()
+        me int: count <- 0
+        me int: count2 <- 0
+        me int: crntCoset <- 0
+        withEach idx in RANGE(0..size){
+            if(count == itemsPerCoset){
+                count <- 0
+                crntCoset <+- 1
+            }
+            me int: alpha <- 255
+            if(dispMode == 1 and idx%dispArg != 0){alpha <- 10}
+            if(dispMode == 2 and idx >= dispArg){alpha <- 10}
+            me int: baseIdx  <- baseline.indexOf(items[idx])
+            me cdColor: c <- cosetColors[crntCoset]
+            me cdColor: color <- cdColor(c.red, c.green, c.blue, alpha)
+            cr.setColor(color)
+            cr.rectangle(xpos+((idx)*30), yLoc, 30, 25)
+            cr.rectangle(xpos+((baseIdx)*30), yLoc+50, 30, 25)
+            cr.fillNow()
+            cr.setColor(cdColor(0,0,0,alpha*3))
+            cr.rectangle(xpos+((idx)*30), yLoc, 30, 25)
+            cr.rectangle(xpos+((baseIdx)*30), yLoc+50, 30, 25)
             cr.strokeNow()
 
-        me int: xpos <- xLoc
-        cr.rectangle(xLoc+65, yLoc, items.size()*30, 25); cr.strokeNow()
-        withEach idx in RANGE(0..items.size()){
-            cr.moveTo(xLoc+65+((idx+1)*30), yLoc)
-            cr.lineTo(xLoc+65+((idx+1)*30), yLoc+25)
+            cr.setColor(cdColor(0,0,0,alpha*3))
+            renderText(cr, toString(count2), textFont, xpos+((idx)*30)+8, yLoc-2)
+            cr.fillNow()
+            drawArrow(cr, xpos+((idx)*30)+15, yLoc+20, xpos+((baseIdx)*30)+15, yLoc+60)
+
+            count <+-1
+            count2 <+-1
         }
-        cr.strokeNow()
-        if(!isBase){
-            cr.setColor(styler.Blue)
-            withEach idx in RANGE(0..items.size()){
-                me int: baseIdx  <- baseline.indexOf(items[idx])
-                drawArrow(cr, xLoc+65+((idx)*30)+15, yLoc+10, xLoc+65+((baseIdx)*30)+15, yLoc-60+25)
-            }
-        }
+      //  cr.strokeNow()
+        //~ if(!isBase){
+            //~ cr.setColor(styler.Black)
+            //~ withEach idx in RANGE(0..size){
+                //~ me int: baseIdx  <- baseline.indexOf(items[idx])
+                //~ drawArrow(cr, xpos+((idx)*30)+15, yLoc+20, xpos+((baseIdx)*30)+15, yLoc+60)
+            //~ }
+        //~ }
+        cairo_restore(cr)
     }
 
 }
@@ -453,28 +537,9 @@ struct testConstructing{
     }
 }
 
-struct innerAdd{
-    our inf: baseline
 
-    void: doOp(our inf: infA, our inf: infB, our inf: result) <- {
-            me int: sum <- infA.value() + infB.value()
-            result.baseline <- infA.baseline
-            withEach idx in RANGE(0..infA.items.size()){
-                result.items.append(infA.items[idx])
-            }
-            print("SUM: ",infA.value(), " + ", infB.value(), " = ", result.value(), "\n")
-        }
-    void: init(me int: valA, me int: valB, me int: size) <- {
-        Allocate(baseline)
-        baseline.initAsBaseline(size, baseline)
-        our inf:: infA; infA.initInf(baseline, size, valA)
-        our inf:: infB; infB.initInf(baseline, size, valB)
-        our inf:: result; doOp(infA, infB, result)
-    }
-}
 
 struct iExp{
-
     void: dispJoin(our inf: masterBaseline, me int: A_size, me int: A_val, me int: B_size, me int: B_val, me int: R_size, me int: R_val) <- {
 
         our inf:: topInf; topInf.initInf(masterBaseline, R_size, R_val)
@@ -531,59 +596,59 @@ struct iExp{
 
     }
 }
-struct testRebaseCombos{
-    our inf: zero
-    our inf: crnt
 
-    void: doTest(me int: size) <- {
-        me List<our inf>: infs
-        Allocate(zero)
-        zero.initAsBaseline(size, zero)
-            print("ZERO#:",zero.stringifyLong(1),"\n")
-        Allocate(crnt)
-        crnt.initAscopyOf(zero)
-            print("CRNT#:",crnt.stringifyLong(1),"\n")
-        withEach idx in RANGE(0..size){
-            our inf:: itm
-            itm.initInf(crnt, size, idx)
-            if(!itm.isValid(idx)){print("INVALID:")}
-            print("    ",idx,":",itm.stringifyLong(0),"\n")
-            infs.append(itm)
-        }
-        withEach zIdx in RANGE(0..size){
-            crnt.rebase(zero, zIdx)
-            print("CRNT ",zIdx,":",crnt.stringifyLong(0),"  -------\n")
-            withEach vIdx in RANGE(0..size){
-                our inf: itm <- infs[vIdx]
-                me int: val <- itm.value()
-                me string: spcr <- " "
-                if(vIdx>9){spcr<-""}
-                print("    ",spcr,vIdx,":",itm.stringifyLong(0))
-                if(!itm.isValid(val)){print(" \tINVALID")}
-                print("\n")
-            }
-        }
-    }
-}
 
 struct testQuotients{
-    me bool: showFailureCases <- true
+    me bool: showFailureCases <- false
     our inf: masterBaseline
 
     me int: QFails <- 0
     me int: DFails <- 0
     me int: Qzeros <- 0
     me int: Dzeros <- 0
+    me int: QInvld <- 0
+    me int: DInvld <- 0
     me int: total <- 0
 
-    me string: printResult(me int:Swanted, me int: Vwanted, me int: Sgot, me int:Vgot, me int:term, me string: tailStr) <- {
+    me string: testStatus(me int:Swanted, me int: Vwanted, me int: Sgot, me int:Vgot, me bool: allIdent, me bool: isValid) <- {
+        me string: S <- ""
+        if(!isValid){
+            S <+- "INVLD"
+        }
+        else if(Swanted==Sgot and Vwanted==Vgot){
+            S <+- "PASS"
+        }
+        else if(Vwanted == 0 and Vgot==1){
+            if(allIdent){S <+- "PASS-Z";}
+            else{S <+- "ZERO";}
+        } else {
+            S<+- "FAIL"
+        }
+        return(S)
+    }
+
+    me string: printResult(me int:Swanted, me int: Vwanted, me int: Sgot, me int:Vgot, me bool: allIdent, me bool: isValid, me int:term, me string: tailStr) <- {
         me string: S <- ""
         S <+- "*"+toString(Swanted)+"+"+toString(Vwanted)+"\t"
-        if(Swanted==Sgot and Vwanted==Vgot){S <+- "PASS\t"}
+        if(!isValid){
+            if(term==0){DInvld<+- 1}
+            else if(term==1){QInvld<+- 1}
+            S <+- "INVLD\t"
+        }
+        else if(Swanted==Sgot and Vwanted==Vgot){
+            S <+- "PASS\t"
+            if(term==1 or term==0){S <+- tailStr}
+        }
         else if(Vwanted == 0 and Vgot==1){
-            S <+- "ZERO\t";
+            if(allIdent){S <+- "PASS-Z\t";}
+            else{S <+- "ZERO\t";
+                //DFails<+- 1
+            }
             if(term==0){Dzeros<+- 1}
-            else if(term==1){Qzeros<+- 1}
+            else if(term==1){
+                Qzeros<+- 1
+                S <+- tailStr
+            }
         } else {
             S<+- "FAIL  "
             S <+- "*"+toString(Sgot)+"+"+toString(Vgot)+"\t"
@@ -597,24 +662,32 @@ struct testQuotients{
     void: checkJoin(our inf: term, me int: size, me int: value, me int: quotient, me int:phase <- 0) <- {
         me int: divisor <- size / quotient
         me inf: D
-        D.initAsDivisor(term, quotient, phase)
+        D.initAsDivisor(term, quotient, phase, value)
         our inf:: Q
         Q.initAsQuotient(term, divisor)
 //print("INF-Q:",Q.mySymbol(),"\n")
         total <+- 1
+        globalItemIdx <- total
         me int: Sd <- divisor
         me int: Sq <- quotient
         me int: Vd <- value / Sq
         me int: Vq <- value - (Vd*Sq)
         me int: result <- Vd * Sq + Vq
+        me int: DSize <- D.items.size()
+        me int: QSize <- Q.items.size()
         //print(" Sd, Sq, Vd, Vq:", Sd,",  ", Sq,",  ", Vd,",  ", Vq,"\n")
-        if(value>1 and Sd>1 and value % Sd == 0){print("MARK:  ")}
-        if((divisor-1)*value == size){print("WRAP:  ")}
-        if(isSmallPrime(value) and isSmallPrime(Sd)){print("PRIMES:  ")}
-        print("RESULT:\t",phase,"\t*",size,"+",value," (",divisor,"*",quotient,"):\t",
-                printResult(Sd, Vd, D.items.size(),D.value(), 0, "\tD"+D.stringifyLong(0)),"\t\t",
-                printResult(Sq,Vq,Q.items.size(),Q.value(), 1, "\t\tQ"+Q.stringifyLong(0)),
-                "\n")
+        // if(value>1 and Sd>1 and value % Sd == 0){print("MARK:  ")}
+        // if((divisor-1)*value == size){print("WRAP:  ")}
+        // if(isSmallPrime(value) and isSmallPrime(Sd)){print("PRIMES:  ")}
+
+        me string: testStat <- testStatus(Sd, Vd, DSize, D.value(), D.allIdent, D.isValid(Vd))
+        if(testStat!="PASS" and testStat!="PASS-Z" and testStat!="ZERO"){
+            print("addInfonToScene(",size,", ",value,", 2, ",divisor,")\t//",testStat, "  ID:", total,"\n")
+        }
+        // print("RESULT:\t",phase,"\t*",size,"+",value," (",divisor,"*",quotient,"):\t",
+        //         printResult(Sd, Vd, DSize, D.value(), D.allIdent, D.isValid(Vd), 0, "\tD"+D.stringifyLong(0)),"\t\t",
+        //         printResult(Sq, Vq, QSize, Q.value(), Q.allIdent, Q.isValid(Vq), 1, "\t\tQ"+Q.stringifyLong(0)),
+        //         "\n")
         if(showFailureCases){
             our inf:: wanted; wanted.initInf(term, Sd, Vd)
             our inf::   goot;   goot.initInf(term, Sd, Vd+1)
@@ -625,10 +698,10 @@ struct testQuotients{
     }
 
     void: doOneTest(me int: size, me int: value, me int: quotient, me int:phase <- 0) <- {
-        print("\n----------------------------------------------------\n")
+ //       print("\n----------------------------------------------------\n")
             our inf:: term; term.initWithBase(size, value);
             //print(term.stringifyLong(0),"\n")
-            print(term.stringifyFull("Source infon"),"\n\n");
+ //           print(term.stringifyFull("Source infon"),"\n\n");
          //   withEach phase in RANGE(0..size / quotient){
          phase <- 0
                 checkJoin(term, size, value, quotient, phase);
@@ -637,11 +710,11 @@ struct testQuotients{
     }
 
     void: doTest() <- {
-        me bool: doAllTests <- false
+        me bool: doAllTests <- true
         if(doAllTests){
             Allocate(masterBaseline)
-            me int: maxToTest <- 1024//12
-            withEach size in RANGE(1024..maxToTest+1){
+            me int: maxToTest <- 12// 1024//12
+            withEach size in RANGE(1..maxToTest+1){
                 me List<int>: coPrimes
                 withEach D in RANGE(1..size+1){
                     me int: Q <- size / D
@@ -650,20 +723,20 @@ struct testQuotients{
                     }
                 }
                 masterBaseline.initAsBaseline(size, masterBaseline)
-                print("\n####################################################\n")
-                print("BASE:",masterBaseline.stringifyLong(0), "\n")
-                print("----------------------------------------------------\n")
+                // print("\n####################################################\n")
+                // print("BASE:",masterBaseline.stringifyLong(0), "\n")
+                // print("----------------------------------------------------\n")
                 withEach val in RANGE(0..size){
                     our inf:: term; term.initInf(masterBaseline, size, val)
-                    print("  PROD(*",size,"+",val,"):\t", term.stringifyLong(0), "\n")
+             //       print("  PROD(*",size,"+",val,"):\t", term.stringifyLong(0), "\n")
                     me int: phase <- 0
                     withEach Q in coPrimes{
-        //        print("----------------------------------------------------\n")
-        //                    print(term.stringifyFull("Source Infon"),"\n");
+                // print("----------------------------------------------------\n")
+                            // print(term.stringifyFull("Source Infon"),"\n");
                             checkJoin(term, size, val, Q, phase)
                     }
                     //print("Size:",size, "  val:",val, " total:",total,"  Q-Fails:",QFails, "  D-Fails:", DFails)
-              //      print("\n")
+    //                print("\n")
                 }
             }
         }
@@ -682,22 +755,60 @@ struct testQuotients{
                 doOneTest(12,7, 4, phase)
                 doOneTest(12,8, 3, phase)
         }
-            print("\n\n D-Fails:",DFails, "    Q-Fails:",QFails, "    Total:", total, "   D-zeros:",Dzeros, "   Q-zeros:",Qzeros,"\n")
+            print("\n\n D-Fails:",DFails, "    Q-Fails:",QFails, "    Total:", total, "   D-zeros:",Dzeros, "   Q-zeros:",Qzeros, "   D-Invlds:", DInvld, "   Q-Invlds:", QInvld,"\n")
     }
 }
+
 struct infonWidget: inherits=DashboardWidget{
     me List<our inf>: infons
 
-    void: init() <- {
-        Allocate(textFont,"Ariel", "12")
-        lineColor1 <- cdColor(255,0,0,255)
-        lineColor2 <- cdColor(0,250,255,255)
+    void: addInfonToScene(me int: size, me int: val, me int: dispMode <- 0, me int: dispArg <- 0) <- {
         our inf:: masterBaseline
-        masterBaseline.initAsBaseline(25, masterBaseline)//maxSize*maxSize)
-        our inf:: term; term.initInf(masterBaseline, 12, 5)
+        masterBaseline.initAsBaseline(size, masterBaseline)
+        our inf:: term; term.initInf(masterBaseline, size, val)
+        term.dispMode <- dispMode
+        term.dispArg <- dispArg
         infons.append(term)
+    }
 
-exit(1)
+    void: init() <- {
+        cosetColors.append(cdColor(255,0,0,255))
+        cosetColors.append(cdColor(0,255,0,255))
+        cosetColors.append(styler.Yellow)
+        cosetColors.append(cdColor(255,12,200,255))
+        cosetColors.append(cdColor(2,200,200,255))
+        cosetColors.append(styler.Orange)
+        Allocate(textFont,"Ariel", "12")
+
+//Shouldn't fail
+addInfonToScene(5, 4, 2, 5)	//INVLD  ID:33
+addInfonToScene(6, 5, 2, 6)	//INVLD  ID:57
+addInfonToScene(7, 6, 2, 7)	//INVLD  ID:71
+addInfonToScene(8, 7, 2, 8)	//INVLD  ID:103
+addInfonToScene(9, 8, 2, 9)	//INVLD  ID:130
+
+// Normal fails
+addInfonToScene(6, 3, 2, 3)	//INVLD
+addInfonToScene(8, 3, 2, 4)	//INVLD
+addInfonToScene(9, 5, 2, 3)	//INVLD
+addInfonToScene(10, 3, 2, 5)	//INVLD
+addInfonToScene(10, 5, 2, 5)	//INVLD
+addInfonToScene(10, 7, 2, 5)	//INVLD
+addInfonToScene(12, 3, 2, 6)	//INVLD
+addInfonToScene(12, 4, 2, 4)	//INVLD
+addInfonToScene(12, 5, 2, 4)	//INVLD
+addInfonToScene(12, 5, 2, 6)	//INVLD
+addInfonToScene(12, 6, 2, 3)	//INVLD
+addInfonToScene(12, 7, 2, 3)	//INVLD
+addInfonToScene(12, 8, 2, 4)	//INVLD
+addInfonToScene(12, 9, 2, 6)	//INVLD
+
+        // withEach val in RANGE(0..11){
+        //     addInfonToScene(12, val, 1, 4)
+        //     addInfonToScene(12, val, 2, 4)
+        // }
+
+//exit(1)
         //~ me innerAdd: iAdd
         //~ iAdd.init(3, 2, 5)
 
@@ -705,24 +816,106 @@ exit(1)
         //~ test1.doTest(5)
     }
     void: draw(their GUI_ctxt: cr) <- {
-        print("In DRAW Infon WIDGET!!!!!!!()\n")
-        cr.setColor(styler.Gray)
+        cr.setColor(styler.White)
         cr.setLineWidth(1)
-        cr.rectangle(0,0,1200,1200)
+        cr.rectangle(0,0,1200,1400)
         cr.fillNow()
 
+        me int: yPos <- 50
+        me int: xPos <- 40
         withEach infn in infons{
-            infn.baseline.draw(cr, 100, 40)
-            infn.draw(cr, 100, 100)
+            me int: infonSize <- infn.items.size()
+            me int: infonVal <- infn.value()
+            me int: colIdx <- infn.dispArg
+            me int: dispArg <- infn.dispArg
+            me int: dispMode <- infn.dispMode
+            me int: Q_size <- 0
+            me int: D_size <- 0
+
+               D_size <- dispArg
+               Q_size <- infonSize/D_size
+
+            me int: divisorVal <- infonVal / Q_size
+            me int: quotientVal <- infonVal % Q_size
+            me string: label <- 'Expected: {*'+toString(D_size)+'+'+toString(divisorVal)+' *'+toString(Q_size)+'+'+toString(quotientVal)+'} ==  *'+toString(infonSize)+'+'+toString(infonVal)
+            cr.setColor(cdColor(0,0,0,200))
+            cr.rectangle(xPos-5, yPos-20, 330, 90); cr.strokeNow()
+            renderText(cr, label, textFont, xPos, yPos-25)
+            cr.setColor(cdColor(230,230,230,200))
+
+            infn.draw(cr, xPos, yPos, 0.75)
+            if(xPos>700){xPos <- 40; yPos <+- 200}
+            else{xPos <+- 350}
+
+
+        }
+    }
+}
+
+struct infonWidgetTable: inherits=DashboardWidget{
+    me int: infonSize <- 12
+    me List<int>: cols <- [1, 2, 3, 4, 6]
+    our inf: masterBaseline
+
+    void: init() <- {
+        Allocate(masterBaseline)
+        masterBaseline.initAsBaseline(infonSize, masterBaseline)
+
+        cosetColors.append(cdColor(255,0,0,255))
+        cosetColors.append(cdColor(0,255,0,255))
+        cosetColors.append(styler.Yellow)
+        cosetColors.append(cdColor(255,12,200,255))
+        cosetColors.append(cdColor(2,200,200,255))
+        cosetColors.append(styler.Orange)
+        Allocate(textFont,"Ariel", "8")
+        Allocate(hugeFont, "Ariel", "72")
+    }
+
+    void: draw(their GUI_ctxt: cr) <- {
+        cr.setColor(styler.White)
+        cr.setLineWidth(1)
+        cr.rectangle(0,0,2000,2000)
+        cr.fillNow()
+
+        me int: yPos <- 40
+        me string: tsz <- toString(infonSize)
+        withEach row in RANGE(0..infonSize){
+            cr.setColor(cdColor(230,230,230,255))
+            renderText(cr, to_string(row), hugeFont, 20, yPos+70)
+            cr.strokeNow()
+
+            our inf:: term; term.initInf(masterBaseline, infonSize, row)
+
+            withEach colIdx in RANGE(0..cols.size){
+                me int: Q_size <- cols[colIdx]
+                me int: D_size <- infonSize/Q_size
+                me int: quotientVal <- row / D_size
+                me int: divisorVal <- row % D_size
+                me string: label <- '{*'+toString(Q_size)+'+'+toString(quotientVal)+' *'+toString(infonSize/Q_size)+'+'+toString(divisorVal)+'} ==  *12+'+toString(row)
+                cr.setColor(cdColor(50,50,50,200))
+                me int: xPos <- 150+colIdx*300
+                cr.rectangle(xPos-5, yPos-20, 250, 145); cr.strokeNow()
+                renderText(cr, label, textFont, xPos, yPos-3)
+                term.dispMode <- 2
+                term.dispArg <- Q_size
+                term.draw(cr, xPos, yPos+10, 0.5)
+
+                term.dispMode <- 1
+                term.draw(cr, xPos, yPos+75, 0.5)
+
+            }
+            yPos <+- 150
         }
     }
 }
 
 struct GLOBAL{
     their GUI_canvas: drawing_area
-    their infonWidget: infCanvas
+    their infonWidget: infCanvas            // Uncomment this one to use the infonWidget
+   // their infonWidgetTable: infCanvas     // Uncomment this one to use the display all the size 12s (for example)
     me int: fontSize
-    our fontSpec: textFont
+    our fontSpec:: textFont
+    our fontSpec:: hugeFont
     me cdColor: lineColor1
     me cdColor: lineColor2
 }
@@ -733,7 +926,7 @@ struct APP{
         infCanvas.init()
         drawing_area  <- gui.newCanvas()
         drawing_area.setParent(infCanvas)
-        gui.setWidgetSize(drawing_area, 1200, 1200)
+        gui.setWidgetSize(drawing_area, 1800, 1800)
         infCanvas.EventDispatcher.registerWidgetForEventDispatcher(drawing_area, infCanvas)
         addToContainerAndExpand (frame, drawing_area)
     }
