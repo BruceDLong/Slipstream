@@ -1,0 +1,141 @@
+concepts = {
+    @side = {color}
+
+    // To orient these cublets, we must make some assumptions about their orientation coordinates.
+
+    @center-cube = {
+        thing,
+        front-color,
+        base-color:gray,
+        *6+{ side| {%.front-color} {%.base-color} {%.base-color} {%.base-color} {%.base-color} {%.base-color}}
+    }
+
+//       +Y (top-color)
+//        |
+//        |
+//        O------> +X (right side, background-color)
+//       /
+//      /
+//    +Z (front-color)
+
+    @edge-cube = {
+        thing,
+        front-color,
+        top-color,
+        base-color:gray,
+        *6+{ side| {%.front-color} {%.top-color} {%.base-color} {%.base-color} {%.base-color} {%.base-color}}
+    }
+
+    @corner-cube = {
+        thing,
+        front-color,
+        top-color,
+        side-color,
+        base-color:gray,
+        *6+{ side| {%.front-color} {%.top-color} {%.side-color} {%.base-color} {%.base-color} {%.base-color}}
+    }
+
+
+    // ---------------------------------------------
+    // Face definition (positions relative to face using Euler ZYX)
+    // ---------------------------------------------
+    @face = {
+        thing,
+        face-color,
+
+        center-cube:{face-color: %.face-color},
+
+        edge-cubes:{
+            n :{ thing:{location:{x:0, y: 1, z:0}, orientation:*_+[{x:0,y:0,z:0}   {x:90, y:0, z:180}]}, sides:{face-color, _} },
+            e :{ thing:{location:{x:1, y: 0, z:0}, orientation:*_+[{x:0,y:,z:90}   {x:0, y:90, z:-90}]}, sides:{face-color, _} },
+            s :{ thing:{location:{x:0, y:-1, z:0}, orientation:*_+[{x:0,y:0,z:180} {x:90, y:-90, z:90}], sides:{face-color, _} },
+            w :{ thing:{location:{x:-1,y: 0, z:0}, orientation:*_+[{x:0,y:0,z:-90} {x:-90, y:180, z:180}], sides:{face-color, _} }
+        },
+
+        corner-cubes:{ // Todo: Calculate the orientations
+            ne:{ thing:{location:{x: 1, y: 1, z:0}, orientation:*_+[{x:0,y:0,z:0}  {x:0,y:0,z:0}  {x:0,y:0,z:0}], sides:{face-color, _, _} },
+            nw:{ thing:{location:{x:-1, y: 1, z:0}, orientation:*_+[{x:0,y:0,z:0}  {x:0,y:0,z:0}  {x:0,y:0,z:0}], sides:{face-color, _, _} },
+            se:{ thing:{location:{x: 1, y:-1, z:0}, orientation:*_+[{x:0,y:0,z:0}  {x:0,y:0,z:0}  {x:0,y:0,z:0}], sides:{face-color, _, _} },
+            sw:{ thing:{location:{x:-1, y:-1, z:0}, orientation:*_+[{x:0,y:0,z:0}  {x:0,y:0,z:0}  {x:0,y:0,z:0}], sides:{face-color, _, _} }
+        }
+    }
+
+    // ---------------------------------------------
+    // Full Rubik’s Cube model
+    // ---------------------------------------------
+    @rubix-cube = {T
+        thing
+
+        // First we inject the cubelets
+        *6+{center-cube|
+            center-cube:{front-color:red},
+            center-cube:{front-color:orange},
+            center-cube:{front-color:white},
+            center-cube:{front-color:yellow},
+            center-cube:{front-color:blue},
+            center-cube:{front-color:green}
+        }
+
+        *12+{edge-cube|
+            edge-cube:{front-color:red,    top-color:white},
+            edge-cube:{front-color:red,    top-color:blue},
+            edge-cube:{front-color:red,    top-color:yellow},
+            edge-cube:{front-color:red,    top-color:green},
+            edge-cube:{front-color:orange, top-color:white},
+            edge-cube:{front-color:orange, top-color:blue},
+            edge-cube:{front-color:orange, top-color:yellow},
+            edge-cube:{front-color:orange, top-color:green},
+            edge-cube:{front-color:white,  top-color:blue},
+            edge-cube:{front-color:white,  top-color:green},
+            edge-cube:{front-color:yellow, top-color:blue},
+            edge-cube:{front-color:yellow, top-color:green}
+        }
+
+        *8+{corner-cube|
+            corner-cube:{front-color:red,    top-color:white,  side-color:blue},
+            corner-cube:{front-color:red,    top-color:white,  side-color:green},
+            corner-cube:{front-color:red,    top-color:yellow, side-color:blue},
+            corner-cube:{front-color:red,    top-color:yellow, side-color:green},
+            corner-cube:{front-color:orange, top-color:white,  side-color:blue},
+            corner-cube:{front-color:orange, top-color:white,  side-color:green},
+            corner-cube:{front-color:orange, top-color:yellow, side-color:blue},
+            corner-cube:{front-color:orange, top-color:yellow, side-color:green}
+        }
+
+        // The 6 faces that hold the cubelets. The z axis is valid at right angles
+        *6+faces:{
+            red-face:    { thing:{location:{x:0,  y:0,  z: 1}, orientation:{x:0,   y:0,   z = *_+[0,90,180,270]}}, face-color:red    },
+            orange-face: { thing:{location:{x:0,  y:0,  z:-1}, orientation:{x:0,   y:π,   z = *_+[0,90,180,270]}}, face-color:orange },
+            white-face:  { thing:{location:{x:0,  y: 1, z:0}, orientation:{x:π/2,  y:0,   z = *_+[0,90,180,270]}}, face-color:white  },
+            yellow-face: { thing:{location:{x:0,  y:-1, z:0}, orientation:{x:-π/2, y:0,   z = *_+[0,90,180,270]}}, face-color:yellow },
+            blue-face:   { thing:{location:{x:-1, y:0,  z:0}, orientation:{x:0,    y:-π/2,z = *_+[0,90,180,270]}}, face-color:blue   },
+            green-face:  { thing:{location:{x: 1, y:0,  z:0}, orientation:{x:0,    y:π/2, z = *_+[0,90,180,270]}}, face-color:green  }
+        }
+
+        // Now Specify the idenitites among the face 
+        // The 8 corner identities
+        %.face:{face-color:red}.corners.ne    = %.face:{face-color:white}.corners.se  = %.face:{face-color:green}.corners.nw
+        %.face:{face-color:red}.corners.se    = %.face:{face-color:green}.corners.sw  = %.face:{face-color:yellow}.corners.ne
+        %.face:{face-color:red}.corners.sw    = %.face:{face-color:yellow}.corners.nw = %.face:{face-color:blue}.corners.se
+        %.face:{face-color:red}.corners.nw    = %.face:{face-color:blue}.corners.ne   = %.face:{face-color:white}.corners.sw
+        %.face:{face-color:orange}.corners.ne = %.face:{face-color:white}.corners.nw  = %.face:{face-color:blue}.corners.nw
+        %.face:{face-color:orange}.corners.se = %.face:{face-color:green}.corners.se  = %.face:{face-color:white}.corners.nw
+        %.face:{face-color:orange}.corners.sw = %.face:{face-color:yellow}.corners.se = %.face:{face-color:green}.corners.se
+        %.face:{face-color:orange}.corners.nw = %.face:{face-color:blue}.corners.sw   = %.face:{face-color:yellow}.corners.sw
+
+        // The 12 edge identities
+        %.face:{face-color:red}.edges.n    = %.face:{face-color:white}.edges.s
+        %.face:{face-color:red}.edges.e    = %.face:{face-color:green}.edges.w
+        %.face:{face-color:red}.edges.s    = %.face:{face-color:yellow}.edges.n
+        %.face:{face-color:red}.edges.w    = %.face:{face-color:blue}.edges.e
+        %.face:{face-color:orange}.edges.n = %.face:{face-color:white}.edges.n
+        %.face:{face-color:orange}.edges.e = %.face:{face-color:blue}.edges.w
+        %.face:{face-color:orange}.edges.s = %.face:{face-color:yellow}.edges.s
+        %.face:{face-color:orange}.edges.w = %.face:{face-color:green}.edges.e
+        %.face:{face-color:white}.edges.e  = %.face:{face-color:blue}.edges.n
+        %.face:{face-color:green}.edges.n  = %.face:{face-color:white}.edges.w
+        %.face:{face-color:yellow}.edges.e = %.face:{face-color:green}.edges.s
+        %.face:{face-color:blue}.edges.s   = %.face:{face-color:yellow}.edges.w
+
+    | ... }
+}
