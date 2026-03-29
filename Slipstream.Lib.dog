@@ -234,7 +234,6 @@ struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
         parserThread.sourceConnector <- source
     }
     void: start(me string:name) <- {
-        toFill.stillParsing <- true
         normerThread.init(parentAgent, toFill)
         normerThread.start(name+"_NRM")
         parserThread.initAndStart(parser, source.inputBuf, toFill, name+"_PnE")

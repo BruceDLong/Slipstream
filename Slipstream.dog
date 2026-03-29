@@ -374,7 +374,7 @@ struct Presenter{
         me List<string>: buttons
         me string: btnLabel <- ""
         me int: buttonStrSize <- buttonList.size()
-        withEach pos in RANGE(0..buttonStrSize){
+        withEach pos in range 0 .. buttonStrSize {
             me char: ch<-buttonList[pos]
             if(ch=="|" or pos==buttonStrSize-1){
                 if(ch!="|" and pos==buttonStrSize-1){btnLabel <+- ch}

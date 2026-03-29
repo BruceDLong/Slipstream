@@ -55,7 +55,7 @@ struct TimeView: inherits=ReactiveControl{
         me string: itemID <- PR.sourcePov.mySymbol()
         me string: timeIdxID <- itemID+"/timeIdx"
         me int: timeIdx <- proactiveGUI.presenter.modelMgr.getInt64(timeIdxID, 0)
-//print("TIME_DRAW idx:",timeIdx,"\n")
+        //print("TIME_DRAW idx:",timeIdx,"\n")
         me int: height <- 200
         me int: width  <- 300
         me GuiCoords:RA{PR.posX, PR.posY, width, height}
@@ -233,16 +233,16 @@ struct Scene3D: inherits=ReactiveControl{
             //print("\nORIENT: x:", xOri," y:",yOri," z:",zOri,"\n")
         }
 
-our infon:: item
-our WordUse:: word
-item.type    <- word
-word.setAsGiven("rubixstate")
-if(stuffPov.pItem.type!=NULL and stuffPov.pItem.isCompatibleWith(item, false)){
-    xOri <+- frameNumber * 0.03
-    yOri <+- frameNumber * 0.06
-    zOri <+- frameNumber * 0.00
-    frameNumber <+- 1
-}
+    our infon:: item
+    our WordUse:: word
+    item.type    <- word
+    word.setAsGiven("rubixstate")
+    if(stuffPov.pItem.type!=NULL and stuffPov.pItem.isCompatibleWith(item, false)){
+        xOri <+- frameNumber * 0.03
+        yOri <+- frameNumber * 0.06
+        zOri <+- frameNumber * 0.00
+        frameNumber <+- 1
+    }
         thing.name <- objType // TODO: This could be a better name. It's for debugging.
         thing.setScale(1.0, 1.0, 1.0)
         thing.rotateX(xOri)
@@ -250,8 +250,8 @@ if(stuffPov.pItem.type!=NULL and stuffPov.pItem.isCompatibleWith(item, false)){
         thing.rotateZ(zOri)
         thing.setLocation(xLoc, yLoc, zLoc)
         thing.calcThingMatx(mat4ID)
-me int: strLen <- objType.size()
-if(strLen>4){if(objType.subStr(strLen-4)=="cube"){objType<-"colorcube"}}
+    me int: strLen <- objType.size()
+    if(strLen>4){if(objType.subStr(strLen-4)=="cube"){objType<-"colorcube"}}
         switch(objType){
             case "rectangle":{}
             case "cube":{
@@ -382,7 +382,7 @@ struct TextEditBox: inherits=ReactiveControl{
 
     me int: calcWidthToCursor(me string: line, me int: charsToCur) <- {
         me int: wtc <- 0
-        withEach p in RANGE(0..charsToCur){
+        withEach p in range 0 .. charsToCur {
             wtc <+- thisPR.font.getCharWidthX1024(line[p])
         }
         return(wtc/1024)
@@ -392,7 +392,7 @@ struct TextEditBox: inherits=ReactiveControl{
         me int32: wtc <- 0
         me int: p <- 0
         if(line.size()==0){charsToCur<-0; widthToCur<-0; return();}
-        withEach count in RANGE(0..line.size()){
+        withEach count in range 0 .. line.size() {
             me int: chrWidth <- thisPR.font.getCharWidth(line[p])
             if(wtc+(chrWidth/2) >= maxWidthToCur){break()}
             wtc <+- chrWidth
@@ -586,7 +586,7 @@ struct TextEditBox: inherits=ReactiveControl{
                             our string: pText <- getClipboardAsText()
                             if(pText!=NULL){
                                 me int: txtSz <- pText.size()
-                                withEach pos in RANGE(0..txtSz){
+                                withEach pos in range 0 .. txtSz {
                                     me int32: chAtPos <- pText[pos]
                                     insertChar(chAtPos)
                                 }
@@ -639,7 +639,7 @@ struct TerminalApp: inherits=WindowControl{
     our InfonStream: iStream
     our ParamRec: thisPR
 
-// checkParseStatus:  // THESE ARE DUPLICATES FROM PARSER AND MUST MATCH!
+    // checkParseStatus:  // THESE ARE DUPLICATES FROM PARSER AND MUST MATCH!
     const int: valid_EOB       <- -1
     const int: valid_notDone   <- 1
     const int: valid_maybeDone <- 2
@@ -723,7 +723,6 @@ struct TerminalApp: inherits=WindowControl{
             crntLineNum <+- numLines
             pov <- pov.next
         }
-
         // Draw the currently-being-edited line
         our ParamRec:: innerPR; innerPR.init(dataItems.back(), xCur, yCur, width-10, lineHeight)
         innerPR.topPov  <- PR.topPov
