@@ -1,6 +1,6 @@
 // universe.pr
 // Our universe
 
-{T {...} |
+%W = *(20000+_) +{T million-year | ... }
 
-}
+%W = {... Earth}

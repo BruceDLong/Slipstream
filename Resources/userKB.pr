@@ -13,7 +13,7 @@
             edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0.0}, location:{xLoc:0, yLoc:-1.1, zLoc:1.1}},}
             edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:0, yLoc:1.1, zLoc:1.1}},}
             edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:-1.1, yLoc:0, zLoc:1.1}},}
-            edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0,} location:{xLoc:1.1, yLoc:0, zLoc:1.1}},}
+            edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:1.1, yLoc:0, zLoc:1.1}},}
             edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:-1.1, yLoc:-1.1, zLoc:0}},}
             edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:1.1, yLoc:-1.1, zLoc:0}},}
             edgeCube:{thing:{orientation:{xRot:0, yRot:0.0, zRot:0}, location:{xLoc:-1.1, yLoc:1.1, zLoc:0}},}

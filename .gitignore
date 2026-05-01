@@ -42,3 +42,15 @@ libraryLogs/
 JavaTestBuild/
 
 *.orig
+
+.codex
+
+codeDog.log
+
+Resources/HD-Peaceful-Background.jpg
+
+Resources/Lake-Summer-Mountain.jpg
+
+Resources/Peaceful-HD-Images.jpg
+
+Resources/Peaceful-Pictures.jpg
