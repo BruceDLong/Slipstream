@@ -19,7 +19,9 @@ LicenseText = `All rights reserved.`
 
 runCode=`
     CommandLineManager.defineOption("Slip", "topFile", "-f", "--file", "The top-level file to load.", "deviceKB.pr")
+    CommandLineManager.defineOption("Slip", "drctLocator", "-d", "--drct-locator", "Override direct terminal stream locator.", "drct:///")
     me string: topFile <- CommandLineManager.getOption("Slip", "topFile")
+    drctLocator <- CommandLineManager.getOption("Slip", "drctLocator")
     thisApp.loadAndParseSettingsAndData(topFile)
 `
 
@@ -621,6 +623,7 @@ void: run() <-{
 
 struct GLOBAL{
 our POV: myStuff // Do better design for this
+    me string: drctLocator <- "drct:///"
     me ProactiveGUI: proactiveGUI
     their GUI_canvas: drawing_area
     their SlipView: slipView

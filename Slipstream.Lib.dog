@@ -25,6 +25,9 @@ runCode=`
 `
 do ManageCmdLine(cmd)
 
+// To Override the terminal's input for testing, add this to the cmd line:
+// -d drct://path/to/script.pr
+
 struct GLOBAL{
     me SlipstreamCore: CORE
 }
@@ -118,6 +121,34 @@ struct DrctConnector: inherits=InfonConnector {     // Direct / Local connection
     our TerminalApp: termToConnect  //TODO: This lib shouldn't depend on TerminalApp; use a proxie class
     void: init(our SStreamSpec: SP) <- {
         streamSpec <- SP
+        inputEOF <- false
+    }
+    void: pumpInputBuff() <- {
+        if(streamSpec.contentArgs==""){return()}
+
+        me string: scriptPath <- streamSpec.contentArgs
+        me FileStream: scriptFile
+        scriptFile.open(scriptPath)
+        if(scriptFile.failure()){
+            me string: fallbackPath <- getAssetsDir()+"/"+scriptPath
+            scriptFile.open(fallbackPath)
+            if(scriptFile.failure()){
+                inputEOF <- true
+                inputBuf.close()
+                handleSystemError("DRCT_SHIM_OPEN_FAIL:"+scriptPath)
+                return()
+            }
+            scriptPath <- fallbackPath
+        }
+
+        log("DRCT_SHIM_FEED:"+scriptPath)
+        while(!scriptFile.EOF()){
+            me string: line <- scriptFile.getLine()
+            inputBuf.putStr(line+"\n")
+        }
+        scriptFile.close()
+        inputEOF <- true
+        inputBuf.close()
     }
     bool: pumpOutputBuf(me string: mesg) <- {
         termToConnect.processResult(mesg)
@@ -249,6 +280,7 @@ struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
 
 struct ConnectionManager{ // Manage connections to a Proteus Agent
     their Agent: agent
+    me Repository: foundation
     me Repository: device
     me Repository: user
     me Repository: world
@@ -329,7 +361,10 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
     }
     me QuicClient_Engine: quicClient
 
-    void: submitProteusResult(me uint64: originID, me uint64: pos, me string: mesg)  <- {connectionMgr.infonSourceRecords[originID].source.submitProteusResult(pos, mesg)}
+    void: submitProteusResult(me uint64: originID, me uint64: pos, me string: mesg)  <- {
+        log("Result from "+getOriginIDString(originID)+":"+toString(pos)+" "+mesg)
+        connectionMgr.infonSourceRecords[originID].source.submitProteusResult(pos, mesg)
+    }
     void: handleSystemError  (me uint64: originID, me string: mesg)  <- {connectionMgr.infonSourceRecords[originID].source.handleSystemError(mesg)}
     void: handleSyntaxError  (me uint64: originID, me string: mesg)  <- {connectionMgr.infonSourceRecords[originID].source.handleSyntaxError(mesg)}
     void: handleProteusError (me uint64: originID, me string: mesg)  <- {connectionMgr.infonSourceRecords[originID].source.handleProteusError(mesg)}
@@ -354,6 +389,7 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
     void: start() <- {
       //agent.device <- connectionMgr.device.initAndLoad(connectionMgr, "device", masterFile)
       //agent.world  <- connectionMgr.world.initAndLoad(connectionMgr,  "world","quic://[::1]:2006/public/PublicKB.pr")
+        agent.foundation  <- connectionMgr.world.initAndLoad(connectionMgr,  "world","file:///public/foundation.pr")
         agent.world  <- connectionMgr.world.initAndLoad(connectionMgr,  "world","file:///public/PublicKB.pr")
         sleep(1000)
         agent.user   <- connectionMgr.user.initAndLoad(connectionMgr,   "user", "file:///userKB.pr")

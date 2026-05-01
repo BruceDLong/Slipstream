@@ -169,7 +169,7 @@ struct Scene3D: inherits=ReactiveControl{
         result.addPart(t3d)
     }
     me cdColor: getColorFromHue(our POV: huePov) <- {
-        me cdColor: retColor
+        me cdColor: retColor <- Styler.Gray
         if(huePov){
             me int: hue <- huePov.pItem.fetchInt()
             switch(hue){
@@ -676,7 +676,8 @@ struct TerminalApp: inherits=WindowControl{
             Allocate(TermApp)
             termBoxGDR.isActive <- 1 // Set 'not first time'
             termBoxGDR.ctrl <- TermApp
-            TermApp.iStream <- CORE.connectionMgr.user.appendAnInfonAndLoad(CORE.connectionMgr, "drct:///")
+            log("DRAW_TERM_CONNECTOR:"+drctLocator)
+            TermApp.iStream <- CORE.connectionMgr.user.appendAnInfonAndLoad(CORE.connectionMgr, drctLocator)
             TermApp.thisPR  <- PR
             TermApp.GDR     <- termBoxGDR
             our DrctConnector: DConn <- asClass(DrctConnector, TermApp.iStream.source)
@@ -713,6 +714,7 @@ struct TerminalApp: inherits=WindowControl{
             me int64: entryWidth  <- fetchIntField(safeFetchField(propertiesInf, "width"))
             me int64: numLines    <- entryWidth/editWidth+1
             me string: entryText  <- fetchStringField(dataInf)
+  //  log("    ENTRY_TEXT:[" + entryText + "]")
             if(sourceID=="agent:RESULT"){dr.addC(cmdSetColor, styler.Yellow)}
             else if(sourceID=="agent:SYSERR"){dr.addC(cmdSetColor, styler.Red)}
             else if(sourceID=="agent:SYNERR"){dr.addC(cmdSetColor, styler.Pink)}
