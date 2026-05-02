@@ -25,6 +25,10 @@ runCode=`
     thisApp.loadAndParseSettingsAndData(topFile)
 `
 
+deinitCode=`
+    CORE.shutdown()
+`
+
 ////////////   A p p l i c a t i o n   a n d   G l o b a l s
 
 mainStyle = {
@@ -629,6 +633,13 @@ our POV: myStuff // Do better design for this
     their SlipView: slipView
     their LightSource: lightSrc
     me List<their LightSource>: lightSources
+
+me void: slipstream_shutdown_CB(their GtkWidget: widget, me gpointer: user_data) <- <%{
+    CORE.shutdown();
+}%>
+me void: connectSlipstreamShutdownCB(me GUI_Frame: widget) <- <%{
+    g_signal_connect(G_OBJECT(widget), "destroy", G_CALLBACK(slipstream_shutdown_CB), NULL);
+}%>
 }
 
 struct APP{
@@ -648,11 +659,11 @@ struct APP{
         CORE.connectionMgr.user.iStream.waitForCompletion()
         widgetMngr.init()
         widgetMngr.init2()
-        CORE.shutdown()
         return(true)
     }
 
     me void: createAppArea(me GUI_Frame: frame) <- {
+        connectSlipstreamShutdownCB(frame)
         Allocate(slipView)
         drawing_area  <- slipView.initProactiveGUI()
         slipView.loadData(CORE.agent.user)

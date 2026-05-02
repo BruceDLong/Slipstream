@@ -63,15 +63,17 @@ model InfonConnector{
     me int:    statusCode
     me string: statusMesg
     me bool:   inputEOF
+    me bool:   shutdownRequested
+    me bool:   allowStreamingNormalize
     their InfonStream: iStreamParent
     void: init(our SStreamSpec: SP) <- {}
     void: pumpInputBuff()        <- {}
     me string: readInputStream() <- {return("")}
     bool: pumpOutputBuf(me string: mesg)  // send to outputstream: outputBuf.putStr(mesg);
-    void: submitProteusResult(me int64: pos, me string: mesg)  <- {pumpOutputBuf("RESULT:"+toString(pos)+":"+mesg+"\n")}
-    void: handleSystemError  (me string: mesg)  <- {pumpOutputBuf("SYSERR:"+mesg+"\n")}
-    void: handleSyntaxError  (me string: mesg)  <- {pumpOutputBuf("SYNERR:"+mesg+"\n")}
-    void: handleProteusError (me string: mesg)  <- {pumpOutputBuf("NRMERR:"+mesg+"\n")}
+    void: submitProteusResult(me int64: pos, me string: mesg)  <- {if(!shutdownRequested){pumpOutputBuf("RESULT:"+toString(pos)+":"+mesg+"\n")}}
+    void: handleSystemError  (me string: mesg)  <- {if(!shutdownRequested){pumpOutputBuf("SYSERR:"+mesg+"\n")}}
+    void: handleSyntaxError  (me string: mesg)  <- {if(!shutdownRequested){pumpOutputBuf("SYNERR:"+mesg+"\n")}}
+    void: handleProteusError (me string: mesg)  <- {if(!shutdownRequested){pumpOutputBuf("NRMERR:"+mesg+"\n")}}
 }
 struct InfonConnector{}
 
@@ -83,6 +85,7 @@ struct FileConnector: inherits=InfonConnector {
         dataFile.open(filePath)
         if (dataFile.failure()){logFatalError("Failed to open file: " + filePath + "\n")}
         inputEOF<-false
+        allowStreamingNormalize <- false
         log("Initialized:"+filePath)
     }
     void: pumpInputBuff() <- {
@@ -103,6 +106,7 @@ struct ClipConnector: inherits=InfonConnector {
     void: init(our SStreamSpec: SP) <- {
         streamSpec <- SP
         inputEOF<-false
+        allowStreamingNormalize <- true
         log("Initialized CLIP connection")
     }
     void: pumpInputBuff() <- {
@@ -122,6 +126,7 @@ struct DrctConnector: inherits=InfonConnector {     // Direct / Local connection
     void: init(our SStreamSpec: SP) <- {
         streamSpec <- SP
         inputEOF <- false
+        allowStreamingNormalize <- (streamSpec.contentArgs=="")
     }
     void: pumpInputBuff() <- {
         if(streamSpec.contentArgs==""){return()}
@@ -165,6 +170,8 @@ struct DrctConnector: inherits=InfonConnector {     // Direct / Local connection
 struct AgentConnector:inherits=InfonConnector {      // Connect to other agents
     void: init(our SStreamSpec: SP) <- {
         streamSpec <- SP
+        inputEOF <- false
+        allowStreamingNormalize <- true
         their QuicClient_Connection: qConn  <- CORE.quicClient.getClientConnection(SP.ipAddr, SP.portNum)
         if(qConn==NULL){log("ERROR setting up QuicClient_Connection."); return()}
 
@@ -266,16 +273,29 @@ struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
     }
     void: start(me string:name) <- {
         normerThread.init(parentAgent, toFill)
-        normerThread.start(name+"_NRM")
-        parserThread.initAndStart(parser, source.inputBuf, toFill, name+"_PnE")
-        source.pumpInputBuff()
+        if(source.allowStreamingNormalize){
+            normerThread.start(name+"_NRM")
+            parserThread.initAndStart(parser, source.inputBuf, toFill, name+"_PnE")
+            source.pumpInputBuff()
+        }else{
+            parserThread.initAndStart(parser, source.inputBuf, toFill, name+"_PnE")
+            source.pumpInputBuff()
+            parserThread.waitForExit()
+            normerThread.start(name+"_NRM")
+        }
         //waitForCompletion(); log("Result:"+toString(toFill))
     }
     void: waitForCompletion() <-{
         parserThread.waitForExit()
         normerThread.waitForExit()
     }
-    void: requestFinish() <- {} // For long-running streams, request to end the stream.
+    void: requestFinish() <- {
+        if(source != NULL){
+            source.shutdownRequested <- true
+            source.inputEOF <- true
+            source.inputBuf.close()
+        }
+    } // For long-running streams, request to end the stream.
 }
 
 struct ConnectionManager{ // Manage connections to a Proteus Agent
@@ -343,6 +363,14 @@ struct ConnectionManager{ // Manage connections to a Proteus Agent
         log("WARNING, No connection was made for: "+specString)
         return(NULL)
     }
+    void: shutdown() <- {
+        withEach (originID, stream) in infonSourceRecords{
+            if(stream != NULL){stream.requestFinish()}
+        }
+        withEach (originID, stream) in infonSourceRecords{
+            if(stream != NULL){stream.waitForCompletion()}
+        }
+    }
 }
 
 struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream node
@@ -351,6 +379,7 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
     me ConnectionManager: connectionMgr
     me string: statusMsg
     me bool: idling
+    me bool: shutdownStarted
 
     me bool: normalizeFromStreamSpec(our POV: infToFill, me string: streamSpec) <- {
         me bool: success <- connectionMgr.startNewConnection(infToFill.pItem, streamSpec)==NULL
@@ -377,6 +406,7 @@ struct SlipstreamCore: inherits=ProteusCore{ // Create and manage a slipstream n
         quicClient.init("CFile", false, ipAddr, stoi(portNum))
     }
     void: init(me string: topFile) <- {
+        shutdownStarted <- false
         streamingNormMode <- true
         initHardFuncNames()
         statusMsg <- ""  // Empty == OK
@@ -411,7 +441,11 @@ if(count>250){
         }
     }
     void: stopIdling()<-{idling <- false}
-    void: shutdown()<-{} // TODO: Ask all streams to quit then wait for them. Dealloc anything
+    void: shutdown()<-{
+        if(shutdownStarted){return()}
+        shutdownStarted <- true
+        connectionMgr.shutdown()
+    } // Ask all streams to quit then wait for them.
 
     void: run(me string: topFile) <- {
         // This is an example or for testing. Normally use a GUI's event loop.
