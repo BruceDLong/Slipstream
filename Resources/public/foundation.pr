@@ -8,7 +8,7 @@
     // -----------------------------
     // Some low level units
     // -----------------------------
-    @cesium-133-hyperfine-transition-frequency    <SI> = *_+9192631770 // Hz
+    @cesium_133-hyperfine-transition-frequency    <SI> = *_+9192631770 // Hz
     @speed-of-light     <SI> = *_+299792458  // m/s
     @Planck-constant    <SI> = *_+0.000000000000000000000000000000000662607015  //joule second
     @electron-charge    <SI> = *_+0.0000000000000000001602176634   // coulomb
@@ -37,7 +37,7 @@
     // -----------------------------
     // Time units / calendar concepts
     // -----------------------------
-    @second       = *cesium-133-hyperfine-transition-frequency +{T F3-F4-period | ... }          // keep abstract for now
+  //  @second       = *cesium_133-hyperfine-transition-frequency +{T F3-F4-period | ... }          // keep abstract for now
     @Julian-year  = *31557600 +{T second| ... }
     @earth-year   = {T ... }          // orbit-based later
 
@@ -49,11 +49,11 @@
         &*1000 + { million-year | ... }
     }
 
-    @calendar view = {
+    @calendar_view = {
         ...                          // placeholder for BCE/CE, century, etc.
     }
 
-    @year slice = {
+    @year_slice = {
         cosmic-index,
         calendar-views,
         contents

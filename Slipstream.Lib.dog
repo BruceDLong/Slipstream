@@ -220,7 +220,7 @@ struct ThreadedInfonParser: inherits=Threads{
         log("OPENING PARSE_THREAD:" + streamName())
         parser.doParse(result)
         if(parser.doesParseHaveError()){
-            handleSyntaxError(parser.errorMesg)
+            handleSyntaxError(parser.formattedError())
         }
         log("CLOSING PARSE_THREAD:" + streamName())
 
@@ -232,7 +232,7 @@ struct ThreadedInfonParser: inherits=Threads{
     me string: streamName() <- {return(sourceConnector.streamSpec.spec)}
     void: handleSyntaxError(me string: mesg) <- {
         log("Syntax Error:"+mesg)
-        sourceConnector.handleSyntaxError(streamName() + mesg)
+        sourceConnector.handleSyntaxError(streamName() + ": " + mesg)
     }
 }
 struct InfonStream{ // InfonConnector -> Parse -> Extract -> Normalize
