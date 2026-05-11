@@ -246,6 +246,7 @@ struct Presenter{
     their GuiModelManager: modelMgr
     me string: crntFocusIDStr
     our GuiDataRec: crntGDR
+    our POV: crntFocusTopPov
 
     me List<our ProactEvent>: eventRegistry             // For events with a single target
     me List<our ProactEvent>: broadcastEventRegistry    // More than one target wants to know
@@ -253,18 +254,26 @@ struct Presenter{
     void: registerEvent(our ProactEvent: event) <- {eventRegistry.prepend(event)}
     void: registerBroadcastEvent(our ProactEvent: event) <- {broadcastEventRegistry.prepend(event)}
 
-    void: grabFocus(me string: widgetID) <- {
-        if(widgetID == crntFocusIDStr){return()}
+    void: grabFocus(me string: widgetID, our POV: topPov<-NULL) <- {
+        if(widgetID == crntFocusIDStr){
+            if(topPov!=NULL){crntFocusTopPov <- topPov}
+            return()
+        }
         if(crntFocusIDStr!=""){
             our GuiDataRec: old_GDR <- modelMgr.fetchGuiData(crntFocusIDStr) // Get currently focused item
-            old_GDR.isActive<-0
+            if(old_GDR!=NULL){old_GDR.isActive<-0}
             //log("DEACTIVATING:"+crntFocusIDStr)
         }
         our GuiDataRec: new_GDR <- modelMgr.fetchGuiData(widgetID)
+        if(new_GDR==NULL){
+            Allocate(new_GDR)
+            modelMgr.guiData[widgetID] <- new_GDR
+        }
         if(new_GDR!=NULL){
             new_GDR.isActive <+- 1
             crntFocusIDStr <- widgetID
             crntGDR <- new_GDR
+            crntFocusTopPov <- topPov
             //log("ACTIVATING:"+widgetID)
         }
     }
@@ -274,6 +283,8 @@ struct Presenter{
             crntGDR.ctrl.saveBack()
             crntGDR.isActive <- 0
             crntGDR <- NULL
+            crntFocusIDStr <- ""
+            crntFocusTopPov <- NULL
         }
     }
     void: reset() <- {eventRegistry.clear(); broadcastEventRegistry.clear()}
@@ -729,7 +740,8 @@ struct ProactiveGUIWidget: inherits=DashboardWidget{
     me bool: keyTyped(their GUI_KeyboardEvent: event) <- {
         me bool: retval <- false
         our GuiDataRec: GDR <- proactiveGUI.presenter.crntGDR
-        if(GDR!=NULL and GDR.ctrl!=NULL){
+        our POV: focusTopPov <- proactiveGUI.presenter.crntFocusTopPov
+        if(GDR!=NULL and GDR.ctrl!=NULL and (focusTopPov==NULL or proactiveGUI.guiModelManager.isPovTopWindow(focusTopPov))){
             retval <- GDR.ctrl.keyTyped(event)
         }
         return(retval)

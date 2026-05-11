@@ -30,11 +30,19 @@ struct GLOBAL{
 struct WindowControl: inherits=ReactiveControl{
     void: drawHeader(our dashDrawing: dr, our ParamRec: PR) <- {
         // dragging header
-        if(proactiveGUI.guiModelManager.isPovTopWindow(PR.sourcePov)){dr.addC(cmdSetColor, topTextColr)}
+        our POV: windowPov <- PR.topPov
+        if(windowPov==NULL){windowPov <- PR.sourcePov}
+        if(proactiveGUI.guiModelManager.isPovTopWindow(windowPov)){dr.addC(cmdSetColor, topTextColr)}
         else{dr.addC(cmdSetColor, surfaceBkgnd)}
+        me GuiCoords:WindowRectXYWH{PR.posX, PR.posY, PR.posW, PR.posH}
         me GuiCoords:HedrRectXYWH{PR.posX, PR.posY, PR.posW, headerHeight-2}
 
-        // Block click-under
+        // Block click-under and focus the window from any click in its bounds.
+        our ProactEvent:: windowFocusEvent;
+        windowFocusEvent.setTrigger(tPrimaryClick, WindowRectXYWH, PR.topPov); windowFocusEvent.setGUI_Event1(eBlockEvents)
+        proactiveGUI.presenter.registerEvent(windowFocusEvent)
+
+        // Keep title-bar clicks above the full-window event.
         our ProactEvent:: blockEvents;
         blockEvents.setTrigger(tPrimaryClick, HedrRectXYWH, PR.topPov); blockEvents.setGUI_Event1(eBlockEvents)
         proactiveGUI.presenter.registerEvent(blockEvents)
@@ -484,7 +492,7 @@ struct TextEditBox: inherits=ReactiveControl{
         if(textBoxGDR!=NULL){isActive <- textBoxGDR.isActive}
         else{
             Allocate(textBoxGDR); proactiveGUI.presenter.modelMgr.guiData[GDR_ID]<-textBoxGDR
-            if(PR.startActive) {isActive<-1; proactiveGUI.presenter.grabFocus(GDR_ID)} else {isActive<-0}
+            if(PR.startActive) {isActive<-1; proactiveGUI.presenter.grabFocus(GDR_ID, PR.topPov)} else {isActive<-0}
         }
         if(isActive==0){
             dr.addC(cmdSetColor, cdColor(200,200,200,200))
@@ -507,7 +515,7 @@ struct TextEditBox: inherits=ReactiveControl{
             dr.add1(cmdFill)
 
             our ProactEvent:: clickEvent;
-            clickEvent.setTrigger(tPrimaryClick, myCoords); clickEvent.setGUI_SetActiveFlag(GDR_ID, 1)
+            clickEvent.setTrigger(tPrimaryClick, myCoords, PR.topPov); clickEvent.setGUI_SetActiveFlag(GDR_ID, 1)
             proactiveGUI.presenter.registerEvent(clickEvent)
         } else {
             our TextEditBox: TEBox
@@ -540,7 +548,7 @@ struct TextEditBox: inherits=ReactiveControl{
             drawACursor(dr, cursorPos, yPos, PR.font.height)
 
             our ProactEvent:: clickEvent;
-            clickEvent.setTrigger(tPrimaryClick, myCoords); clickEvent.setGUI_CallFunc(ePrimaryClick, GDR_ID)
+            clickEvent.setTrigger(tPrimaryClick, myCoords, PR.topPov); clickEvent.setGUI_CallFunc(ePrimaryClick, GDR_ID)
             proactiveGUI.presenter.registerEvent(clickEvent)
         }
     }
@@ -745,7 +753,6 @@ struct TerminalApp: inherits=WindowControl{
             case other_error:    {innerPR.foreGnd <- styler.Red}
             default:             {innerPR.foreGnd <- styler.Black}
         }
-        if(proactiveGUI.presenter.modelMgr.isPovTopWindow(PR.topPov)){innerPR.startActive <- true}
         proactiveGUI.presenter.drawItem(dr, innerPR)
     }
 
@@ -791,6 +798,8 @@ struct TerminalApp: inherits=WindowControl{
             if(newSrcID==NULL){} //DO_NOW: MAKE AND PLACE SourceID
             newSrcID.pItem.value.format <- fLiteral
             newSrcID.pItem.value.str <- "user"
+            our POV: dataInf <- safeFetchField(newPov, "data")
+            proactiveGUI.presenter.grabFocus(dataInf.mySymbol()+"/editBox", thisPR.topPov)
         }
 
     }
