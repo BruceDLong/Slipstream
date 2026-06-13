@@ -291,14 +291,6 @@ struct Presenter{
         dr.addC(cmdSetColor, titleTextColr)
         dr.addTF(cmdRenderTextCentered, PR.posX+(vertListWidth/2), yCur+(VListHeaderHeight/2)+(styler.titleFont.height/2-5), PR.title, styler.titleFont)
 
-        if(PR.screenPos!=NULL){ // Enable dragging
-            me GuiCoords:HedrRectXYWH{PR.posX, yCur, vertListWidth, VListHeaderHeight};
-            our ProactEvent:: dragEvent;
-            our POV: dragTopPov <- PR.topPov
-            if(dragTopPov==NULL){dragTopPov <- PR.sourcePov}
-            dragEvent.setTrigger(tDragStart, HedrRectXYWH, dragTopPov); dragEvent.setInfonEvent(eGUI_SetXY, PR.xPov, PR.yPov)
-            registerEvent(dragEvent)
-        }
         // Draw the list body
         yCur <+- VListHeaderHeight
         our ParamRec:: listPR; listPR.init(PR.dataPov, PR.posX, yCur, vertListWidth, 0)
@@ -329,6 +321,15 @@ struct Presenter{
         PR.posW <- vertListWidth
         PR.posH <- yCur-PR.posY
         boxDR.h <- PR.posH
+        if(PR.screenPos!=NULL){ // Enable dragging
+            me GuiCoords:ListRectXYWH{PR.posX, PR.posY, PR.posW, PR.posH};
+            me GuiCoords:HedrRectXYWH{PR.posX, PR.posY, PR.posW, VListHeaderHeight};
+            our ProactEvent:: dragEvent;
+            our POV: dragTopPov <- PR.topPov
+            if(dragTopPov==NULL){dragTopPov <- PR.sourcePov}
+            dragEvent.setTrigger(tDragStart, HedrRectXYWH, dragTopPov); dragEvent.setRedrawBounds(ListRectXYWH); dragEvent.setInfonEvent(eGUI_SetXY, PR.xPov, PR.yPov)
+            registerEvent(dragEvent)
+        }
     }
 
     void: setNaturalDimensions(our ParamRec: PR) <- {
@@ -622,7 +623,7 @@ struct SlipView: inherits=ProactiveGUIWidget{
 
 // load myStuff
 myStuff <- theInfon.fetchField("mystuff")
-callPeriodically(SlipView, slipView, 100)
+requestRedraw()
         return(false) // No errors
     }
 void: run() <-{
