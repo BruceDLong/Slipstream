@@ -1,6 +1,6 @@
 // Slipstream.dog
 
-LinuxBuild: Platform='Linux' CPU='amd64' Lang='CPP' LangVersion='GNU' optimize='speed';
+LocalBuild: Platform='Local' optimize='speed';
 //SwingBuild: Platform='Java' CPU='JavaVM' Lang='Java' optimize='speed';
 //AndroidBuild: Platform='Android' CPU='JavaVM' Lang='Java' optimize='power';
 //iPhoneBuild: Platform='IOS' CPU='amd64' Lang='Swift' optimize='speed';
@@ -294,7 +294,9 @@ struct Presenter{
         if(PR.screenPos!=NULL){ // Enable dragging
             me GuiCoords:HedrRectXYWH{PR.posX, yCur, vertListWidth, VListHeaderHeight};
             our ProactEvent:: dragEvent;
-            dragEvent.setTrigger(tDragStart, HedrRectXYWH); dragEvent.setInfonEvent(eGUI_SetXY, PR.xPov, PR.yPov)
+            our POV: dragTopPov <- PR.topPov
+            if(dragTopPov==NULL){dragTopPov <- PR.sourcePov}
+            dragEvent.setTrigger(tDragStart, HedrRectXYWH, dragTopPov); dragEvent.setInfonEvent(eGUI_SetXY, PR.xPov, PR.yPov)
             registerEvent(dragEvent)
         }
         // Draw the list body
@@ -638,11 +640,13 @@ our POV: myStuff // Do better design for this
     their LightSource: lightSrc
     me List<their LightSource>: lightSources
 
-me void: slipstream_shutdown_CB(their GtkWidget: widget, me gpointer: user_data) <- <%{
+me void: slipstream_shutdown_CB(their void: widget, their void: user_data) <- <%{
     CORE.shutdown();
 }%>
 me void: connectSlipstreamShutdownCB(me GUI_Frame: widget) <- <%{
+#ifndef _WIN32
     g_signal_connect(G_OBJECT(widget), "destroy", G_CALLBACK(slipstream_shutdown_CB), NULL);
+#endif
 }%>
 }
 

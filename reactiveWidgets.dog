@@ -53,7 +53,7 @@ struct WindowControl: inherits=ReactiveControl{
         dr.addTF(cmdRenderTextCentered, PR.posX+(PR.posW/2), PR.posY+(headerHeight/2)+(styler.smallFont.height/2-3), PR.title, styler.smallFont)
         if(PR.screenPos!=NULL){
             our ProactEvent:: dragEvent
-            dragEvent.setTrigger(tDragStart, HedrRectXYWH); dragEvent.setInfonEvent(eGUI_SetXY, PR.xPov, PR.yPov)
+            dragEvent.setTrigger(tDragStart, HedrRectXYWH, windowPov); dragEvent.setInfonEvent(eGUI_SetXY, PR.xPov, PR.yPov)
             proactiveGUI.presenter.registerEvent(dragEvent)
         }
     }
