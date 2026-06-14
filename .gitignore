@@ -34,6 +34,7 @@
 # Proteus stuff:
 ErrFile.dog
 WorldManager.dog
+LocalBuild/
 LinuxBuild/
 LinuxTestBuild/
 

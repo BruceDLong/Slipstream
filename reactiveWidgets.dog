@@ -391,7 +391,7 @@ struct Scene3D: inherits=ReactiveControl{
         our Window3D:: win3D
         our Thing3D: object <- attempt3DDraw(PR.sourcePov, PR, win3D)
         if(object!=NULL){
-            dr.add3D(object, win3D)
+            addThing3DToDrawing(dr, object, win3D)
             drawDebugDiagnostics(dr, win3D)
             if(lastDrawHasAnimation){
                 slipView.requestAnimationFrameRectIn(win3D.windowXPos - animationFramePad, win3D.windowYPos - animationFramePad,

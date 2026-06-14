@@ -13,7 +13,7 @@ Authors = "Bruce Long"
 Description = "The Slipstream Browser"
 ProgramOrLibrary = "program"
 
-featuresNeeded = [GUI_ToolKit, Dashboard, ReactGUI, Render3D, Slipstream, Proteus]
+featuresNeeded = [GUI_ToolKit, Dashboard, ReactGUI, ReactGUI_Render3D, Render3D, Slipstream, Proteus]
 
 LicenseText = `All rights reserved.`
 
@@ -571,7 +571,7 @@ struct SlipView: inherits=ProactiveGUIWidget{
 
     me List<our POV>: boardInfons
     our dashDrawing: popup_dr
-    me bool: showFrameDiagnostics <- true
+    me bool: showFrameDiagnostics <- false
     me bool: frameDiagnosticsLogEnabled <- true
     me int64: frameDiagnosticsDrawCount
     me int64: frameDiagnosticsFPS
@@ -694,6 +694,7 @@ struct SlipView: inherits=ProactiveGUIWidget{
         proactiveGUI.presenter.drawDashboard(dr, boardInfons[crntBoardIdx], 0,0,windowW,windowH)
         me int64: buildDoneMillis <- guiMonotonicMillis()
         resetReactGuiRenderDiagnostics()
+        resetReactGuiRender3DDiagnostics()
         dr.render(cr)
         me int64: renderDoneMillis <- guiMonotonicMillis()
         updateFrameDiagnostics(frameStartMillis, buildDoneMillis, renderDoneMillis)
