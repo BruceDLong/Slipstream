@@ -571,8 +571,120 @@ struct SlipView: inherits=ProactiveGUIWidget{
 
     me List<our POV>: boardInfons
     our dashDrawing: popup_dr
+    me bool: showFrameDiagnostics <- true
+    me bool: frameDiagnosticsLogEnabled <- true
+    me int64: frameDiagnosticsDrawCount
+    me int64: frameDiagnosticsFPS
+    me int64: frameDiagnosticsFPSWindowStartMillis
+    me int64: frameDiagnosticsFPSWindowCount
+    me int64: frameDiagnosticsLastDrawMillis
+    me int64: frameDiagnosticsLastBuildMillis
+    me int64: frameDiagnosticsLastRenderMillis
+
+    // Later rendering work: dirty invalidation is now rect-based, but each repaint
+    // still rebuilds and walks the full command list. Good next targets are cached
+    // background layers, clip-aware image/3D commands, and per-window retained draw lists.
+
+    void: appendFrameDiagnosticsLogRow(me string: row) <- <%{
+        static bool initialized = false;
+        static std::ofstream diagLog;
+        if(!initialized){
+            diagLog.open("SlipstreamFrameDiagnostics.csv", std::ios::out | std::ios::trunc);
+            if(diagLog.is_open()){
+                diagLog << "sample_ms,draw_fps,draw_total_ms,build_ms,render_ms,draw_count,"
+                        << "cmd_visited,cmd_rendered,cmd_path_culled,cmd_direct_culled,cmd_paint_skipped,"
+                        << "cmd_text,cmd_image,cmd_bg,cmd_subdraw,cmd_3d,"
+                        << "anim_fps,anim_dt_ms,anim_tween_ms,anim_requests,anim_full_requests,anim_rect_requests,"
+                        << "anim_scheduled,anim_coalesced,anim_callbacks,anim_full_redraws,anim_rect_redraws,"
+                        << "anim_pending,anim_has_rect,anim_rect_x,anim_rect_y,anim_rect_w,anim_rect_h,"
+                        << "window_w,window_h,board_index\n";
+            }
+            initialized = true;
+        }
+        if(diagLog.is_open()){
+            diagLog << row << "\n";
+            diagLog.flush();
+        }
+    }%>
+
+    me string: diagnosticsScalarToString(me GUI_Scalar: value) <- <%{
+        return std::to_string((double)value);
+    }%>
+
+    void: writeFrameDiagnosticsLog(me int64: sampleMillis) <- {
+        if(!frameDiagnosticsLogEnabled){return()}
+        me string: row <- toString(sampleMillis)
+        row <+- "," + toString(frameDiagnosticsFPS)
+        row <+- "," + toString(frameDiagnosticsLastDrawMillis)
+        row <+- "," + toString(frameDiagnosticsLastBuildMillis)
+        row <+- "," + toString(frameDiagnosticsLastRenderMillis)
+        row <+- "," + toString(frameDiagnosticsDrawCount)
+        row <+- "," + toString(reactGuiDiagCommandsVisited)
+        row <+- "," + toString(reactGuiDiagCommandsRendered)
+        row <+- "," + toString(reactGuiDiagPathShapeCulled)
+        row <+- "," + toString(reactGuiDiagDirectCulled)
+        row <+- "," + toString(reactGuiDiagPathPaintSkipped)
+        row <+- "," + toString(reactGuiDiagTextRendered)
+        row <+- "," + toString(reactGuiDiagImageRendered)
+        row <+- "," + toString(reactGuiDiagBackgroundRendered)
+        row <+- "," + toString(reactGuiDiagSubDrawingRendered)
+        row <+- "," + toString(reactGuiDiagThing3DRendered)
+        row <+- "," + toString(animationFrameFPS)
+        row <+- "," + toString(animationFrameLastDeltaMillis)
+        row <+- "," + toString(animationFrameLastTweenMillis)
+        row <+- "," + toString(animationFrameRequestCount)
+        row <+- "," + toString(animationFrameFullRequestCount)
+        row <+- "," + toString(animationFrameRectRequestCount)
+        row <+- "," + toString(animationFrameScheduledCount)
+        row <+- "," + toString(animationFrameCoalescedCount)
+        row <+- "," + toString(animationFrameCallbackCount)
+        row <+- "," + toString(animationFrameFullRedrawCount)
+        row <+- "," + toString(animationFrameRectRedrawCount)
+        if(animationFramePending){row <+- ",1"} else {row <+- ",0"}
+        if(animationFrameHasRedrawRect){row <+- ",1"} else {row <+- ",0"}
+        row <+- "," + diagnosticsScalarToString(animationFrameRedrawX)
+        row <+- "," + diagnosticsScalarToString(animationFrameRedrawY)
+        row <+- "," + diagnosticsScalarToString(animationFrameRedrawW)
+        row <+- "," + diagnosticsScalarToString(animationFrameRedrawH)
+        row <+- "," + toString(windowW)
+        row <+- "," + toString(windowH)
+        row <+- "," + toString(crntBoardIdx)
+        appendFrameDiagnosticsLogRow(row)
+    }
+
+    void: updateFrameDiagnostics(me int64: frameStartMillis, me int64: buildDoneMillis, me int64: renderDoneMillis) <- {
+        frameDiagnosticsDrawCount <+- 1
+        frameDiagnosticsFPSWindowCount <+- 1
+        frameDiagnosticsLastBuildMillis <- buildDoneMillis - frameStartMillis
+        frameDiagnosticsLastRenderMillis <- renderDoneMillis - buildDoneMillis
+        frameDiagnosticsLastDrawMillis <- renderDoneMillis - frameStartMillis
+        if(frameDiagnosticsFPSWindowStartMillis==0){
+            frameDiagnosticsFPSWindowStartMillis <- frameStartMillis
+        }
+        me int64: fpsElapsedMillis <- renderDoneMillis - frameDiagnosticsFPSWindowStartMillis
+        if(fpsElapsedMillis>=1000){
+            frameDiagnosticsFPS <- (frameDiagnosticsFPSWindowCount * 1000) / fpsElapsedMillis
+            writeFrameDiagnosticsLog(renderDoneMillis)
+            frameDiagnosticsFPSWindowStartMillis <- renderDoneMillis
+            frameDiagnosticsFPSWindowCount <- 0
+        }
+    }
+
+    me string: frameDiagnosticsLine1() <- {
+        return("draw fps:" + toString(frameDiagnosticsFPS) + " total:" + toString(frameDiagnosticsLastDrawMillis) + "ms")
+    }
+    me string: frameDiagnosticsLine2() <- {
+        return("build:" + toString(frameDiagnosticsLastBuildMillis) + "ms render:" + toString(frameDiagnosticsLastRenderMillis) + "ms draws:" + toString(frameDiagnosticsDrawCount))
+    }
+    me string: frameDiagnosticsLine3() <- {
+        return("cmd visited/rendered:" + toString(reactGuiDiagCommandsVisited) + "/" + toString(reactGuiDiagCommandsRendered) + " culled:" + toString(reactGuiDiagPathShapeCulled + reactGuiDiagDirectCulled))
+    }
+    me string: frameDiagnosticsLine4() <- {
+        return("cmd text:" + toString(reactGuiDiagTextRendered) + " bg:" + toString(reactGuiDiagBackgroundRendered) + " img:" + toString(reactGuiDiagImageRendered) + " 3d:" + toString(reactGuiDiagThing3DRendered))
+    }
 
     void: draw(their GUI_ctxt: cr) <- {
+        me int64: frameStartMillis <- guiMonotonicMillis()
         popup_dr<-NULL
         proactiveGUI.presenter.reset()
         crntBoardIdx <- proactiveGUI.presenter.modelMgr.getInt64(myInfon.mySymbol()+"/crntBoard", 0)
@@ -580,7 +692,11 @@ struct SlipView: inherits=ProactiveGUIWidget{
         if(crntBoardIdx >= boardInfons.size()){logFatalError("Non-existant board requested:"+toString(crntBoardIdx)+" of "+toString(boardInfons.size()))}
         our dashDrawing:: dr
         proactiveGUI.presenter.drawDashboard(dr, boardInfons[crntBoardIdx], 0,0,windowW,windowH)
+        me int64: buildDoneMillis <- guiMonotonicMillis()
+        resetReactGuiRenderDiagnostics()
         dr.render(cr)
+        me int64: renderDoneMillis <- guiMonotonicMillis()
+        updateFrameDiagnostics(frameStartMillis, buildDoneMillis, renderDoneMillis)
         if(popup_dr!=NULL){
             log("POP_UP!")
             popup_dr.render(cr)

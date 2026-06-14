@@ -132,6 +132,29 @@ struct GLOBAL{ // Temp code to do rotating cube
     me int: frameNumber
 }
 struct Scene3D: inherits=ReactiveControl{
+    me bool: lastDrawHasAnimation <- false
+    me int: animationFrameMillis <- 33
+    me GUI_Scalar: animationFramePad <- 8
+
+    void: drawDebugDiagnostics(our dashDrawing: dr, our Window3D: win3D) <- {
+        if(!slipView.showFrameDiagnostics){return()}
+        me GUI_Scalar: diagX <- win3D.windowXPos + 8
+        me GUI_Scalar: diagY <- win3D.windowYPos + 8
+        me GuiCoords: diagRect{diagX, diagY, 420, 112}
+        dr.addC(cmdSetColor, Styler.Black)
+        dr.addRA(cmdDrawRect, diagRect)
+        dr.add1(cmdFill)
+
+        dr.addC(cmdSetColor, Styler.Yellow)
+        dr.addTF(cmdRenderText, diagX + 8, diagY + 17, slipView.frameDiagnosticsLine1(), styler.smallFont)
+        dr.addTF(cmdRenderText, diagX + 8, diagY + 31, slipView.frameDiagnosticsLine2(), styler.smallFont)
+        dr.addTF(cmdRenderText, diagX + 8, diagY + 45, slipView.animationDiagnosticsLine1(), styler.smallFont)
+        dr.addTF(cmdRenderText, diagX + 8, diagY + 59, slipView.animationDiagnosticsLine2(), styler.smallFont)
+        dr.addTF(cmdRenderText, diagX + 8, diagY + 73, slipView.animationDiagnosticsLine3(), styler.smallFont)
+        dr.addTF(cmdRenderText, diagX + 8, diagY + 87, slipView.frameDiagnosticsLine3(), styler.smallFont)
+        dr.addTF(cmdRenderText, diagX + 8, diagY + 101, slipView.frameDiagnosticsLine4(), styler.smallFont)
+    }
+
     void: tmp_colorCube(our Thing3D: result, me float: arg, me cdColor: top, me cdColor: front, me cdColor: right, me cdColor: bottom, me  cdColor: back, me cdColor: left) <- {
         me Triangle3D: t1;
         our Thing3D: t3d
@@ -246,6 +269,7 @@ struct Scene3D: inherits=ReactiveControl{
     item.type    <- word
     word.setAsGiven("rubixstate")
     if(stuffPov.pItem.type!=NULL and stuffPov.pItem.isCompatibleWith(item, false)){
+        lastDrawHasAnimation <- true
         xOri <+- frameNumber * 0.03
         yOri <+- frameNumber * 0.06
         zOri <+- frameNumber * 0.00
@@ -363,9 +387,17 @@ struct Scene3D: inherits=ReactiveControl{
     }
 
     void: draw(our dashDrawing: dr, our ParamRec: PR) <- {
+        lastDrawHasAnimation <- false
         our Window3D:: win3D
         our Thing3D: object <- attempt3DDraw(PR.sourcePov, PR, win3D)
-        if(object!=NULL){dr.add3D(object, win3D)}
+        if(object!=NULL){
+            dr.add3D(object, win3D)
+            drawDebugDiagnostics(dr, win3D)
+            if(lastDrawHasAnimation){
+                slipView.requestAnimationFrameRectIn(win3D.windowXPos - animationFramePad, win3D.windowYPos - animationFramePad,
+                    win3D.windowWidth3D + animationFramePad*2, win3D.windowHeight3D + animationFramePad*2, animationFrameMillis)
+            }
+        }
     }
 }
 
