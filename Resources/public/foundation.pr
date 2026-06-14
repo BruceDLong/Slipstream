@@ -59,4 +59,7 @@
         contents
     }
 
+    // Now define a world as a T-list with more than 20000 million years.
+    @world = *(20000+_) +{T million-year | ... }
+
 }
